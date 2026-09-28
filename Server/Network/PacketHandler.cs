@@ -18,6 +18,7 @@ namespace Server.Network
         {
             // Map OpCodes to their specific controller/handler methods
             _handlers.Add(OpCode.LoginRequest, AuthHandler.HandleLoginRequest);
+            _handlers.Add(OpCode.SignUpRequest, AuthHandler.HandleSignUpRequest);
 
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }

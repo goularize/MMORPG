@@ -1,35 +1,94 @@
 using System;
+using System.Linq;
 using Shared.Network;
+using Server.Database;
+using Server.Database.Models;
 
 namespace Server.Handlers
 {
     public static class AuthHandler
     {
+        public static void HandleSignUpRequest(ClientConnection client, Packet packet)
+        {
+            string username = packet.ReadString();
+            string password = packet.ReadString();
+
+            Console.WriteLine($"[Client {client.Id}] Requested Sign Up with Username: '{username}'");
+            
+            bool isSuccess = false;
+            string message;
+
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                message = "Username and password cannot be empty.";
+            }
+            else
+            {
+                using var db = new AppDbContext();
+                
+                // Check if user exists
+                bool exists = db.Accounts.Any(a => a.Username.ToLower() == username.ToLower());
+                if (exists)
+                {
+                    message = "Username is already taken.";
+                }
+                else
+                {
+                    // Hash the password for security
+                    string hash = BCrypt.Net.BCrypt.HashPassword(password);
+                    
+                    var newAccount = new Account
+                    {
+                        Username = username,
+                        PasswordHash = hash
+                    };
+                    
+                    db.Accounts.Add(newAccount);
+                    db.SaveChanges();
+                    
+                    isSuccess = true;
+                    message = "Account created successfully!";
+                    Console.WriteLine($"[Client {client.Id}] Account created for '{username}'.");
+                }
+            }
+
+            using Packet response = new Packet(OpCode.SignUpResponse);
+            response.Write(isSuccess);
+            response.Write(message);
+            client.Send(response);
+        }
+
         public static void HandleLoginRequest(ClientConnection client, Packet packet)
         {
-            // Read the data from the incoming packet
             string username = packet.ReadString();
             string password = packet.ReadString();
 
             Console.WriteLine($"[Client {client.Id}] Requested Login with Username: '{username}'");
             
-            // Mock authentication logic
             bool isSuccess = false;
             string message = "Invalid credentials.";
 
-            // Very simple mock check: allow any username that isn't empty, as long as password is "123"
-            if (!string.IsNullOrWhiteSpace(username) && password == "123")
+            using var db = new AppDbContext();
+            
+            // Find the user by username
+            var account = db.Accounts.FirstOrDefault(a => a.Username.ToLower() == username.ToLower());
+            
+            if (account != null)
             {
-                isSuccess = true;
-                message = $"Welcome to the game, {username}!";
-                Console.WriteLine($"[Client {client.Id}] Login Successful.");
+                // Verify the hashed password
+                if (BCrypt.Net.BCrypt.Verify(password, account.PasswordHash))
+                {
+                    isSuccess = true;
+                    message = $"Welcome to the game, {username}!";
+                    Console.WriteLine($"[Client {client.Id}] Login Successful for Account ID {account.Id}.");
+                }
             }
-            else
+            
+            if (!isSuccess)
             {
                 Console.WriteLine($"[Client {client.Id}] Login Failed.");
             }
 
-            // Create and send the response packet back to the client
             using Packet response = new Packet(OpCode.LoginResponse);
             response.Write(isSuccess);
             response.Write(message);

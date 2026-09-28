@@ -7,8 +7,10 @@ namespace Shared.Network
         
         // Client -> Server
         LoginRequest = 1,
+        SignUpRequest = 3,
         
         // Server -> Client
         LoginResponse = 2,
+        SignUpResponse = 4
     }
 }
