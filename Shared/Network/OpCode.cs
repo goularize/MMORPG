@@ -6,11 +6,11 @@ namespace Shared.Network
         Unknown = 0,
         
         // Client -> Server
-        LoginRequest = 1,
+        SignInRequest = 1,
         SignUpRequest = 3,
         
         // Server -> Client
-        LoginResponse = 2,
+        SignInResponse = 2,
         SignUpResponse = 4
     }
 }

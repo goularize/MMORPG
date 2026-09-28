@@ -58,12 +58,12 @@ namespace Server.Handlers
             client.Send(response);
         }
 
-        public static void HandleLoginRequest(ClientConnection client, Packet packet)
+        public static void HandleSignInRequest(ClientConnection client, Packet packet)
         {
             string username = packet.ReadString();
             string password = packet.ReadString();
 
-            Console.WriteLine($"[Client {client.Id}] Requested Login with Username: '{username}'");
+            Console.WriteLine($"[Client {client.Id}] Requested Sign In with Username: '{username}'");
             
             bool isSuccess = false;
             string message = "Invalid credentials.";
@@ -80,16 +80,16 @@ namespace Server.Handlers
                 {
                     isSuccess = true;
                     message = $"Welcome to the game, {username}!";
-                    Console.WriteLine($"[Client {client.Id}] Login Successful for Account ID {account.Id}.");
+                    Console.WriteLine($"[Client {client.Id}] Sign In Successful for Account ID {account.Id}.");
                 }
             }
             
             if (!isSuccess)
             {
-                Console.WriteLine($"[Client {client.Id}] Login Failed.");
+                Console.WriteLine($"[Client {client.Id}] Sign In Failed.");
             }
 
-            using Packet response = new Packet(OpCode.LoginResponse);
+            using Packet response = new Packet(OpCode.SignInResponse);
             response.Write(isSuccess);
             response.Write(message);
             
