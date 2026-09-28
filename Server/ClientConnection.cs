@@ -1,6 +1,7 @@
 using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Server.Network;
 
 namespace Server
 {
@@ -11,6 +12,9 @@ namespace Server
         private readonly NetworkStream _stream;
         private readonly byte[] _receiveBuffer;
         private readonly Action<int> _onDisconnect;
+
+        // Packet framing variables
+        private byte[] _packetBytes;
 
         public ClientConnection(int id, TcpClient tcpClient, Action<int> onDisconnect)
         {
@@ -44,15 +48,74 @@ namespace Server
                         break;
                     }
 
-                    // For now, just log that we received data.
-                    // Later, we will pass these bytes to a PacketParser.
-                    Console.WriteLine($"Received {bytesRead} bytes from Client {Id}.");
+                    // Handle packet framing
+                    ProcessIncomingBytes(_receiveBuffer, bytesRead);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Client {Id} connection error: {ex.Message}");
                 Disconnect();
+            }
+        }
+
+        private void ProcessIncomingBytes(byte[] buffer, int length)
+        {
+            // Append incoming bytes to our persistent packet buffer
+            if (_packetBytes == null)
+            {
+                _packetBytes = new byte[length];
+                Array.Copy(buffer, 0, _packetBytes, 0, length);
+            }
+            else
+            {
+                byte[] temp = new byte[_packetBytes.Length + length];
+                Array.Copy(_packetBytes, 0, temp, 0, _packetBytes.Length);
+                Array.Copy(buffer, 0, temp, _packetBytes.Length, length);
+                _packetBytes = temp;
+            }
+
+            // Loop through the buffer to extract as many complete packets as possible
+            while (_packetBytes.Length >= 2) // We need at least 2 bytes to read the packet length
+            {
+                // Read the expected length of the packet from the first 2 bytes (header)
+                ushort expectedLength = BitConverter.ToUInt16(_packetBytes, 0);
+
+                // Security check: if length is 0, someone is sending corrupt data. Prevent infinite loop.
+                if (expectedLength == 0)
+                {
+                    Console.WriteLine($"Client {Id} sent a corrupt packet (length 0). Disconnecting.");
+                    Disconnect();
+                    return;
+                }
+
+                if (_packetBytes.Length >= expectedLength)
+                {
+                    // We have a complete packet! Extract it.
+                    byte[] completePacket = new byte[expectedLength];
+                    Array.Copy(_packetBytes, 0, completePacket, 0, expectedLength);
+
+                    // Route it to the PacketHandler
+                    PacketHandler.HandlePacket(Id, completePacket);
+
+                    // Remove the processed packet from our buffer
+                    int remainingBytes = _packetBytes.Length - expectedLength;
+                    if (remainingBytes > 0)
+                    {
+                        byte[] newBuffer = new byte[remainingBytes];
+                        Array.Copy(_packetBytes, expectedLength, newBuffer, 0, remainingBytes);
+                        _packetBytes = newBuffer;
+                    }
+                    else
+                    {
+                        _packetBytes = Array.Empty<byte>(); // Buffer is empty
+                    }
+                }
+                else
+                {
+                    // We don't have the full packet yet, wait for more data to arrive.
+                    break;
+                }
             }
         }
 

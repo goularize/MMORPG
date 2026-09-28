@@ -1,4 +1,5 @@
 using System;
+using Server.Network;
 
 namespace Server
 {
@@ -7,6 +8,9 @@ namespace Server
         static void Main(string[] args)
         {
             Console.Title = "MMORPG Server";
+            
+            // Initialize network routing
+            PacketHandler.Initialize();
             
             GameServer server = new GameServer(7777);
             server.Start();
