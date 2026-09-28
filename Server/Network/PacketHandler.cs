@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Shared.Network;
+using Server.Handlers;
 
 namespace Server.Network
 {
@@ -15,7 +16,8 @@ namespace Server.Network
         /// </summary>
         public static void Initialize()
         {
-            _handlers.Add(OpCode.LoginRequest, HandleLoginRequest);
+            // Map OpCodes to their specific controller/handler methods
+            _handlers.Add(OpCode.LoginRequest, AuthHandler.HandleLoginRequest);
             
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }
@@ -36,40 +38,6 @@ namespace Server.Network
             {
                 Console.WriteLine($"Received unknown packet OpCode: {packet.PacketId} from Client {client.Id}");
             }
-        }
-
-        // --- HANDLER METHODS ---
-
-        private static void HandleLoginRequest(ClientConnection client, Packet packet)
-        {
-            // Read the data from the incoming packet
-            string username = packet.ReadString();
-            string password = packet.ReadString();
-
-            Console.WriteLine($"[Client {client.Id}] Requested Login with Username: '{username}'");
-            
-            // Mock authentication logic
-            bool isSuccess = false;
-            string message = "Invalid credentials.";
-
-            // Very simple mock check: allow any username that isn't empty, as long as password is "123"
-            if (!string.IsNullOrWhiteSpace(username) && password == "123")
-            {
-                isSuccess = true;
-                message = $"Welcome to the game, {username}!";
-                Console.WriteLine($"[Client {client.Id}] Login Successful.");
-            }
-            else
-            {
-                Console.WriteLine($"[Client {client.Id}] Login Failed.");
-            }
-
-            // Create and send the response packet back to the client
-            using Packet response = new Packet(OpCode.LoginResponse);
-            response.Write(isSuccess);
-            response.Write(message);
-            
-            client.Send(response);
         }
     }
 }
