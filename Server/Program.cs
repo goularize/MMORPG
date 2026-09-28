@@ -1,6 +1,7 @@
 using System;
 using Server.Network;
 using Server.World;
+using Server.Database;
 
 namespace Server
 {
@@ -10,6 +11,16 @@ namespace Server
         {
             Console.Title = "MMORPG Server";
             
+            // Load environment variables from .env file
+            DotNetEnv.Env.Load();
+            
+            // Ensure Database exists (creates mmorpg.db file if using SQLite)
+            using (var db = new AppDbContext())
+            {
+                db.Database.EnsureCreated();
+                Console.WriteLine("Database initialized.");
+            }
+
             // Initialize network routing
             PacketHandler.Initialize();
             
