@@ -20,16 +20,16 @@ To handle thousands of messages scalably, we cannot send raw strings or heavy ob
 ## 3. Server Roles & Infrastructure (Hybrid Topology)
 Instead of a single monolith, the backend is split into specialized services to allow for horizontal scalability.
 
-### A. Login & Authentication Server
+### A. Login & Authentication Server (🚧 In Progress - Mocked)
 - **Role:** A lightweight gateway server.
-- **Mechanics:** When a client connects, they send a `LoginRequest`. Passwords are cryptographically hashed and checked. If valid, the server generates a secure session token, provides the client with a Server List (or Gateway address), and hands them off.
+- **Mechanics:** When a client connects, they send a `LoginRequest`. Passwords are cryptographically hashed and checked. If valid, the server generates a secure session token, provides the client with a Server List (or Gateway address), and hands them off. *(Currently implemented as a mock authentication handler).*
 
 ### B. World Server(s)
 - **Role:** Heavyweight authoritative servers running the actual game. Can be deployed as a classic Realm list or distributed map layers (e.g., City Server, Forest Server).
-- **Game Loop (Tick Rate):** Runs a continuous loop (e.g., 30 ticks per second) to process physics, movement, and combat.
-- **Entity System & AoI:** Players and NPCs are "Entities". To save bandwidth, the server uses Area of Interest (AoI) to only send updates about entities physically *near* the player.
+- **Game Loop & Tick Rate (✅ Done):** Runs a continuous, fixed-timestep loop (30 ticks per second) to process physics, movement, and combat independently of network events.
+- **Entity System & AoI (🚧 Next):** Players and NPCs are "Entities". To save bandwidth, the server uses Area of Interest (AoI) to only send updates about entities physically *near* the player.
 
-### C. Database Cluster
+### C. Database Cluster (Pending)
 - **Role:** Persistent storage using PostgreSQL or MySQL (via Entity Framework Core or Dapper).
 - **Mechanics:** Accessed by the Login Server (for accounts) and World Servers (for character saving/loading). All queries are strictly asynchronous to avoid pausing the game loops.
 
