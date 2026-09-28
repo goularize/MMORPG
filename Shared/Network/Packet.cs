@@ -49,6 +49,7 @@ namespace Shared.Network
 
         // --- WRITING METHODS ---
         public void Write(byte value) => _writer.Write(value);
+        public void Write(bool value) => _writer.Write(value);
         public void Write(int value) => _writer.Write(value);
         public void Write(float value) => _writer.Write(value);
         public void Write(string value) => _writer.Write(value); // BinaryWriter handles length prefix for strings automatically
@@ -73,6 +74,7 @@ namespace Shared.Network
 
         // --- READING METHODS ---
         public byte ReadByte() => _reader.ReadByte();
+        public bool ReadBool() => _reader.ReadBoolean();
         public int ReadInt() => _reader.ReadInt32();
         public float ReadFloat() => _reader.ReadSingle();
         public string ReadString() => _reader.ReadString();

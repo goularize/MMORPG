@@ -2,6 +2,7 @@ using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Server.Network;
+using Shared.Network;
 
 namespace Server
 {
@@ -95,8 +96,8 @@ namespace Server
                     byte[] completePacket = new byte[expectedLength];
                     Array.Copy(_packetBytes, 0, completePacket, 0, expectedLength);
 
-                    // Route it to the PacketHandler
-                    PacketHandler.HandlePacket(Id, completePacket);
+                    // Route it to the PacketHandler (passing 'this' so the handler can reply)
+                    PacketHandler.HandlePacket(this, completePacket);
 
                     // Remove the processed packet from our buffer
                     int remainingBytes = _packetBytes.Length - expectedLength;
@@ -116,6 +117,27 @@ namespace Server
                     // We don't have the full packet yet, wait for more data to arrive.
                     break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Finalizes a packet and sends its raw bytes over the network stream to the client.
+        /// </summary>
+        public void Send(Packet packet)
+        {
+            try
+            {
+                if (_tcpClient != null && _tcpClient.Connected)
+                {
+                    byte[] data = packet.ToArray();
+                    // Note: In a production environment, you might want to use _stream.WriteAsync to avoid blocking
+                    _stream.Write(data, 0, data.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending data to Client {Id}: {ex.Message}");
+                Disconnect();
             }
         }
 
