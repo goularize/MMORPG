@@ -53,6 +53,12 @@ namespace Shared.Network
         public void Write(int value) => _writer.Write(value);
         public void Write(float value) => _writer.Write(value);
         public void Write(string value) => _writer.Write(value); // BinaryWriter handles length prefix for strings automatically
+        public void Write(Shared.Math.Vector3 vector) 
+        {
+            _writer.Write(vector.X);
+            _writer.Write(vector.Y);
+            _writer.Write(vector.Z);
+        }
 
         /// <summary>
         /// Finalizes the packet by writing the total length at the very beginning of the stream.
@@ -78,6 +84,10 @@ namespace Shared.Network
         public int ReadInt() => _reader.ReadInt32();
         public float ReadFloat() => _reader.ReadSingle();
         public string ReadString() => _reader.ReadString();
+        public Shared.Math.Vector3 ReadVector3() 
+        {
+            return new Shared.Math.Vector3(_reader.ReadSingle(), _reader.ReadSingle(), _reader.ReadSingle());
+        }
 
         public void Dispose()
         {

@@ -14,6 +14,9 @@ namespace Server.World
 
         private bool _isRunning = false;
         private Thread _logicThread;
+        
+        // The manager that holds all active entities
+        public static EntityManager EntityMgr { get; } = new EntityManager();
 
         public void Start()
         {
@@ -68,11 +71,11 @@ namespace Server.World
 
         /// <summary>
         /// The main update method where all world state calculations happen.
-        /// (e.g. Movement, Physics, Combat, AI)
         /// </summary>
         private void Update()
         {
-            // Placeholder: No game mechanics implemented yet.
+            // Process all entities in the world (Movement, Physics, AI)
+            EntityMgr.Update();
         }
     }
 }
