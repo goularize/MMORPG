@@ -15,8 +15,6 @@ The networking logic is located in the `Server` project and revolves around two 
 ### 2. `ClientConnection`
 - **Location:** `Server/ClientConnection.cs`
 - **Role:** Represents a single connected player (client). 
-- **Data Reading:** Wraps a `TcpClient` and its `NetworkStream`. It continuously reads incoming byte arrays into a buffer (`ReceiveAsync`) as long as the client is connected. 
-- **Disconnection:** It automatically detects when a client drops (when `ReadAsync` returns 0 bytes) or throws an exception, and cleans up the stream.
-
-## Future Plans (Packets)
-Currently, the server only reads raw byte arrays. In the future, these bytes will be deserialized into structured **Packets** (defined in the `Shared` project) using a `PacketParser` so the server can understand specific game actions (e.g., Login, Move, Attack).
+- **Data Reading & Framing:** Wraps a `TcpClient` and its `NetworkStream`. It continuously reads incoming byte arrays into a buffer (`ReceiveAsync`). It performs **Packet Framing** by reading the 2-byte length header of the incoming stream, extracting complete packets, and forwarding them to the `PacketHandler`.
+- **Data Writing:** Provides a `Send(Packet packet)` method to convert packets back into raw bytes and fire them over the network to the client.
+- **Disconnection:** Automatically detects when a client drops (when `ReadAsync` returns 0 bytes) or throws an exception, and cleans up the stream.

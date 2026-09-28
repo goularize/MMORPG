@@ -41,14 +41,14 @@ _stream.Write(rawBytes, 0, rawBytes.Length);
 When the `ClientConnection` receives a complete packet, it routes it to the `PacketHandler`. You can then read the data in the exact same order it was written:
 
 ```csharp
-private static void HandleLoginRequest(int clientId, Packet packet)
+public static void HandleLoginRequest(ClientConnection client, Packet packet)
 {
     // The OpCode (Header) was already read by the router. 
     // Start reading the payload directly:
     string username = packet.ReadString();
     string password = packet.ReadString();
     
-    // ... validate login
+    // ... validate login and reply using client.Send(responsePacket)
 }
 ```
 
@@ -56,7 +56,9 @@ private static void HandleLoginRequest(int clientId, Packet packet)
 
 The `PacketHandler` class in the `Server` project acts as a central switchboard. It holds a dictionary mapping `OpCode` values to specific handler functions. This provides `O(1)` routing performance.
 
+To avoid a massive monolith file, actual logic is separated into specific Handler classes inside the `Server/Handlers/` folder (e.g., `AuthHandler.cs`).
+
 To add a new packet feature:
 1. Add a new ID to `Shared/Network/OpCode.cs`.
-2. Create a handler method in `PacketHandler.cs`.
+2. Create a handler method in a specialized class (e.g., `MovementHandler.cs`).
 3. Register the mapping inside `PacketHandler.Initialize()`.
