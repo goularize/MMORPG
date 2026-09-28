@@ -12,7 +12,12 @@ If you are an AI assistant or agent working on this codebase, please adhere to t
 2. **Server Logic**: The `Server` project is authoritative. It should contain all validation, database interactions, and state management. Never trust the client.
 3. **Asynchronous Code**: The server must handle thousands of connections. Prefer `async/await` and thread-safe data structures (`ConcurrentDictionary`, `ConcurrentQueue`) over blocking calls or manual locks wherever possible.
 
-## Networking
-- The server uses raw TCP sockets (`System.Net.Sockets`).
-- Do not use WebSockets unless specifically requested for a WebGL client build.
-- Prioritize low-allocation code in hot paths (like the network receive loop) to avoid Garbage Collection spikes. (e.g., use `Span<T>`, `Memory<T>`, or `ArrayPool<T>` when parsing packets).
+## Networking & Packets
+- The server uses raw TCP sockets (`System.Net.Sockets`). Do not use WebSockets unless specifically requested for a WebGL client build.
+- **Packet Framing**: All network messages are framed with a 2-byte length header, followed by a 2-byte `OpCode` header, followed by the payload.
+- **Packet Utility**: Always use the `Shared.Network.Packet` utility to read/write binary data to avoid string allocation overhead.
+- **Routing**: Do not put business logic inside `PacketHandler.cs`. It is strictly a router. Business logic must be encapsulated in specific handler classes within the `Server/Handlers/` directory and registered in `PacketHandler.Initialize()`.
+
+## Game Loop & World State
+- The server runs an authoritative, fixed-timestep Game Loop at **30 Ticks Per Second** (`Server.World.GameLogic`).
+- **Critical Rule**: Network handlers (like `AuthHandler` or `MovementHandler`) should generally just queue actions or update intention states. Actual physics, movement, and combat math MUST be processed synchronously inside the `GameLogic.Update()` loop to prevent race conditions and maintain a stable server heartbeat.
