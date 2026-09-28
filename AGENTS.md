@@ -21,3 +21,8 @@ If you are an AI assistant or agent working on this codebase, please adhere to t
 ## Game Loop & World State
 - The server runs an authoritative, fixed-timestep Game Loop at **30 Ticks Per Second** (`Server.World.GameLogic`).
 - **Critical Rule**: Network handlers (like `AuthHandler` or `MovementHandler`) should generally just queue actions or update intention states. Actual physics, movement, and combat math MUST be processed synchronously inside the `GameLogic.Update()` loop to prevent race conditions and maintain a stable server heartbeat.
+
+## Database & Authentication
+- **ORM**: We use Entity Framework Core 8 with PostgreSQL (`Npgsql`).
+- **Secrets**: The connection string is loaded securely via `DotNetEnv` from `Server/.env`. If you need a new secret, put it in `.env` and `.env.example`.
+- **Security**: Never store passwords in plaintext. Always use `BCrypt.Net-Next` to hash and verify passwords in the database.

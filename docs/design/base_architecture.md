@@ -20,18 +20,18 @@ To handle thousands of messages scalably, we cannot send raw strings or heavy ob
 ## 3. Server Roles & Infrastructure (Hybrid Topology)
 Instead of a single monolith, the backend is split into specialized services to allow for horizontal scalability.
 
-### A. Login & Authentication Server (🚧 In Progress - Mocked)
+### A. Login & Authentication Server (✅ Done)
 - **Role:** A lightweight gateway server.
-- **Mechanics:** When a client connects, they send a `LoginRequest`. Passwords are cryptographically hashed and checked. If valid, the server generates a secure session token, provides the client with a Server List (or Gateway address), and hands them off. *(Currently implemented as a mock authentication handler).*
+- **Mechanics:** When a client connects, they send a `SignInRequest`. Passwords are cryptographically hashed using BCrypt. If valid, the server logs the user in. Registration (`SignUpRequest`) is also fully supported.
 
 ### B. World Server(s)
 - **Role:** Heavyweight authoritative servers running the actual game. Can be deployed as a classic Realm list or distributed map layers (e.g., City Server, Forest Server).
 - **Game Loop & Tick Rate (✅ Done):** Runs a continuous, fixed-timestep loop (30 ticks per second) to process physics, movement, and combat independently of network events.
-- **Entity System & AoI (🚧 Next):** Players and NPCs are "Entities". To save bandwidth, the server uses Area of Interest (AoI) to only send updates about entities physically *near* the player.
+- **Entity System & AoI (🚧 In Progress):** Players and NPCs are "Entities". To save bandwidth, the server uses Area of Interest (AoI) to only send updates about entities physically *near* the player.
 
-### C. Database Cluster (Pending)
-- **Role:** Persistent storage using PostgreSQL or MySQL (via Entity Framework Core or Dapper).
-- **Mechanics:** Accessed by the Login Server (for accounts) and World Servers (for character saving/loading). All queries are strictly asynchronous to avoid pausing the game loops.
+### C. Database Cluster (✅ Done)
+- **Role:** Persistent storage using PostgreSQL.
+- **Mechanics:** We use **Entity Framework Core** with the `Npgsql` provider. The database connection string is securely loaded from a `.env` file via `DotNetEnv`. Passwords are NEVER stored in plaintext (BCrypt is used).
 
 ## 4. Game Systems (Future)
 - Combat & Stats Calculation (Server authoritative).
