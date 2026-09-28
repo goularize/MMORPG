@@ -17,22 +17,23 @@ To handle thousands of messages scalably, we cannot send raw strings or heavy ob
 - **Serialization Strategy:** We will use `BinaryReader` and `BinaryWriter` (or modern `.NET Span<T>` / `Memory<T>`) to pack and unpack data directly into bytes.
 - **Routing:** A central `PacketHandler` dictionary will map `OpCodes` to specific functions (e.g., `OpCode.Login` triggers `HandleLogin()`), ensuring O(1) routing speed.
 
-## 3. Login & Authentication
-- **Handshake:** When a client connects, they send a `LoginRequest` packet with credentials.
-- **Security:** Passwords must be hashed. If using tokens, a session token is generated.
-- **Flow:** If valid, the server replies with a `LoginSuccess` packet containing the player's character data and spawns them into the world.
+## 3. Server Roles & Infrastructure (Hybrid Topology)
+Instead of a single monolith, the backend is split into specialized services to allow for horizontal scalability.
 
-## 4. World State & Entity Management
-- **Game Loop (Tick Rate):** The server needs a continuous loop (e.g., 20 or 30 ticks per second) to process physics, movement, and combat, rather than processing them instantly upon receiving a packet.
-- **Entity System:** Players, monsters, and NPCs are all "Entities" with a unique ID.
-- **Area of Interest (AoI):** To save bandwidth, the server only sends updates about entities that are *near* the player, not everyone in the entire world.
+### A. Login & Authentication Server
+- **Role:** A lightweight gateway server.
+- **Mechanics:** When a client connects, they send a `LoginRequest`. Passwords are cryptographically hashed and checked. If valid, the server generates a secure session token, provides the client with a Server List (or Gateway address), and hands them off.
 
-## 5. Data Persistence (Database)
-- **Technology:** PostgreSQL or MySQL using Entity Framework Core or Dapper.
-- **Goal:** Save player progression, inventory, and stats.
-- **Async Db Calls:** Database queries must be strictly asynchronous so they don't pause the Game Loop while waiting for the hard drive.
+### B. World Server(s)
+- **Role:** Heavyweight authoritative servers running the actual game. Can be deployed as a classic Realm list or distributed map layers (e.g., City Server, Forest Server).
+- **Game Loop (Tick Rate):** Runs a continuous loop (e.g., 30 ticks per second) to process physics, movement, and combat.
+- **Entity System & AoI:** Players and NPCs are "Entities". To save bandwidth, the server uses Area of Interest (AoI) to only send updates about entities physically *near* the player.
 
-## 6. Game Systems (Future)
+### C. Database Cluster
+- **Role:** Persistent storage using PostgreSQL or MySQL (via Entity Framework Core or Dapper).
+- **Mechanics:** Accessed by the Login Server (for accounts) and World Servers (for character saving/loading). All queries are strictly asynchronous to avoid pausing the game loops.
+
+## 4. Game Systems (Future)
 - Combat & Stats Calculation (Server authoritative).
 - Inventory & Item Management.
 - Chat System (Global, Local, Whispers).
