@@ -16,3 +16,4 @@
 /home/luiz/Projects/Personal/MMORPG/Server/obj/Debug/net8.0/Server.pdb
 /home/luiz/Projects/Personal/MMORPG/Server/obj/Debug/net8.0/Server.genruntimeconfig.cache
 /home/luiz/Projects/Personal/MMORPG/Server/obj/Debug/net8.0/ref/Server.dll
+/home/luiz/Projects/Personal/MMORPG/Server/obj/Debug/net8.0/Server.sourcelink.json

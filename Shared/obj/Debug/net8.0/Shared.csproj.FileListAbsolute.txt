@@ -9,3 +9,4 @@
 /home/luiz/Projects/Personal/MMORPG/Shared/obj/Debug/net8.0/refint/Shared.dll
 /home/luiz/Projects/Personal/MMORPG/Shared/obj/Debug/net8.0/Shared.pdb
 /home/luiz/Projects/Personal/MMORPG/Shared/obj/Debug/net8.0/ref/Shared.dll
+/home/luiz/Projects/Personal/MMORPG/Shared/obj/Debug/net8.0/Shared.sourcelink.json
