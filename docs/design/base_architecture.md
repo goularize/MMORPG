@@ -7,7 +7,7 @@ This document outlines the high-level design and roadmap for the foundational sy
 - **Goal:** Establish a persistent, bi-directional, and non-blocking connection between the Unity Client and the .NET Server.
 - **Components:** `GameServer` (Listener) and `ClientConnection` (Session Manager).
 
-## 2. Messaging Protocol & Packet System (🚧 Next)
+## 2. Messaging Protocol & Packet System (✅ Done)
 To handle thousands of messages scalably, we cannot send raw strings or heavy objects (like JSON or Dictionaries). We need a fast, low-allocation binary protocol.
 
 - **Packet Structure:** Every message sent over the network will be a "Packet". A packet typically consists of:
