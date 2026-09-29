@@ -58,6 +58,7 @@ After running the script, open the `Client/` folder using Unity Hub.
 ## Documentation
 
 - [Base Architecture](docs/design/base_architecture.md)
+- [Client Architecture](docs/client/architecture.md)
 - [Network Architecture](docs/server/network.md)
 - [Entity System](docs/server/entity_system.md)
 - [Database Setup](docs/server/database.md)
