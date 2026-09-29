@@ -7,6 +7,10 @@ If you are an AI assistant or agent working on this codebase, please adhere to t
 - **Tech Stack**: C# 12, .NET 8.
 - **Client**: Unity (to be developed in the `Client/` directory).
 
+## Git & Version Control Rules
+1. **NEVER COMMIT WITHOUT PERMISSION**: Do not use `git add` or `git commit` unless the user explicitly tells you to commit the current changes.
+2. **NEVER PUSH WITHOUT PERMISSION**: Being asked to commit is **NOT** permission to push. Do not use `git push` unless the user explicitly types the words instructing you to push to the remote repository.
+
 ## Architecture Rules
 1. **Shared Logic**: Any code that needs to be understood by BOTH the `.NET Server` and the `Unity Client` (such as network packet definitions, game constants, enums, or math utilities) MUST be placed in the `Shared` class library.
 2. **Server Logic**: The `Server` project is authoritative. It should contain all validation, database interactions, and state management. Never trust the client.
