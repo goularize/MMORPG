@@ -25,7 +25,28 @@ namespace Server.World
         {
             if (Players.TryRemove(playerId, out Player? player))
             {
-                Console.WriteLine($"Player {player.Name} left the world.");
+                // Save character's final position to the DB asynchronously
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    try
+                    {
+                        using var db = Server.Database.AppDbContext.Factory();
+                        var dbChar = db.Characters.Find(player.Id);
+                        if (dbChar != null)
+                        {
+                            dbChar.X = player.Position.X;
+                            dbChar.Y = player.Position.Y;
+                            dbChar.Z = player.Position.Z;
+                            db.SaveChanges();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Error] Failed to save player {player.Name} position on disconnect: {ex.Message}");
+                    }
+                });
+
+                Console.WriteLine($"Player {player.Name} left the world (Position saved).");
             }
         }
 

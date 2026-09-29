@@ -65,9 +65,14 @@ namespace Server
 
         private void OnClientDisconnect(int clientId)
         {
-            if (_clients.TryRemove(clientId, out _))
+            if (_clients.TryRemove(clientId, out var clientConnection))
             {
                 Console.WriteLine($"Client {clientId} removed from active connections list.");
+                
+                if (clientConnection.PlayerId.HasValue)
+                {
+                    Server.World.GameLogic.EntityMgr.RemovePlayer(clientConnection.PlayerId.Value);
+                }
             }
         }
 
