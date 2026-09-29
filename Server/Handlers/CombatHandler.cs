@@ -60,8 +60,16 @@ namespace Server.Handlers
             // Execution: Calculate Damage
             // A simple damage formula: Attack - (Defense / 2), minimum 1 damage
             int damage = Math.Max(1, player.Attack - (target.Defense / 2));
-            target.Health -= damage;
-            if (target.Health < 0) target.Health = 0;
+            
+            if (target is Resource resourceTarget)
+            {
+                resourceTarget.TakeDamage(damage);
+            }
+            else
+            {
+                target.Health -= damage;
+                if (target.Health < 0) target.Health = 0;
+            }
 
             Console.WriteLine($"[Combat] {player.Name} hit {target.Name} for {damage} damage! ({target.Health}/{target.MaxHealth})");
 

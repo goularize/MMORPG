@@ -37,11 +37,20 @@ namespace Client.Editor
     }
 
     [Serializable]
+    public class ResourceSpawnerExportData
+    {
+        public string Type;
+        public Vector2Data Position;
+        public float RespawnTimeSeconds;
+    }
+
+    [Serializable]
     public class MapExportData
     {
         public string MapName;
         public int MaxPlayers;
         public List<ColliderExportData> Colliders = new List<ColliderExportData>();
+        public List<ResourceSpawnerExportData> ResourceSpawners = new List<ResourceSpawnerExportData>();
     }
 
     public class MapExporter
@@ -112,6 +121,18 @@ namespace Client.Editor
                 }
 
                 mapData.Colliders.Add(colData);
+            }
+
+            // Find all ResourceSpawners
+            Client.Map.ResourceSpawner[] spawners = UnityEngine.Object.FindObjectsOfType<Client.Map.ResourceSpawner>();
+            foreach (var spawner in spawners)
+            {
+                mapData.ResourceSpawners.Add(new ResourceSpawnerExportData
+                {
+                    Type = spawner.ResourceType,
+                    Position = new Vector2Data(spawner.transform.position),
+                    RespawnTimeSeconds = spawner.RespawnTimeSeconds
+                });
             }
 
             // Convert to JSON

@@ -1,18 +1,104 @@
+using System;
+using System.IO;
 using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Collections.Generic;
 using Server.World.Entities;
 
 namespace Server.World
 {
+    // DTOs for JSON Parsing
+    public class Vector2Data
+    {
+        public float x { get; set; }
+        public float y { get; set; }
+    }
+
+    public class ResourceSpawnerExportData
+    {
+        public string Type { get; set; } = string.Empty;
+        public Vector2Data Position { get; set; } = new Vector2Data();
+        public float RespawnTimeSeconds { get; set; }
+    }
+
+    public class MapExportData
+    {
+        public string MapName { get; set; } = string.Empty;
+        public int MaxPlayers { get; set; }
+        public List<ResourceSpawnerExportData> ResourceSpawners { get; set; } = new();
+    }
+
     public class MapManager
     {
         public ConcurrentDictionary<int, MapInstance> ActiveMaps { get; } = new();
 
         public MapManager()
         {
-            // Initialize basic default map(s)
-            // In a full implementation, this would load from JSON configurations
-            ActiveMaps.TryAdd(1, new MapInstance(1));
-            ActiveMaps.TryAdd(2, new MapInstance(2)); // Just as an example for multiple maps
+            LoadMapsFromDisk();
+            
+            // Fallbacks in case no JSON files exist yet
+            if (!ActiveMaps.ContainsKey(1)) ActiveMaps.TryAdd(1, new MapInstance(1));
+            if (!ActiveMaps.ContainsKey(2)) ActiveMaps.TryAdd(2, new MapInstance(2));
+        }
+
+        private void LoadMapsFromDisk()
+        {
+            // The JSON files are in Server/Data/Maps
+            string mapsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Data", "Maps");
+            // If running via dotnet run, the directory structure might be slightly different.
+            // Let's resolve safely based on current working directory.
+            if (!Directory.Exists(mapsDir))
+            {
+                mapsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "Maps");
+            }
+
+            if (!Directory.Exists(mapsDir))
+            {
+                Console.WriteLine($"[MapManager] Maps directory not found at {mapsDir}. Using default maps.");
+                return;
+            }
+
+            var files = Directory.GetFiles(mapsDir, "Map_*_Config.json");
+            int resourceIdCounter = 100000; // Offset IDs to avoid colliding with Players/NPCs
+
+            foreach (var file in files)
+            {
+                try
+                {
+                    // Extract ID from Map_X_Config.json
+                    string fileName = Path.GetFileName(file);
+                    string idPart = fileName.Replace("Map_", "").Replace("_Config.json", "");
+                    if (int.TryParse(idPart, out int mapId))
+                    {
+                        string json = File.ReadAllText(file);
+                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                        var mapData = JsonSerializer.Deserialize<MapExportData>(json, options);
+
+                        if (mapData != null)
+                        {
+                            var mapInstance = new MapInstance(mapId);
+                            
+                            // Load Resources
+                            foreach (var spawner in mapData.ResourceSpawners)
+                            {
+                                int resId = resourceIdCounter++;
+                                var position = new Shared.Math.Vector3(spawner.Position.x, spawner.Position.y, 0);
+                                var resource = new Resource(resId, spawner.Type, position, spawner.RespawnTimeSeconds);
+                                
+                                resource.MapId = mapId;
+                                mapInstance.Resources.TryAdd(resId, resource);
+                            }
+
+                            ActiveMaps.TryAdd(mapId, mapInstance);
+                            Console.WriteLine($"[MapManager] Loaded Map {mapId} ({mapData.MapName}) with {mapData.ResourceSpawners.Count} resources.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Error] Failed to load map config {file}: {ex.Message}");
+                }
+            }
         }
 
         public MapInstance? GetMap(int mapId)
@@ -42,7 +128,7 @@ namespace Server.World
             }
             else
             {
-                System.Console.WriteLine($"[Error] Cannot add player to non-existent Map {mapId}");
+                Console.WriteLine($"[Error] Cannot add player to non-existent Map {mapId}");
             }
         }
 

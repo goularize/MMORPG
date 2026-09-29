@@ -15,6 +15,9 @@ namespace Server.World
         // Thread-safe dictionary for NPCs
         public ConcurrentDictionary<int, NPC> NPCs { get; } = new();
 
+        // Thread-safe dictionary for Resources (Trees, Ores, etc.)
+        public ConcurrentDictionary<int, Resource> Resources { get; } = new();
+
         public MapInstance(int mapId)
         {
             MapId = mapId;
@@ -24,6 +27,7 @@ namespace Server.World
         {
             if (Players.TryGetValue(id, out var player)) return player;
             if (NPCs.TryGetValue(id, out var npc)) return npc;
+            if (Resources.TryGetValue(id, out var res)) return res;
             return null;
         }
 
@@ -86,6 +90,12 @@ namespace Server.World
                 npc.Update();
             }
 
+            // Process Resource logic (Respawn timers)
+            foreach (var res in Resources.Values)
+            {
+                res.Update();
+            }
+
             // Broadcast state updates to players based on their Area of Interest
             ProcessAreaOfInterest();
         }
@@ -115,6 +125,17 @@ namespace Server.World
                     if (Shared.Math.Vector3.Distance(player.Position, npc.Position) <= AOI_RADIUS)
                     {
                         nearbyEntities.Add(npc);
+                    }
+                }
+
+                // Check distance to all Resources
+                foreach (var res in Resources.Values)
+                {
+                    if (Shared.Math.Vector3.Distance(player.Position, res.Position) <= AOI_RADIUS)
+                    {
+                        // Even if depleted, we still might want players to know it's there (as a stump, or hidden if you prefer).
+                        // Let's always add it, and if it's depleted, the client handles the visual state based on its Health.
+                        nearbyEntities.Add(res);
                     }
                 }
 
