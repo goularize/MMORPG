@@ -10,6 +10,11 @@ namespace Server.Handlers
 {
     public static class ChatHandler
     {
+        // Simple regex-based profanity scrubber
+        private static readonly System.Text.RegularExpressions.Regex ProfanityRegex = new(
+            @"(?i)\b(fuck|shit|bitch|asshole|cunt)\b",
+            System.Text.RegularExpressions.RegexOptions.Compiled);
+
         public static void HandleChatMessage(IClientConnection client, Packet packet)
         {
             if (client.PlayerId == null) return;
@@ -31,6 +36,8 @@ namespace Server.Handlers
 
             // Clean/Sanitize message here if needed
             if (string.IsNullOrWhiteSpace(message)) return;
+            
+            message = ProfanityRegex.Replace(message, "***");
 
             switch (channel)
             {
