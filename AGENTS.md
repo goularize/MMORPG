@@ -13,7 +13,8 @@ If you are an AI assistant or agent working on this codebase, please adhere to t
 
 ## Architecture Rules
 1. **Shared Logic**: Any code that needs to be understood by BOTH the `.NET Server` and the `Unity Client` (such as network packet definitions, game constants, enums, or math utilities) MUST be placed in the `Shared` class library.
-2. **Server Logic**: The `Server` project is authoritative. It should contain all validation, database interactions, and state management. Never trust the client.
+2. **Client-Server Link**: The Unity Client shares the backend `Shared/` library natively via OS-level directory junctions inside `Client/Assets/Scripts/Shared/`. **Never duplicate `.cs` files between the client and server.**
+3. **Server Logic**: The `Server` project is authoritative. It should contain all validation, database interactions, and state management. Never trust the client.
 3. **Asynchronous Code**: The server must handle thousands of connections. Prefer `async/await` and thread-safe data structures (`ConcurrentDictionary`, `ConcurrentQueue`) over blocking calls or manual locks wherever possible.
 
 ## Networking & Packets
