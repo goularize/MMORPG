@@ -26,6 +26,9 @@ namespace Server.Network
             _handlers.Add(OpCode.CharacterDeleteRequest, CharacterHandler.HandleDeleteRequest);
             _handlers.Add(OpCode.CharacterSelectRequest, CharacterHandler.HandleSelectRequest);
 
+            // Movement
+            _handlers.Add(OpCode.PlayerMoveRequest, MovementHandler.HandleMoveRequest);
+
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }
 

@@ -15,6 +15,9 @@ namespace Server.World.Entities
         public int Level { get; set; }
         public long Exp { get; set; }
         public int StatPoints { get; set; }
+        
+        // Movement tracking
+        public DateTime LastMoveTime { get; set; } = DateTime.UtcNow;
 
         public Player(int id, string name, Server.Network.IClientConnection connection)
         {

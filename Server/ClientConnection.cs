@@ -10,6 +10,7 @@ namespace Server
     {
         public int Id { get; }
         public int? AccountId { get; set; } // Set when the player successfully signs in
+        public int? PlayerId { get; set; }  // Set when the player selects a character and enters the world
         
         private readonly TcpClient _tcpClient;
         private readonly NetworkStream _stream;

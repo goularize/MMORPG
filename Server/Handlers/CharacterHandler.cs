@@ -148,6 +148,7 @@ namespace Server.Handlers
 
                 // Add to the World
                 GameLogic.EntityMgr.AddPlayer(player);
+                client.PlayerId = player.Id; // Bind the world entity to the active network session
                 Console.WriteLine($"[Client {client.Id}] Selected character '{player.Name}' and entered the world.");
             }
 

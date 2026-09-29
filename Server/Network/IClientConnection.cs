@@ -6,6 +6,7 @@ namespace Server.Network
     {
         int Id { get; }
         int? AccountId { get; set; }
+        int? PlayerId { get; set; }
         void Send(Packet packet);
         void Disconnect();
     }

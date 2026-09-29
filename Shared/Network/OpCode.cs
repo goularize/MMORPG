@@ -26,6 +26,9 @@ namespace Shared.Network
         CharacterDeleteRequest = 12,
         CharacterDeleteResponse = 13,
         CharacterSelectRequest = 14,
-        CharacterSelectResponse = 15
+        CharacterSelectResponse = 15,
+
+        // Movement
+        PlayerMoveRequest = 16
     }
 }

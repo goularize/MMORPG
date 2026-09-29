@@ -14,6 +14,7 @@ namespace Server.Tests
     {
         public int Id { get; } = 1;
         public int? AccountId { get; set; } = 1; // Pre-authenticated for tests
+        public int? PlayerId { get; set; }
         public List<Packet> SentPackets { get; } = new();
 
         public void Send(Packet packet)
