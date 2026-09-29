@@ -14,7 +14,9 @@ namespace Server.Data.Models
     {
         public int TemplateId { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string Type { get; set; } = "Monster";
+        public string Type { get; set; } = "Enemy";
+        public string Behavior { get; set; } = "Passive";
+        public float AggroRadius { get; set; } = 0.0f;
         public string PrefabName { get; set; } = string.Empty;
         public int[] LevelRange { get; set; } = new int[] { 1, 1 };
         public float[] StatVarianceRange { get; set; } = new float[] { 1.0f, 1.0f };
