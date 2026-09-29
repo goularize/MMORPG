@@ -1,0 +1,35 @@
+[
+  {
+    "TemplateId": 100,
+    "Name": "Goblin Looter",
+    "Type": "Monster",
+    "PrefabName": "Entity_Goblin",
+    "LevelRange": [2, 5],
+    "StatVarianceRange": [0.9, 1.1],
+    "BaseStrength": 10,
+    "BaseIntelligence": 2,
+    "BaseConstitution": 8,
+    "BaseKnowledge": 2,
+    "Interactions": []
+  },
+  {
+    "TemplateId": 200,
+    "Name": "Town Blacksmith",
+    "Type": "Friendly",
+    "PrefabName": "Entity_HumanBlacksmith",
+    "LevelRange": [50, 50],
+    "StatVarianceRange": [1.0, 1.0],
+    "BaseStrength": 50,
+    "BaseIntelligence": 50,
+    "BaseConstitution": 999,
+    "BaseKnowledge": 50,
+    "Interactions": [
+      {
+        "ConditionType": "None",
+        "ConditionValue": 0,
+        "Action": "OpenShop",
+        "ActionValue": 15
+      }
+    ]
+  }
+]

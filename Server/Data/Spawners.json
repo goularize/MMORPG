@@ -1,0 +1,22 @@
+[
+  {
+    "Type": "Area",
+    "TemplateId": 100,
+    "X": 15.5,
+    "Y": 0.0,
+    "Z": -20.5,
+    "Radius": 10.0,
+    "Amount": 5,
+    "RotationY": 0.0
+  },
+  {
+    "Type": "Point",
+    "TemplateId": 200,
+    "X": 5.0,
+    "Y": 0.0,
+    "Z": 5.0,
+    "Radius": 0.0,
+    "Amount": 1,
+    "RotationY": 180.0
+  }
+]
