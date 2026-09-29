@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Shared.Network;
 using Shared.Math;
+using Server.Database;
 using Server.Network;
 using Server.World;
 
@@ -34,14 +35,49 @@ namespace Server.Handlers
             switch (channel)
             {
                 case ChatChannel.Global:
+                    LogMessage(ChatChannel.Global, sender.Name, null, message);
                     BroadcastGlobal(sender.Name, message);
                     break;
                 case ChatChannel.Local:
+                    LogMessage(ChatChannel.Local, sender.Name, null, message);
                     BroadcastLocal(sender, message);
                     break;
                 case ChatChannel.Whisper:
+                    LogMessage(ChatChannel.Whisper, sender.Name, targetName, message);
                     SendWhisper(sender, targetName, message);
                     break;
+            }
+        }
+
+        private static void LogMessage(ChatChannel channel, string senderName, string? targetName, string message)
+        {
+            // Read from Environment Variables (set via DotNetEnv)
+            string envKey = $"CHAT_LOG_{channel.ToString().ToUpper()}";
+            string envValue = Environment.GetEnvironmentVariable(envKey) ?? "false";
+
+            if (bool.TryParse(envValue, out bool shouldLog) && shouldLog)
+            {
+                // Offload DB write to a background task so we don't stall the main GameLogic/Network thread
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    try
+                    {
+                        using var db = AppDbContext.Factory();
+                        db.ChatLogs.Add(new Server.Database.Models.ChatLog
+                        {
+                            Timestamp = DateTime.UtcNow,
+                            Channel = channel,
+                            SenderName = senderName,
+                            TargetName = targetName,
+                            Message = message
+                        });
+                        db.SaveChanges();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Error] Failed to log chat to database: {ex.Message}");
+                    }
+                });
             }
         }
 

@@ -19,6 +19,9 @@ namespace Server.Database
         // This DbSet represents the "Characters" table
         public DbSet<Character> Characters { get; set; }
 
+        // This DbSet represents the "ChatLogs" table
+        public DbSet<ChatLog> ChatLogs { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
