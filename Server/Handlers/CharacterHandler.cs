@@ -81,6 +81,7 @@ namespace Server.Handlers
                         Name = name,
                         AppearanceId = appearanceId,
                         Level = 1,
+                        MapId = 1, // Start at MapId 1 (Starting Village)
                         X = 0f,
                         Y = 0f,
                         Z = 0f,
@@ -179,7 +180,8 @@ namespace Server.Handlers
             if (isSuccess)
             {
                 // Send starting coordinates so client can load scene
-                response.Write(characterData!.X);
+                response.Write(characterData!.MapId);
+                response.Write(characterData.X);
                 response.Write(characterData.Y);
                 response.Write(characterData.Z);
             }

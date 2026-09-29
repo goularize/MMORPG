@@ -56,14 +56,15 @@ namespace Client.Network.Handlers
             bool success = packet.ReadBool();
             if (success)
             {
+                int mapId = packet.ReadInt();
                 float x = packet.ReadFloat();
                 float y = packet.ReadFloat();
                 float z = packet.ReadFloat();
                 
-                Debug.Log($"[CharacterHandler] Selection successful. Spawning at {x}, {y}, {z}");
+                Debug.Log($"[CharacterHandler] Selection successful. Loading MapId {mapId}. Spawning at {x}, {y}, {z}");
                 
-                // TODO: Load Game Scene and prepare to receive EntitySpawn and initial stats
-                // UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+                // TODO: Load specific Map Scene based on MapId
+                // UnityEngine.SceneManagement.SceneManager.LoadScene($"Map_{mapId}");
             }
             else
             {

@@ -19,6 +19,7 @@ namespace Server.Database.Models
         public int AppearanceId { get; set; }
 
         // Last known position
+        public int MapId { get; set; } = 1;
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
