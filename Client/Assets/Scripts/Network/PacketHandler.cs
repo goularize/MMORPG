@@ -18,6 +18,11 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.SignInResponse, Handlers.AuthHandler.HandleAuthResponse);
             _packetHandlers.Add((int)OpCode.SignUpResponse, Handlers.AuthHandler.HandleAuthResponse);
             
+            _packetHandlers.Add((int)OpCode.CharacterListResponse, Handlers.CharacterHandler.HandleListResponse);
+            _packetHandlers.Add((int)OpCode.CharacterCreateResponse, Handlers.CharacterHandler.HandleCreateResponse);
+            _packetHandlers.Add((int)OpCode.CharacterDeleteResponse, Handlers.CharacterHandler.HandleDeleteResponse);
+            _packetHandlers.Add((int)OpCode.CharacterSelectResponse, Handlers.CharacterHandler.HandleSelectResponse);
+
             Debug.Log($"[PacketHandler] Initialized with {_packetHandlers.Count} routes.");
         }
 
