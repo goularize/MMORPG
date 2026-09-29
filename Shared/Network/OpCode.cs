@@ -37,6 +37,10 @@ namespace Shared.Network
 
         // Vitals & Stats
         StatsUpdate = 19,
-        VitalsUpdate = 20
+        VitalsUpdate = 20,
+
+        // Targeting & Actions
+        EntityInteractRequest = 21,
+        EntityAttackRequest = 22
     }
 }

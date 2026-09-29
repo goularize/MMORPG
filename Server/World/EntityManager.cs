@@ -13,6 +13,13 @@ namespace Server.World
         // Thread-safe dictionary for NPCs
         public ConcurrentDictionary<int, NPC> NPCs { get; } = new();
 
+        public Entity? GetEntity(int id)
+        {
+            if (Players.TryGetValue(id, out var player)) return player;
+            if (NPCs.TryGetValue(id, out var npc)) return npc;
+            return null;
+        }
+
         public void AddPlayer(Player player)
         {
             if (Players.TryAdd(player.Id, player))

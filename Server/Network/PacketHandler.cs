@@ -32,6 +32,10 @@ namespace Server.Network
             // Chat
             _handlers.Add(OpCode.ChatMessageRequest, ChatHandler.HandleChatMessage);
 
+            // Targeting & Actions
+            _handlers.Add(OpCode.EntityInteractRequest, InteractHandler.HandleInteractRequest);
+            _handlers.Add(OpCode.EntityAttackRequest, CombatHandler.HandleAttackRequest);
+
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }
 
