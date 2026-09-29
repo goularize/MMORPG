@@ -8,7 +8,7 @@ Drawing inspiration from classic MMORPGs like *World of Warcraft*, *Guild Wars*,
 The absolute minimum required to have a multiplayer environment.
 - **Client-Server Architecture:** Persistent TCP socket connections.
 - **Binary Protocol:** Custom packet serialization for fast data transfer.
-- **Authentication:** Account registration, secure password hashing, and login flow.
+- **Authentication:** Account registration, secure password hashing, and sign in flow.
 - **Authoritative World State:** 30 TPS fixed game loop.
 - **Entity System & AoI:** Area of Interest filtering to limit bandwidth usage.
 

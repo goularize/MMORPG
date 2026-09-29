@@ -32,7 +32,7 @@ To keep the server scalable and the code organized, data follows a strict 3-step
    
 2. **The Router (`PacketHandler`)**: 
    - Receives the raw, complete packet byte array from `ClientConnection`.
-   - It reads the next 2 bytes to figure out the `OpCode` (e.g., "Ah, this is a LoginRequest (ID: 1)").
+   - It reads the next 2 bytes to figure out the `OpCode` (e.g., "Ah, this is a SignInRequest (ID: 1)").
    - It looks at its internal Dictionary, finds the function mapped to ID 1, and fires it.
    - *It acts purely as a traffic cop, routing data in O(1) time without processing game logic.*
 

@@ -12,15 +12,15 @@ To handle thousands of messages scalably, we cannot send raw strings or heavy ob
 
 - **Packet Structure:** Every message sent over the network will be a "Packet". A packet typically consists of:
   - **Length (2 bytes):** How big the packet is (so the receiver knows when it has read the whole thing).
-  - **OpCode / Packet ID (2 bytes):** A unique `ushort` or `enum` identifying the type of message (e.g., `1 = LoginRequest`, `2 = MovePacket`).
+  - **OpCode / Packet ID (2 bytes):** A unique `ushort` or `enum` identifying the type of message (e.g., `1 = SignInRequest`, `2 = MovePacket`).
   - **Payload (Variable):** The actual data (e.g., Username/Password strings, or X/Y/Z float coordinates).
 - **Serialization Strategy:** We will use `BinaryReader` and `BinaryWriter` (or modern `.NET Span<T>` / `Memory<T>`) to pack and unpack data directly into bytes.
-- **Routing:** A central `PacketHandler` dictionary will map `OpCodes` to specific functions (e.g., `OpCode.Login` triggers `HandleLogin()`), ensuring O(1) routing speed.
+- **Routing:** A central `PacketHandler` dictionary will map `OpCodes` to specific functions (e.g., `OpCode.SignIn` triggers `HandleSignIn()`), ensuring O(1) routing speed.
 
 ## 3. Server Roles & Infrastructure (Hybrid Topology)
 Instead of a single monolith, the backend is split into specialized services to allow for horizontal scalability.
 
-### A. Login & Authentication Server (✅ Done)
+### A. SignIn & Authentication Server (✅ Done)
 - **Role:** A lightweight gateway server.
 - **Mechanics:** When a client connects, they send a `SignInRequest`. Passwords are cryptographically hashed using BCrypt. If valid, the server logs the user in. Registration (`SignUpRequest`) is also fully supported.
 

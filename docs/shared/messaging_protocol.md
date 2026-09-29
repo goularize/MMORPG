@@ -13,7 +13,7 @@ Every packet follows a strict structural contract:
 | `ushort` (2 bytes) | `ushort` (2 bytes) | *Variable bytes* depending on the packet |
 
 - **Length:** The total size of the packet in bytes (including the header itself). This is required because TCP is a continuous stream, and the server needs to know when one packet ends and another begins (Packet Framing).
-- **OpCode:** An `enum` value identifying what the packet does (e.g., `1 = LoginRequest`, `2 = MovePacket`).
+- **OpCode:** An `enum` value identifying what the packet does (e.g., `1 = SignInRequest`, `2 = MovePacket`).
 
 ## 2. Using the `Packet` Utility
 
@@ -25,7 +25,7 @@ When you want to send data to the server or client:
 
 ```csharp
 // 1. Create a packet for a specific OpCode
-using Packet packet = new Packet(OpCode.LoginRequest);
+using Packet packet = new Packet(OpCode.SignInRequest);
 
 // 2. Write your payload data in order
 packet.Write("MyUsername");
@@ -41,14 +41,14 @@ _stream.Write(rawBytes, 0, rawBytes.Length);
 When the `ClientConnection` receives a complete packet, it routes it to the `PacketHandler`. You can then read the data in the exact same order it was written:
 
 ```csharp
-public static void HandleLoginRequest(ClientConnection client, Packet packet)
+public static void HandleSignInRequest(ClientConnection client, Packet packet)
 {
     // The OpCode (Header) was already read by the router. 
     // Start reading the payload directly:
     string username = packet.ReadString();
     string password = packet.ReadString();
     
-    // ... validate login and reply using client.Send(responsePacket)
+    // ... validate SignIn and reply using client.Send(responsePacket)
 }
 ```
 

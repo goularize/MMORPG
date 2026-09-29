@@ -21,11 +21,11 @@ namespace Client.Network.Handlers
             {
                 Debug.LogError($"[Auth] FAILED: {message}");
                 
-                // Re-enable UI buttons if the login failed
-                UI.LoginUI loginUI = Object.FindFirstObjectByType<UI.LoginUI>();
-                if (loginUI != null)
+                // Re-enable UI buttons if the sign in failed
+                UI.SignInUI signInUI = Object.FindFirstObjectByType<UI.SignInUI>();
+                if (signInUI != null)
                 {
-                    loginUI.ReEnableButtons();
+                    signInUI.ReEnableButtons();
                 }
             }
         }

@@ -5,7 +5,7 @@ using Shared.Network;
 
 namespace Client.UI
 {
-    public class LoginUI : MonoBehaviour
+    public class SignInUI : MonoBehaviour
     {
         [Header("Inputs")]
         public TMP_InputField usernameInput;
@@ -28,11 +28,11 @@ namespace Client.UI
 
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                Debug.LogWarning("[LoginUI] Username and Password cannot be empty!");
+                Debug.LogWarning("[SignInUI] Username and Password cannot be empty!");
                 return;
             }
 
-            Debug.Log($"[LoginUI] Sending Sign In Request for '{username}'...");
+            Debug.Log($"[SignInUI] Sending Sign In Request for '{username}'...");
 
             using (Packet packet = new Packet(OpCode.SignInRequest))
             {
@@ -53,11 +53,11 @@ namespace Client.UI
 
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                Debug.LogWarning("[LoginUI] Username and Password cannot be empty!");
+                Debug.LogWarning("[SignInUI] Username and Password cannot be empty!");
                 return;
             }
 
-            Debug.Log($"[LoginUI] Sending Sign Up Request for '{username}'...");
+            Debug.Log($"[SignInUI] Sending Sign Up Request for '{username}'...");
 
             using (Packet packet = new Packet(OpCode.SignUpRequest))
             {

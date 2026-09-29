@@ -24,7 +24,7 @@ It must have a Foreign Key relation to the `Account`.
 We need to expand `Shared.Network.OpCode` to handle the Lobby/Character Screen phase:
 
 * **Client -> Server**
-  * `CharacterListRequest`: Sent automatically after a successful login.
+  * `CharacterListRequest`: Sent automatically after a successful sign in.
   * `CharacterCreateRequest`: Sent with Name, Class, and Appearance.
   * `CharacterDeleteRequest`: Sent with CharacterId.
   * `CharacterSelectRequest`: Sent when the player clicks "Enter World" with a specific CharacterId.
