@@ -6,6 +6,9 @@ namespace Server.Database
 {
     public class AppDbContext : DbContext
     {
+        // Allows unit tests to override the context creation
+        public static Func<AppDbContext> Factory = () => new AppDbContext();
+
         public AppDbContext() { }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }

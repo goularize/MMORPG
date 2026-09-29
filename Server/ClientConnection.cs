@@ -6,9 +6,11 @@ using Shared.Network;
 
 namespace Server
 {
-    public class ClientConnection
+    public class ClientConnection : IClientConnection
     {
         public int Id { get; }
+        public int? AccountId { get; set; } // Set when the player successfully signs in
+        
         private readonly TcpClient _tcpClient;
         private readonly NetworkStream _stream;
         private readonly byte[] _receiveBuffer;

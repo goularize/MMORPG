@@ -3,12 +3,13 @@ using System.Linq;
 using Shared.Network;
 using Server.Database;
 using Server.Database.Models;
+using Server.Network;
 
 namespace Server.Handlers
 {
     public static class AuthHandler
     {
-        public static void HandleSignUpRequest(ClientConnection client, Packet packet)
+        public static void HandleSignUpRequest(IClientConnection client, Packet packet)
         {
             string username = packet.ReadString();
             string password = packet.ReadString();
@@ -58,7 +59,7 @@ namespace Server.Handlers
             client.Send(response);
         }
 
-        public static void HandleSignInRequest(ClientConnection client, Packet packet)
+        public static void HandleSignInRequest(IClientConnection client, Packet packet)
         {
             string username = packet.ReadString();
             string password = packet.ReadString();
@@ -80,6 +81,7 @@ namespace Server.Handlers
                 {
                     isSuccess = true;
                     message = $"Welcome to the game, {username}!";
+                    client.AccountId = account.Id; // Bind the database account to the network session
                     Console.WriteLine($"[Client {client.Id}] Sign In Successful for Account ID {account.Id}.");
                 }
             }
