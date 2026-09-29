@@ -66,6 +66,7 @@ namespace Server.Handlers
                     
                     isSuccess = true;
                     message = "Account created successfully!";
+                    client.AccountId = newAccount.Id; // Bind the database account to the network session
                     Console.WriteLine($"[Client {client.Id}] Account created for '{username}'.");
                 }
             }
