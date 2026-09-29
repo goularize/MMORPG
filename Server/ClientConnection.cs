@@ -18,7 +18,7 @@ namespace Server
         private readonly Action<int> _onDisconnect;
 
         // Packet framing variables
-        private byte[] _packetBytes;
+        private byte[]? _packetBytes;
 
         public ClientConnection(int id, TcpClient tcpClient, Action<int> onDisconnect)
         {

@@ -11,8 +11,8 @@ namespace Shared.Network
     public class Packet : IDisposable
     {
         private MemoryStream _memoryStream;
-        private BinaryWriter _writer;
-        private BinaryReader _reader;
+        private BinaryWriter? _writer;
+        private BinaryReader? _reader;
         
         public OpCode PacketId { get; private set; }
 
@@ -48,14 +48,14 @@ namespace Shared.Network
         }
 
         // --- WRITING METHODS ---
-        public void Write(byte value) => _writer.Write(value);
-        public void Write(bool value) => _writer.Write(value);
-        public void Write(int value) => _writer.Write(value);
-        public void Write(float value) => _writer.Write(value);
-        public void Write(string value) => _writer.Write(value); // BinaryWriter handles length prefix for strings automatically
+        public void Write(byte value) => _writer!.Write(value);
+        public void Write(bool value) => _writer!.Write(value);
+        public void Write(int value) => _writer!.Write(value);
+        public void Write(float value) => _writer!.Write(value);
+        public void Write(string value) => _writer!.Write(value); // BinaryWriter handles length prefix for strings automatically
         public void Write(Shared.Math.Vector3 vector) 
         {
-            _writer.Write(vector.X);
+            _writer!.Write(vector.X);
             _writer.Write(vector.Y);
             _writer.Write(vector.Z);
         }
@@ -70,7 +70,7 @@ namespace Shared.Network
             ushort length = (ushort)_memoryStream.Length;
             
             // Go back to the beginning of the stream (position 0)
-            _writer.Seek(0, SeekOrigin.Begin);
+            _writer!.Seek(0, SeekOrigin.Begin);
             
             // Overwrite the first 2 bytes with the actual length
             _writer.Write(length);
@@ -79,14 +79,14 @@ namespace Shared.Network
         }
 
         // --- READING METHODS ---
-        public byte ReadByte() => _reader.ReadByte();
-        public bool ReadBool() => _reader.ReadBoolean();
-        public int ReadInt() => _reader.ReadInt32();
-        public float ReadFloat() => _reader.ReadSingle();
-        public string ReadString() => _reader.ReadString();
+        public byte ReadByte() => _reader!.ReadByte();
+        public bool ReadBool() => _reader!.ReadBoolean();
+        public int ReadInt() => _reader!.ReadInt32();
+        public float ReadFloat() => _reader!.ReadSingle();
+        public string ReadString() => _reader!.ReadString();
         public Shared.Math.Vector3 ReadVector3() 
         {
-            return new Shared.Math.Vector3(_reader.ReadSingle(), _reader.ReadSingle(), _reader.ReadSingle());
+            return new Shared.Math.Vector3(_reader!.ReadSingle(), _reader.ReadSingle(), _reader.ReadSingle());
         }
 
         public void Dispose()

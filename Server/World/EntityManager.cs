@@ -23,7 +23,7 @@ namespace Server.World
 
         public void RemovePlayer(int playerId)
         {
-            if (Players.TryRemove(playerId, out Player player))
+            if (Players.TryRemove(playerId, out Player? player))
             {
                 Console.WriteLine($"Player {player.Name} left the world.");
             }

@@ -13,7 +13,7 @@ namespace Server.World
         private const float MS_PER_TICK = 1000f / TICKS_PER_SECOND;
 
         private bool _isRunning = false;
-        private Thread _logicThread;
+        private Thread? _logicThread;
         
         // The manager that holds all active entities
         public static EntityManager EntityMgr { get; } = new EntityManager();
