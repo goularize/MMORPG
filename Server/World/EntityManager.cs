@@ -29,6 +29,9 @@ namespace Server.World
             }
         }
 
+        // The distance within which a player can "see" other entities
+        private const float AOI_RADIUS = 50.0f;
+
         /// <summary>
         /// Called once per tick by the GameLogic loop.
         /// Iterates over all entities to process their physics, movement, or AI.
@@ -45,6 +48,92 @@ namespace Server.World
             foreach (var npc in NPCs.Values)
             {
                 npc.Update();
+            }
+
+            // Broadcast state updates to players based on their Area of Interest
+            ProcessAreaOfInterest();
+        }
+
+        private void ProcessAreaOfInterest()
+        {
+            // For a first version, we just loop all players and check distance to all entities.
+            // In a production MMO, this would use Spatial Partitioning (Grid/QuadTree).
+            foreach (var player in Players.Values)
+            {
+                List<Entity> nearbyEntities = new List<Entity>();
+
+                // Check distance to all other players
+                foreach (var otherPlayer in Players.Values)
+                {
+                    if (player.Id == otherPlayer.Id) continue; // Skip self
+
+                    if (Shared.Math.Vector3.Distance(player.Position, otherPlayer.Position) <= AOI_RADIUS)
+                    {
+                        nearbyEntities.Add(otherPlayer);
+                    }
+                }
+
+                // Check distance to all NPCs
+                foreach (var npc in NPCs.Values)
+                {
+                    if (Shared.Math.Vector3.Distance(player.Position, npc.Position) <= AOI_RADIUS)
+                    {
+                        nearbyEntities.Add(npc);
+                    }
+                }
+
+                // Now we have everything near the player.
+                // 1. Send Spawn for newly discovered entities
+                // 2. Send Despawn for entities that left
+                // 3. Send Position Update for entities currently in range
+                
+                HashSet<int> currentNearbyIds = new HashSet<int>();
+
+                foreach (var entity in nearbyEntities)
+                {
+                    currentNearbyIds.Add(entity.Id);
+
+                    if (!player.KnownEntities.Contains(entity.Id))
+                    {
+                        // New entity entered AoI!
+                        player.KnownEntities.Add(entity.Id);
+                        
+                        using Shared.Network.Packet spawnPacket = new Shared.Network.Packet(Shared.Network.OpCode.EntitySpawn);
+                        spawnPacket.Write(entity.Id);
+                        spawnPacket.Write(entity.Name);
+                        spawnPacket.Write(entity.Position);
+                        player.Connection.Send(spawnPacket);
+                    }
+                    else
+                    {
+                        // Entity is already known, just update position
+                        using Shared.Network.Packet movePacket = new Shared.Network.Packet(Shared.Network.OpCode.EntityPositionUpdate);
+                        movePacket.Write(entity.Id);
+                        movePacket.Write(entity.Position);
+                        player.Connection.Send(movePacket);
+                    }
+                }
+
+                // Check who left the AoI
+                List<int> toRemove = new List<int>();
+                foreach (var knownId in player.KnownEntities)
+                {
+                    if (!currentNearbyIds.Contains(knownId))
+                    {
+                        // They left!
+                        toRemove.Add(knownId);
+                        
+                        using Shared.Network.Packet despawnPacket = new Shared.Network.Packet(Shared.Network.OpCode.EntityDespawn);
+                        despawnPacket.Write(knownId);
+                        player.Connection.Send(despawnPacket);
+                    }
+                }
+
+                // Remove out-of-range entities from known list
+                foreach (var id in toRemove)
+                {
+                    player.KnownEntities.Remove(id);
+                }
             }
         }
     }

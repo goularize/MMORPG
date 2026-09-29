@@ -11,6 +11,11 @@ namespace Shared.Network
         
         // Server -> Client
         SignInResponse = 2,
-        SignUpResponse = 4
+        SignUpResponse = 4,
+
+        // World / AoI
+        EntitySpawn = 5,
+        EntityDespawn = 6,
+        EntityPositionUpdate = 7
     }
 }

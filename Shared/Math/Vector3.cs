@@ -17,5 +17,13 @@ namespace Shared.Math
         {
             return $"({X:F2}, {Y:F2}, {Z:F2})";
         }
+
+        public static float Distance(Vector3 a, Vector3 b)
+        {
+            float dx = a.X - b.X;
+            float dy = a.Y - b.Y;
+            float dz = a.Z - b.Z;
+            return (float)System.Math.Sqrt(dx * dx + dy * dy + dz * dz);
+        }
     }
 }

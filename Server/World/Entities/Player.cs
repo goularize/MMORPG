@@ -1,7 +1,12 @@
+using System.Collections.Generic;
+
 namespace Server.World.Entities
 {
     public class Player : Entity
     {
+        // AoI Tracking
+        public HashSet<int> KnownEntities { get; } = new();
+
         // Account Relationship
         public int AccountId { get; set; }
         public ClientConnection Connection { get; set; } // The active network session
