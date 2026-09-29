@@ -16,11 +16,11 @@ namespace Server.Handlers
 
             // 1. Get the acting player
             if (!client.PlayerId.HasValue) return;
-            var player = GameLogic.EntityMgr.GetEntity(client.PlayerId.Value) as Player;
+            var player = GameLogic.MapMgr.GetPlayer(client.PlayerId.Value);
             if (player == null || player.Health <= 0) return;
 
             // 2. Existence Check
-            var target = GameLogic.EntityMgr.GetEntity(targetId);
+            var target = GameLogic.MapMgr.GetMap(player.MapId)?.GetEntity(targetId);
             if (target == null)
             {
                 Console.WriteLine($"[Interact] Player {player.Name} tried to interact with non-existent entity {targetId}.");

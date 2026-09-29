@@ -20,7 +20,8 @@ namespace Server.Handlers
             if (client.PlayerId == null) return;
 
             // Resolve the sender
-            if (!GameLogic.EntityMgr.Players.TryGetValue(client.PlayerId.Value, out var sender))
+            var sender = GameLogic.MapMgr.GetPlayer(client.PlayerId.Value);
+            if (sender == null)
             {
                 return;
             }
@@ -95,9 +96,12 @@ namespace Server.Handlers
             broadcast.Write(senderName);
             broadcast.Write(message);
 
-            foreach (var player in GameLogic.EntityMgr.Players.Values)
+            foreach (var map in GameLogic.MapMgr.ActiveMaps.Values)
             {
-                player.Connection.Send(broadcast);
+                foreach (var player in map.Players.Values)
+                {
+                    player.Connection.Send(broadcast);
+                }
             }
             
             Console.WriteLine($"[Global] {senderName}: {message}");
@@ -112,11 +116,15 @@ namespace Server.Handlers
 
             float chatRadius = 50.0f; // Could be larger or smaller than AoI
 
-            foreach (var target in GameLogic.EntityMgr.Players.Values)
+            var map = GameLogic.MapMgr.GetMap(sender.MapId);
+            if (map != null)
             {
-                if (Vector3.Distance(sender.Position, target.Position) <= chatRadius)
+                foreach (var target in map.Players.Values)
                 {
-                    target.Connection.Send(broadcast);
+                    if (Vector3.Distance(sender.Position, target.Position) <= chatRadius)
+                    {
+                        target.Connection.Send(broadcast);
+                    }
                 }
             }
             
@@ -125,7 +133,12 @@ namespace Server.Handlers
 
         private static void SendWhisper(Server.World.Entities.Player sender, string targetName, string message)
         {
-            var target = GameLogic.EntityMgr.Players.Values.FirstOrDefault(p => p.Name.Equals(targetName, StringComparison.OrdinalIgnoreCase));
+            Server.World.Entities.Player? target = null;
+            foreach (var map in GameLogic.MapMgr.ActiveMaps.Values)
+            {
+                target = map.Players.Values.FirstOrDefault(p => p.Name.Equals(targetName, StringComparison.OrdinalIgnoreCase));
+                if (target != null) break;
+            }
 
             if (target != null)
             {

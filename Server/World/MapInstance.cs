@@ -5,13 +5,20 @@ using Server.World.Entities;
 
 namespace Server.World
 {
-    public class EntityManager
+    public class MapInstance
     {
+        public int MapId { get; }
+
         // Thread-safe dictionary to hold all active players in the world
         public ConcurrentDictionary<int, Player> Players { get; } = new();
         
         // Thread-safe dictionary for NPCs
         public ConcurrentDictionary<int, NPC> NPCs { get; } = new();
+
+        public MapInstance(int mapId)
+        {
+            MapId = mapId;
+        }
 
         public Entity? GetEntity(int id)
         {
@@ -24,7 +31,8 @@ namespace Server.World
         {
             if (Players.TryAdd(player.Id, player))
             {
-                Console.WriteLine($"Player {player.Name} (ID: {player.Id}) joined the world.");
+                player.MapId = MapId;
+                Console.WriteLine($"Player {player.Name} (ID: {player.Id}) joined Map {MapId}.");
             }
         }
 
@@ -53,7 +61,7 @@ namespace Server.World
                     }
                 });
 
-                Console.WriteLine($"Player {player.Name} left the world (Position saved).");
+                Console.WriteLine($"Player {player.Name} left Map {MapId} (Position saved).");
             }
         }
 

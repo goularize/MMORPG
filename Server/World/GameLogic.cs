@@ -15,8 +15,8 @@ namespace Server.World
         private bool _isRunning = false;
         private Thread? _logicThread;
         
-        // The manager that holds all active entities
-        public static EntityManager EntityMgr { get; } = new EntityManager();
+        // The manager that holds all active Map Instances
+        public static MapManager MapMgr { get; } = new MapManager();
 
         public void Start()
         {
@@ -74,8 +74,8 @@ namespace Server.World
         /// </summary>
         private void Update()
         {
-            // Process all entities in the world (Movement, Physics, AI)
-            EntityMgr.Update();
+            // Process all active Maps in the world
+            MapMgr.Update();
         }
     }
 }

@@ -169,7 +169,7 @@ namespace Server.Handlers
                 if (player.Mana > player.MaxMana) player.Mana = player.MaxMana;
 
                 // Add to the World
-                GameLogic.EntityMgr.AddPlayer(player);
+                GameLogic.MapMgr.AddPlayer(player);
                 client.PlayerId = player.Id; // Bind the world entity to the active network session
                 Console.WriteLine($"[Client {client.Id}] Selected character '{player.Name}' and entered the world.");
             }
@@ -192,7 +192,8 @@ namespace Server.Handlers
             {
                 // Also send the initial stats sync to the client
                 // Note: Need to get the actual Player reference from the DB data again, or we can just find it in EntityManager
-                if (GameLogic.EntityMgr.Players.TryGetValue(characterId, out var activePlayer))
+                var activePlayer = GameLogic.MapMgr.GetPlayer(characterId);
+                if (activePlayer != null)
                 {
                     using Packet statsPacket = new Packet(OpCode.StatsUpdate);
                     statsPacket.Write(activePlayer.MaxHealth);

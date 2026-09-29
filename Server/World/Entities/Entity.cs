@@ -11,6 +11,7 @@ namespace Server.World.Entities
 
         // RPG Progression
         public int Level { get; set; } = 1;
+        public int MapId { get; set; } = 1;
 
         // Vitals
         public int Health { get; set; }

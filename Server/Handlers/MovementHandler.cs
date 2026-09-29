@@ -19,7 +19,8 @@ namespace Server.Handlers
             Vector3 targetPosition = new Vector3(targetX, targetY, targetZ);
 
             // 2. Look up the active Player entity from the World
-            if (GameLogic.EntityMgr.Players.TryGetValue(client.PlayerId.Value, out var player))
+            var player = GameLogic.MapMgr.GetPlayer(client.PlayerId.Value);
+            if (player != null)
             {
                 // Basic Speed Hack Validation
                 float distance = Vector3.Distance(player.Position, targetPosition);

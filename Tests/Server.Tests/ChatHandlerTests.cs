@@ -13,15 +13,15 @@ namespace Server.Tests
     {
         private void SetupWorld(out MockClientConnection senderClient, out MockClientConnection receiverClient)
         {
-            GameLogic.EntityMgr.Players.Clear();
+            GameLogic.MapMgr.ActiveMaps[1].Players.Clear();
 
             senderClient = new MockClientConnection { AccountId = 1, PlayerId = 1 };
             var sender = new Player(1, "Alice", senderClient) { Position = new Vector3(0, 0, 0) };
-            GameLogic.EntityMgr.AddPlayer(sender);
+            GameLogic.MapMgr.AddPlayer(sender);
 
             receiverClient = new MockClientConnection { AccountId = 2, PlayerId = 2 };
             var receiver = new Player(2, "Bob", receiverClient) { Position = new Vector3(10, 0, 0) }; // Close to Alice
-            GameLogic.EntityMgr.AddPlayer(receiver);
+            GameLogic.MapMgr.AddPlayer(receiver);
         }
 
         [Fact]
@@ -62,7 +62,7 @@ namespace Server.Tests
             // Add Charlie who is far away
             var farClient = new MockClientConnection { AccountId = 3, PlayerId = 3 };
             var charlie = new Player(3, "Charlie", farClient) { Position = new Vector3(100, 0, 0) };
-            GameLogic.EntityMgr.AddPlayer(charlie);
+            GameLogic.MapMgr.AddPlayer(charlie);
 
             using var writePacket = new Packet(OpCode.ChatMessageRequest);
             writePacket.Write((byte)ChatChannel.Local);

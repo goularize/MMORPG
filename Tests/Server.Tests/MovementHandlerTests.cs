@@ -22,8 +22,8 @@ namespace Server.Tests
             // Set last move time to 1 second ago
             player.LastMoveTime = System.DateTime.UtcNow.AddSeconds(-1);
             
-            GameLogic.EntityMgr.Players.Clear();
-            GameLogic.EntityMgr.AddPlayer(player);
+            GameLogic.MapMgr.ActiveMaps[1].Players.Clear();
+            GameLogic.MapMgr.AddPlayer(player);
 
             using var writePacket = new Packet(OpCode.PlayerMoveRequest);
             writePacket.Write(10.0f); // X (moved 10 units in 1 second, allowed)
@@ -51,8 +51,8 @@ namespace Server.Tests
             // Set last move time to 1 second ago
             player.LastMoveTime = System.DateTime.UtcNow.AddSeconds(-1);
             
-            GameLogic.EntityMgr.Players.Clear();
-            GameLogic.EntityMgr.AddPlayer(player);
+            GameLogic.MapMgr.ActiveMaps[1].Players.Clear();
+            GameLogic.MapMgr.AddPlayer(player);
 
             using var writePacket = new Packet(OpCode.PlayerMoveRequest);
             writePacket.Write(50.0f); // X (moved 50 units in 1 second, way too fast!)

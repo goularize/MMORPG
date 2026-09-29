@@ -71,7 +71,7 @@ namespace Server
                 
                 if (clientConnection.PlayerId.HasValue)
                 {
-                    Server.World.GameLogic.EntityMgr.RemovePlayer(clientConnection.PlayerId.Value);
+                    Server.World.GameLogic.MapMgr.RemovePlayer(clientConnection.PlayerId.Value);
                 }
             }
         }
