@@ -10,6 +10,7 @@ namespace Client.UI
         [Header("Inputs")]
         public TMP_InputField usernameInput;
         public TMP_InputField passwordInput;
+        public TextMeshProUGUI errorText;
         
         [Header("Buttons")]
         public Button signInButton;
@@ -23,6 +24,8 @@ namespace Client.UI
 
         private void OnSignInClicked()
         {
+            if (errorText != null) errorText.text = "";
+
             string username = usernameInput.text;
             string password = passwordInput.text;
 
@@ -36,6 +39,7 @@ namespace Client.UI
 
             using (Packet packet = new Packet(OpCode.SignInRequest))
             {
+                packet.Write(Network.NetworkManager.GameVersion);
                 packet.Write(username);
                 packet.Write(password);
                 Network.NetworkManager.Instance.SendPacket(packet);
@@ -48,6 +52,8 @@ namespace Client.UI
 
         private void OnSignUpClicked()
         {
+            if (errorText != null) errorText.text = "";
+
             string username = usernameInput.text;
             string password = passwordInput.text;
 
@@ -61,6 +67,7 @@ namespace Client.UI
 
             using (Packet packet = new Packet(OpCode.SignUpRequest))
             {
+                packet.Write(Network.NetworkManager.GameVersion);
                 packet.Write(username);
                 packet.Write(password);
                 Network.NetworkManager.Instance.SendPacket(packet);
@@ -71,10 +78,15 @@ namespace Client.UI
         }
 
         // Called by AuthHandler when a response is received
-        public void ReEnableButtons()
+        public void ReEnableButtons(string errorMessage = "")
         {
             signInButton.interactable = true;
             signUpButton.interactable = true;
+
+            if (errorText != null && !string.IsNullOrEmpty(errorMessage))
+            {
+                errorText.text = errorMessage;
+            }
         }
     }
 }

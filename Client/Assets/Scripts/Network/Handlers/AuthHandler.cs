@@ -15,7 +15,7 @@ namespace Client.Network.Handlers
                 Debug.Log($"[Auth] SUCCESS: {message}");
                 
                 // Must run on main thread, which we are since this is invoked via Update()!
-                UnityEngine.SceneManagement.SceneManager.LoadScene("CharacterSelection");
+                UnityEngine.SceneManagement.SceneManager.LoadScene("CharacterScene");
             }
             else
             {
@@ -25,7 +25,7 @@ namespace Client.Network.Handlers
                 UI.SignInUI signInUI = Object.FindFirstObjectByType<UI.SignInUI>();
                 if (signInUI != null)
                 {
-                    signInUI.ReEnableButtons();
+                    signInUI.ReEnableButtons(message);
                 }
             }
         }
