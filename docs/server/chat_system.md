@@ -56,6 +56,22 @@ The system uses the `ChatChannel` enum (byte) to determine routing logic and cli
 
 ---
 
+## Database Logging
+
+The server supports asynchronous saving of chat history to the PostgreSQL database via Entity Framework. To save bandwidth and storage, this is configured on a per-channel basis inside the Server's `.env` file.
+
+**Configuration (`Server/.env`):**
+```env
+CHAT_LOG_LOCAL=false
+CHAT_LOG_GLOBAL=true
+CHAT_LOG_WHISPER=true
+CHAT_LOG_SYSTEM=false
+```
+
+When enabled for a channel, the `ChatHandler` spawns a detached background `Task` to log the UTC Timestamp, Channel, SenderName, TargetName (if whisper), and the Message payload to the `ChatLogs` database table without blocking the 30-TPS server cycle.
+
+---
+
 ## Future Enhancements
 - **Profanity Filter:** Add a regex scrubber before the `switch(channel)` block in `ChatHandler.cs`.
 - **Mute / Ignore List:** Validate `sender.Name` against a target's local blocklist before calling `target.Connection.Send`.
