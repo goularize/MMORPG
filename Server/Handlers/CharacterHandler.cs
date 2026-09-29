@@ -54,14 +54,28 @@ namespace Server.Handlers
             {
                 using var db = AppDbContext.Factory();
 
-                bool exists = db.Characters.Any(c => c.Name.ToLower() == name.ToLower());
-                if (exists)
+                var account = db.Accounts.FirstOrDefault(a => a.Id == client.AccountId.Value);
+                if (account == null)
                 {
-                    message = "Name is already taken.";
+                    message = "Account not found.";
                 }
                 else
                 {
-                    var newChar = new Character
+                    int currentCount = db.Characters.Count(c => c.AccountId == client.AccountId.Value);
+                    if (currentCount >= account.CharacterSlots)
+                    {
+                        message = $"You cannot create more than {account.CharacterSlots} characters.";
+                    }
+                    else
+                    {
+                        bool exists = db.Characters.Any(c => c.Name.ToLower() == name.ToLower());
+                        if (exists)
+                        {
+                            message = "Name is already taken.";
+                        }
+                        else
+                        {
+                            var newChar = new Character
                     {
                         AccountId = client.AccountId.Value,
                         Name = name,
@@ -83,6 +97,8 @@ namespace Server.Handlers
 
                     isSuccess = true;
                     message = "Character created successfully!";
+                        }
+                    }
                 }
             }
 

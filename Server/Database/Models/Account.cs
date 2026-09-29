@@ -18,6 +18,9 @@ namespace Server.Database.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [Required]
+        public int CharacterSlots { get; set; } = 3;
+
         // Navigation Property: One Account can have many Characters
         public System.Collections.Generic.List<Character> Characters { get; set; } = new();
     }
