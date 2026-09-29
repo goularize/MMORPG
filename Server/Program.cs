@@ -1,4 +1,5 @@
 using System;
+using Microsoft.EntityFrameworkCore;
 using Server.Network;
 using Server.World;
 using Server.Database;
@@ -10,20 +11,20 @@ namespace Server
         static void Main(string[] args)
         {
             Console.Title = "MMORPG Server";
-            
+
             // Load environment variables from .env file
             DotNetEnv.Env.Load();
-            
-            // Ensure Database exists (creates mmorpg.db file if using SQLite)
+
+            // Apply any pending migrations (creates database if it doesn't exist)
             using (var db = new AppDbContext())
             {
-                db.Database.EnsureCreated();
-                Console.WriteLine("Database initialized.");
+                db.Database.Migrate();
+                Console.WriteLine("Database and Migrations initialized.");
             }
 
             // Initialize network routing
             PacketHandler.Initialize();
-            
+
             // Start the Networking Layer
             GameServer server = new GameServer(7777);
             server.Start();

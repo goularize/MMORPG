@@ -13,7 +13,7 @@ namespace Server.Database
         {
             // Load connection string from the .env file (or system environment variables)
             string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") 
-                ?? "postgres://postgres:mypassword@localhost/mmorpg";
+                ?? "Host=localhost;Database=mmorpg;Username=postgres;Password=mypassword";
                 
             optionsBuilder.UseNpgsql(connectionString);
         }
