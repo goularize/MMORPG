@@ -29,6 +29,10 @@ namespace Shared.Network
         CharacterSelectResponse = 15,
 
         // Movement
-        PlayerMoveRequest = 16
+        PlayerMoveRequest = 16,
+
+        // Chat
+        ChatMessageRequest = 17,
+        ChatMessageBroadcast = 18
     }
 }

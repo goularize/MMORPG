@@ -29,6 +29,9 @@ namespace Server.Network
             // Movement
             _handlers.Add(OpCode.PlayerMoveRequest, MovementHandler.HandleMoveRequest);
 
+            // Chat
+            _handlers.Add(OpCode.ChatMessageRequest, ChatHandler.HandleChatMessage);
+
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }
 
