@@ -42,3 +42,19 @@ This is the exact flow of data 30 times a second:
 4. `EntityManager` loops through all thousands of active players and NPCs, calling `Update()` on each one individually.
 
 This strict synchronous pipeline prevents race conditions (e.g., two players attacking the exact same monster at the exact same millisecond).
+
+## 4. Area of Interest (AoI)
+
+To prevent the server from sending the positions of every single monster in the world to every single player, the `EntityManager` implements **Area of Interest (AoI)** calculations.
+
+### How it Works
+At the end of every tick, `EntityManager.ProcessAreaOfInterest()` runs:
+1. It loops through all `Player`s.
+2. It calculates the **Euclidean Distance** between the `Player` and every other `Entity` (`Vector3.Distance`). Because we use 3 axes (X, Y, Z), this math naturally works flawlessly for both full 3D games and 2D games (where Z simply remains 0).
+3. If an Entity is within **50.0f units** of the Player, it is considered "in range".
+
+### Network State & Synchronization
+To tell the client when to spawn or destroy GameObjects, the Server needs to track state. Every `Player` has a `HashSet<int> KnownEntities` property.
+* **`EntitySpawn`**: If a nearby entity's ID is *not* in `KnownEntities`, they just walked into range. The server adds them to the set and sends an `EntitySpawn` packet with their full data so the client can instantiate the model.
+* **`EntityPositionUpdate`**: If the entity is *already* in `KnownEntities`, the server just sends an `EntityPositionUpdate` packet with the new `Vector3` coordinates.
+* **`EntityDespawn`**: If an ID was in `KnownEntities` but is no longer within the 50.0f radius, they walked away. The server removes them from the set and sends an `EntityDespawn` packet so the client can destroy the model.

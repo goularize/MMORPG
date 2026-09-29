@@ -10,6 +10,15 @@ This repository contains the backend and shared logic for the game. The Unity cl
 - **`Shared/`**: A .NET Class Library containing shared code (models, network packets, enums) used by both the Server and the Unity Client.
 - **`Client/`**: Placeholder for the future Unity project.
 
+## Features Currently Implemented
+
+* **Secure Authentication**: Registration and Sign-in backed by PostgreSQL and BCrypt password hashing.
+* **Database Integration**: Entity Framework Core 8 with Code-First Migrations and DotNetEnv integration.
+* **Custom Binary Protocol**: Lightweight TCP packet serialization/deserialization for high-throughput networking.
+* **Authoritative Game Loop**: Fixed-timestep 30 TPS synchronous update loop to prevent race conditions.
+* **Entity System**: Complete OOP hierarchy for Players and NPCs managed by an RAM-based EntityManager.
+* **Area of Interest (AoI)**: Distance-based entity culling to limit bandwidth usage and dynamically trigger Spawn/Despawn packets for clients.
+
 ## Getting Started
 
 ### Prerequisites
