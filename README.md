@@ -38,6 +38,22 @@ cd Server
 dotnet run
 ```
 
+### Running the Unity Client
+Because the Client and Server share the exact same networking and math code, we use directory symlinks to avoid duplicating files. Before opening the Unity project for the first time, run the setup script for your OS from the root of the repository:
+
+**Windows:**
+Double-click `setup_client.bat` or run:
+```cmd
+.\setup_client.bat
+```
+
+**Mac / Linux:**
+```bash
+chmod +x setup_client.sh
+./setup_client.sh
+```
+After running the script, open the `Client/` folder using Unity Hub.
+
 ## Documentation
 
 - [Base Architecture](docs/design/base_architecture.md)
