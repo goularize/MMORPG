@@ -136,15 +136,20 @@ namespace Server.Handlers
                     Exp = characterData.Exp,
                     StatPoints = characterData.StatPoints,
                     Health = characterData.Health,
-                    MaxHealth = characterData.Constitution * 10, // Example stat formula
                     Mana = characterData.Mana,
-                    MaxMana = characterData.Knowledge * 10,
                     Strength = characterData.Strength,
                     Intelligence = characterData.Intelligence,
                     Constitution = characterData.Constitution,
                     Knowledge = characterData.Knowledge,
                     Position = new Shared.Math.Vector3(characterData.X, characterData.Y, characterData.Z)
                 };
+
+                // Calculate all derived stats correctly
+                player.CalculateDerivedStats();
+
+                // Cap health/mana to max if somehow they exceeded it (or for new characters)
+                if (player.Health > player.MaxHealth) player.Health = player.MaxHealth;
+                if (player.Mana > player.MaxMana) player.Mana = player.MaxMana;
 
                 // Add to the World
                 GameLogic.EntityMgr.AddPlayer(player);
@@ -164,6 +169,23 @@ namespace Server.Handlers
             }
 
             client.Send(response);
+            
+            if (isSuccess)
+            {
+                // Also send the initial stats sync to the client
+                // Note: Need to get the actual Player reference from the DB data again, or we can just find it in EntityManager
+                if (GameLogic.EntityMgr.Players.TryGetValue(characterId, out var activePlayer))
+                {
+                    using Packet statsPacket = new Packet(OpCode.StatsUpdate);
+                    statsPacket.Write(activePlayer.MaxHealth);
+                    statsPacket.Write(activePlayer.MaxMana);
+                    statsPacket.Write(activePlayer.Attack);
+                    statsPacket.Write(activePlayer.MagicAttack);
+                    statsPacket.Write(activePlayer.Defense);
+                    statsPacket.Write(activePlayer.MagicDefense);
+                    client.Send(statsPacket);
+                }
+            }
         }
     }
 }

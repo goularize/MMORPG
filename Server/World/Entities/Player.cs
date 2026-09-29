@@ -12,12 +12,11 @@ namespace Server.World.Entities
         public Server.Network.IClientConnection Connection { get; set; } // The active network session
 
         // RPG Progression
-        public int Level { get; set; }
         public long Exp { get; set; }
         public int StatPoints { get; set; }
         
         // Movement tracking
-        public DateTime LastMoveTime { get; set; } = DateTime.UtcNow;
+        public System.DateTime LastMoveTime { get; set; } = System.DateTime.UtcNow;
 
         public Player(int id, string name, Server.Network.IClientConnection connection)
         {
@@ -29,7 +28,17 @@ namespace Server.World.Entities
         public override void Update()
         {
             base.Update();
-            // Process player-specific logic (e.g. processing queued inputs)
+            
+            // Sync vitals to client if they changed (e.g. from regen)
+            if (_vitalsChanged)
+            {
+                using Shared.Network.Packet packet = new Shared.Network.Packet(Shared.Network.OpCode.VitalsUpdate);
+                packet.Write(Id);
+                packet.Write(Health);
+                packet.Write(Mana);
+                Connection.Send(packet);
+                _vitalsChanged = false;
+            }
         }
     }
 }

@@ -33,6 +33,10 @@ namespace Shared.Network
 
         // Chat
         ChatMessageRequest = 17,
-        ChatMessageBroadcast = 18
+        ChatMessageBroadcast = 18,
+
+        // Vitals & Stats
+        StatsUpdate = 19,
+        VitalsUpdate = 20
     }
 }

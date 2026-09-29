@@ -14,6 +14,7 @@ namespace Server
 
             // Load environment variables from .env file
             DotNetEnv.Env.Load();
+            ServerConfig.Initialize();
 
             // Apply any pending migrations (creates database if it doesn't exist)
             using (var db = new AppDbContext())
