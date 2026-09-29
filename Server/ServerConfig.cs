@@ -8,8 +8,16 @@ namespace Server
         public static int BaseManaRes { get; private set; } = 3;
         public static double RegenTickIntervalSeconds { get; private set; } = 1.0;
 
+        public static string GameVersion { get; private set; } = "0.1.0-alpha";
+
         public static void Initialize()
         {
+            var versionEnv = Environment.GetEnvironmentVariable("GAME_VERSION");
+            if (!string.IsNullOrEmpty(versionEnv))
+            {
+                GameVersion = versionEnv;
+            }
+
             if (int.TryParse(Environment.GetEnvironmentVariable("BASE_HEALTH_RES"), out int hpRes))
             {
                 BaseHealthRes = hpRes;
@@ -25,7 +33,7 @@ namespace Server
                 RegenTickIntervalSeconds = tickInterval;
             }
             
-            Console.WriteLine($"[Config] Regen loaded: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s");
+            Console.WriteLine($"[Config] Running Version: {GameVersion} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s");
         }
     }
 }

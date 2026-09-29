@@ -11,6 +11,16 @@ namespace Server.Handlers
     {
         public static void HandleSignUpRequest(IClientConnection client, Packet packet)
         {
+            string clientVersion = packet.ReadString();
+            if (clientVersion != ServerConfig.GameVersion)
+            {
+                using Packet errResponse = new Packet(OpCode.SignUpResponse);
+                errResponse.Write(false);
+                errResponse.Write($"Version mismatch! Server is running {ServerConfig.GameVersion}.");
+                client.Send(errResponse);
+                return;
+            }
+
             string username = packet.ReadString();
             string password = packet.ReadString();
 
@@ -61,6 +71,16 @@ namespace Server.Handlers
 
         public static void HandleSignInRequest(IClientConnection client, Packet packet)
         {
+            string clientVersion = packet.ReadString();
+            if (clientVersion != ServerConfig.GameVersion)
+            {
+                using Packet errResponse = new Packet(OpCode.SignInResponse);
+                errResponse.Write(false);
+                errResponse.Write($"Version mismatch! Server is running {ServerConfig.GameVersion}.");
+                client.Send(errResponse);
+                return;
+            }
+
             string username = packet.ReadString();
             string password = packet.ReadString();
 
