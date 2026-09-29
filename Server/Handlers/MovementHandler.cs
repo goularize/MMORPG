@@ -47,6 +47,19 @@ namespace Server.Handlers
                     return;
                 }
 
+                // Map Collision Validation (Phase 5)
+                var map = GameLogic.MapMgr.GetMap(player.MapId);
+                if (map != null && !map.IsWalkable(targetPosition))
+                {
+                    Console.WriteLine($"[Anti-Cheat] Player {player.Name} tried to walk into a solid object at {targetPosition}. Rubberbanding...");
+                    
+                    using Packet rubberbandPacket = new Packet(OpCode.EntityPositionUpdate);
+                    rubberbandPacket.Write(player.Id);
+                    rubberbandPacket.Write(player.Position); // The old, valid position
+                    client.Send(rubberbandPacket);
+                    return;
+                }
+
                 // If valid, apply the move and update the timestamp
                 player.Position = targetPosition;
                 player.LastMoveTime = DateTime.UtcNow;

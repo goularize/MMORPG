@@ -14,6 +14,15 @@ namespace Server.World
         public float y { get; set; }
     }
 
+    public class ColliderExportData
+    {
+        public string Type { get; set; } = string.Empty;
+        public Vector2Data Position { get; set; } = new Vector2Data();
+        public Vector2Data Size { get; set; } = new Vector2Data();
+        public float Radius { get; set; }
+        public List<Vector2Data> Vertices { get; set; } = new();
+    }
+
     public class ResourceSpawnerExportData
     {
         public string Type { get; set; } = string.Empty;
@@ -25,6 +34,7 @@ namespace Server.World
     {
         public string MapName { get; set; } = string.Empty;
         public int MaxPlayers { get; set; }
+        public List<ColliderExportData> Colliders { get; set; } = new();
         public List<ResourceSpawnerExportData> ResourceSpawners { get; set; } = new();
     }
 
@@ -89,8 +99,33 @@ namespace Server.World
                                 mapInstance.Resources.TryAdd(resId, resource);
                             }
 
+                            // Load Colliders
+                            foreach (var col in mapData.Colliders)
+                            {
+                                if (col.Type == "Polygon")
+                                {
+                                    var vertices = new List<Shared.Math.Vector3>();
+                                    foreach (var v in col.Vertices)
+                                    {
+                                        vertices.Add(new Shared.Math.Vector3(v.x, v.y, 0));
+                                    }
+                                    mapInstance.Colliders.Add(new Physics.PolygonCollider(vertices));
+                                }
+                                else if (col.Type == "Box")
+                                {
+                                    var center = new Shared.Math.Vector3(col.Position.x, col.Position.y, 0);
+                                    var size = new Shared.Math.Vector3(col.Size.x, col.Size.y, 0);
+                                    mapInstance.Colliders.Add(new Physics.BoxCollider(center, size));
+                                }
+                                else if (col.Type == "Circle")
+                                {
+                                    var center = new Shared.Math.Vector3(col.Position.x, col.Position.y, 0);
+                                    mapInstance.Colliders.Add(new Physics.CircleCollider(center, col.Radius));
+                                }
+                            }
+
                             ActiveMaps.TryAdd(mapId, mapInstance);
-                            Console.WriteLine($"[MapManager] Loaded Map {mapId} ({mapData.MapName}) with {mapData.ResourceSpawners.Count} resources.");
+                            Console.WriteLine($"[MapManager] Loaded Map {mapId} ({mapData.MapName}) with {mapData.ResourceSpawners.Count} resources and {mapData.Colliders.Count} colliders.");
                         }
                     }
                 }

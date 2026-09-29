@@ -18,9 +18,24 @@ namespace Server.World
         // Thread-safe dictionary for Resources (Trees, Ores, etc.)
         public ConcurrentDictionary<int, Resource> Resources { get; } = new();
 
+        // Server-authoritative collision providers loaded from Unity maps
+        public List<Physics.ICollisionProvider> Colliders { get; } = new();
+
         public MapInstance(int mapId)
         {
             MapId = mapId;
+        }
+
+        public bool IsWalkable(Shared.Math.Vector3 position)
+        {
+            foreach (var collider in Colliders)
+            {
+                if (collider.ContainsPoint(position))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public Entity? GetEntity(int id)
