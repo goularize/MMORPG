@@ -17,5 +17,8 @@ namespace Server.Database.Models
         public string PasswordHash { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation Property: One Account can have many Characters
+        public System.Collections.Generic.List<Character> Characters { get; set; } = new();
     }
 }

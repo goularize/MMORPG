@@ -16,6 +16,16 @@ namespace Shared.Network
         // World / AoI
         EntitySpawn = 5,
         EntityDespawn = 6,
-        EntityPositionUpdate = 7
+        EntityPositionUpdate = 7,
+
+        // Lobby / Character Management
+        CharacterListRequest = 8,
+        CharacterListResponse = 9,
+        CharacterCreateRequest = 10,
+        CharacterCreateResponse = 11,
+        CharacterDeleteRequest = 12,
+        CharacterDeleteResponse = 13,
+        CharacterSelectRequest = 14,
+        CharacterSelectResponse = 15
     }
 }
