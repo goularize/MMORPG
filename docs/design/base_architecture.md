@@ -27,7 +27,7 @@ Instead of a single monolith, the backend is split into specialized services to 
 ### B. World Server(s)
 - **Role:** Heavyweight authoritative servers running the actual game. Can be deployed as a classic Realm list or distributed map layers (e.g., City Server, Forest Server).
 - **Game Loop & Tick Rate (✅ Done):** Runs a continuous, fixed-timestep loop (30 ticks per second) to process physics, movement, and combat independently of network events.
-- **Entity System & AoI (🚧 In Progress):** Players and NPCs are "Entities". To save bandwidth, the server uses Area of Interest (AoI) to only send updates about entities physically *near* the player.
+- **Entity System & AoI (✅ Done):** Players and NPCs are "Entities" managed by an `EntityManager`. The server calculates Euclidean distance to determine the Area of Interest (AoI) and dynamically broadcasts `EntitySpawn`, `EntityDespawn`, and `EntityPositionUpdate` packets to clients to save bandwidth.
 
 ### C. Database Cluster (✅ Done)
 - **Role:** Persistent storage using PostgreSQL.
