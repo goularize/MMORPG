@@ -23,6 +23,11 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.CharacterDeleteResponse, Handlers.CharacterHandler.HandleDeleteResponse);
             _packetHandlers.Add((int)OpCode.CharacterSelectResponse, Handlers.CharacterHandler.HandleSelectResponse);
 
+            _packetHandlers.Add((int)OpCode.StatsUpdate, Handlers.WorldHandler.HandleStatsUpdate);
+            _packetHandlers.Add((int)OpCode.VitalsUpdate, Handlers.WorldHandler.HandleVitalsUpdate);
+            _packetHandlers.Add((int)OpCode.EntityPositionUpdate, Handlers.WorldHandler.HandleEntityPositionUpdate);
+            _packetHandlers.Add((int)OpCode.EntitySpawn, Handlers.WorldHandler.HandleEntitySpawn);
+
             Debug.Log($"[PacketHandler] Initialized with {_packetHandlers.Count} routes.");
         }
 

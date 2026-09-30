@@ -51,6 +51,9 @@ namespace Client.Network.Handlers
             UI.CharacterSelectionUI.Instance?.OnCharacterDeleteResponse(success);
         }
 
+        public static int CurrentMapId { get; private set; }
+        public static Vector3 SpawnPosition { get; private set; }
+
         public static void HandleSelectResponse(Packet packet)
         {
             bool success = packet.ReadBool();
@@ -61,10 +64,13 @@ namespace Client.Network.Handlers
                 float y = packet.ReadFloat();
                 float z = packet.ReadFloat();
                 
+                CurrentMapId = mapId;
+                SpawnPosition = new Vector3(x, y, z);
+
                 Debug.Log($"[CharacterHandler] Selection successful. Loading MapId {mapId}. Spawning at {x}, {y}, {z}");
                 
-                // TODO: Load specific Map Scene based on MapId
-                // UnityEngine.SceneManagement.SceneManager.LoadScene($"Map_{mapId}");
+                // Load the main game scene
+                UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
             }
             else
             {
