@@ -20,6 +20,7 @@ namespace Server.Handlers
 
             // 2. Look up the active Player entity from the World
             var player = GameLogic.MapMgr.GetPlayer(client.PlayerId.Value);
+            if (player != null && player.Health <= 0) return;
             if (player != null)
             {
                 // Basic Speed Hack Validation

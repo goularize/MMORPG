@@ -38,6 +38,9 @@ namespace Server.Network
             // Binding
             _handlers.Add(OpCode.SetBindPointRequest, BindHandler.HandleSetBindPointRequest);
 
+            // Death & Respawn
+            _handlers.Add(OpCode.PlayerRespawnRequest, PlayerActionHandler.HandleRespawnRequest);
+
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }
 

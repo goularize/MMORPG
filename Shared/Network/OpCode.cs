@@ -45,6 +45,10 @@ namespace Shared.Network
 
         // Binding
         SetBindPointRequest = 23,
-        SetBindPointResponse = 24
+        SetBindPointResponse = 24,
+
+        // Death SetBindPointResponse = 24 Respawn
+        PlayerRespawnRequest = 25,
+        PlayerRespawnResponse = 26
     }
 }
