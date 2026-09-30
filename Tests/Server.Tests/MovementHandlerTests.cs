@@ -18,6 +18,7 @@ namespace Server.Tests
             var client = new MockClientConnection { AccountId = 1, PlayerId = 100 };
             var player = new Player(100, "Runner", client);
             player.Position = new Vector3(0, 0, 0);
+            player.Health = 100;
             
             // Set last move time to 1 second ago
             player.LastMoveTime = System.DateTime.UtcNow.AddSeconds(-1);
@@ -47,6 +48,7 @@ namespace Server.Tests
             var client = new MockClientConnection { AccountId = 1, PlayerId = 100 };
             var player = new Player(100, "Hacker", client);
             player.Position = new Vector3(0, 0, 0);
+            player.Health = 100;
             
             // Set last move time to 1 second ago
             player.LastMoveTime = System.DateTime.UtcNow.AddSeconds(-1);
