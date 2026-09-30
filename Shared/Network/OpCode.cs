@@ -49,6 +49,9 @@ namespace Shared.Network
 
         // Death SetBindPointResponse = 24 Respawn
         PlayerRespawnRequest = 25,
-        PlayerRespawnResponse = 26
+        PlayerRespawnResponse = 26,
+
+        // Combat Broadcasts
+        EntityCombatEvent = 27
     }
 }

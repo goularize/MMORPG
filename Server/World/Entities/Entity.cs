@@ -32,6 +32,13 @@ namespace Server.World.Entities
         public int MagicDefense { get; set; }
 
         // Regen Tracking
+        // Combat & Cooldowns
+        public DateTime LastAttackTime { get; set; } = DateTime.MinValue;
+        public float BaseAttackSpeed { get; set; } = 1.5f;
+        public float CritChance { get; set; } = 0.05f;
+        public float CritMultiplier { get; set; } = 2.0f;
+        public float DodgeChance { get; set; } = 0.05f;
+
         protected DateTime _lastRegenTime = DateTime.UtcNow;
         protected bool _vitalsChanged = false;
 

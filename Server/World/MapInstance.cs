@@ -115,6 +115,17 @@ namespace Server.World
             ProcessAreaOfInterest();
         }
 
+        public void Broadcast(Shared.Network.Packet packet, Shared.Math.Vector3 origin)
+        {
+            foreach (var player in Players.Values)
+            {
+                if (Shared.Math.Vector3.Distance(player.Position, origin) <= AOI_RADIUS)
+                {
+                    player.Connection.Send(packet);
+                }
+            }
+        }
+
         private void ProcessAreaOfInterest()
         {
             // For a first version, we just loop all players and check distance to all entities.
@@ -210,3 +221,5 @@ namespace Server.World
         }
     }
 }
+
+
