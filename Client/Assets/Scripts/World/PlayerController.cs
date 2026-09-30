@@ -12,13 +12,36 @@ namespace Client.World
         private float _lastSendTime;
         private const float SendRate = 0.1f; // Send movement 10 times a second
         private bool _wasMoving = false;
+        private Vector2 _moveInput;
+        private Rigidbody2D _rb;
+
+        private void Awake()
+        {
+            _rb = GetComponent<Rigidbody2D>();
+        }
 
         private void Update()
         {
-            HandleMovement();
+            HandleInput();
         }
 
-        private void HandleMovement()
+        private void FixedUpdate()
+        {
+            // Physical movement must happen in FixedUpdate for Unity Collisions to work smoothly
+            if (_moveInput != Vector2.zero)
+            {
+                if (_rb != null)
+                {
+                    _rb.MovePosition(_rb.position + _moveInput * speed * Time.fixedDeltaTime);
+                }
+                else
+                {
+                    transform.position += (Vector3)_moveInput * speed * Time.fixedDeltaTime;
+                }
+            }
+        }
+
+        private void HandleInput()
         {
             float moveX = 0f;
             float moveY = 0f;
@@ -31,13 +54,12 @@ namespace Client.World
                 if (UnityEngine.InputSystem.Keyboard.current.aKey.isPressed || UnityEngine.InputSystem.Keyboard.current.leftArrowKey.isPressed) moveX -= 1f;
             }
 
-            bool isMoving = (moveX != 0 || moveY != 0);
+            _moveInput = new Vector2(moveX, moveY).normalized;
+            bool isMoving = (_moveInput != Vector2.zero);
 
             if (isMoving)
             {
-                Vector3 moveDir = new Vector3(moveX, moveY, 0).normalized;
-                transform.position += moveDir * speed * Time.deltaTime;
-
+                // Send the exact position to the server periodically
                 SendMovementPacket(transform.position);
                 _wasMoving = true;
             }
