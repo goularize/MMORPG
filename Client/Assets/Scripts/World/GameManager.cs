@@ -38,8 +38,9 @@ namespace Client.World
             _localPlayer = Instantiate(playerPrefab, spawnPos, Quaternion.identity);
             _localPlayer.name = "LocalPlayer";
 
-            var nameTag = _localPlayer.GetComponentInChildren<NameTag>();
-            if (nameTag != null) nameTag.SetName(Client.UI.CharacterSelectionUI.SelectedCharacterName);
+            // Initialize visual state via the CharacterManager
+            var charManager = _localPlayer.GetComponent<CharacterManager>();
+            if (charManager != null) charManager.SetName(Client.UI.CharacterSelectionUI.SelectedCharacterName);
             
             // Set the camera to follow the player
             Camera.main.transform.SetParent(_localPlayer.transform);
@@ -55,8 +56,9 @@ namespace Client.World
             GameObject newEntity = Instantiate(playerPrefab, pos, Quaternion.identity);
             newEntity.name = $"Remote_{entityId}_{entityName}";
 
-            var nameTag = newEntity.GetComponentInChildren<NameTag>();
-            if (nameTag != null) nameTag.SetName(entityName);
+            // Initialize visual state via the CharacterManager
+            var charManager = newEntity.GetComponent<CharacterManager>();
+            if (charManager != null) charManager.SetName(entityName);
 
             // Disable local input control
             var controller = newEntity.GetComponent<PlayerController>();
