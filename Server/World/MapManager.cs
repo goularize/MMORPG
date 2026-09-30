@@ -14,28 +14,15 @@ namespace Server.World
         public float y { get; set; }
     }
 
-    public class ColliderExportData
+    public class PolygonData
     {
-        public string Type { get; set; } = string.Empty;
-        public Vector2Data Position { get; set; } = new Vector2Data();
-        public Vector2Data Size { get; set; } = new Vector2Data();
-        public float Radius { get; set; }
-        public List<Vector2Data> Vertices { get; set; } = new();
-    }
-
-    public class ResourceSpawnerExportData
-    {
-        public string Type { get; set; } = string.Empty;
-        public Vector2Data Position { get; set; } = new Vector2Data();
-        public float RespawnTimeSeconds { get; set; }
+        public List<Vector2Data> Points { get; set; } = new();
     }
 
     public class MapExportData
     {
         public string MapName { get; set; } = string.Empty;
-        public int MaxPlayers { get; set; }
-        public List<ColliderExportData> Colliders { get; set; } = new();
-        public List<ResourceSpawnerExportData> ResourceSpawners { get; set; } = new();
+        public List<PolygonData> Colliders { get; set; } = new();
     }
 
     public class MapManager
@@ -55,8 +42,6 @@ namespace Server.World
         {
             // The JSON files are in Server/Data/Maps
             string mapsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Data", "Maps");
-            // If running via dotnet run, the directory structure might be slightly different.
-            // Let's resolve safely based on current working directory.
             if (!Directory.Exists(mapsDir))
             {
                 mapsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "Maps");
@@ -68,16 +53,16 @@ namespace Server.World
                 return;
             }
 
-            var files = Directory.GetFiles(mapsDir, "Map_*_Config.json");
-            int resourceIdCounter = 100000; // Offset IDs to avoid colliding with Players/NPCs
+            // Read our new JSON files
+            var files = Directory.GetFiles(mapsDir, "*.json");
 
             foreach (var file in files)
             {
                 try
                 {
-                    // Extract ID from Map_X_Config.json
+                    // Map "01_StartingVillage" to MapId 1
                     string fileName = Path.GetFileName(file);
-                    string idPart = fileName.Replace("Map_", "").Replace("_Config.json", "");
+                    string idPart = fileName.Split('_')[0]; // Gets "01"
                     if (int.TryParse(idPart, out int mapId))
                     {
                         string json = File.ReadAllText(file);
@@ -88,44 +73,20 @@ namespace Server.World
                         {
                             var mapInstance = new MapInstance(mapId);
                             
-                            // Load Resources
-                            foreach (var spawner in mapData.ResourceSpawners)
+                            // Load Colliders from JSON into the Server's Physics Engine
+                            foreach (var poly in mapData.Colliders)
                             {
-                                int resId = resourceIdCounter++;
-                                var position = new Shared.Math.Vector3(spawner.Position.x, spawner.Position.y, 0);
-                                var resource = new Resource(resId, spawner.Type, position, spawner.RespawnTimeSeconds);
-                                
-                                resource.MapId = mapId;
-                                mapInstance.Resources.TryAdd(resId, resource);
-                            }
-
-                            // Load Colliders
-                            foreach (var col in mapData.Colliders)
-                            {
-                                if (col.Type == "Polygon")
+                                var vertices = new List<Shared.Math.Vector3>();
+                                foreach (var pt in poly.Points)
                                 {
-                                    var vertices = new List<Shared.Math.Vector3>();
-                                    foreach (var v in col.Vertices)
-                                    {
-                                        vertices.Add(new Shared.Math.Vector3(v.x, v.y, 0));
-                                    }
-                                    mapInstance.Colliders.Add(new Physics.PolygonCollider(vertices));
+                                    // 2D tile maps map exactly to 3D world space (Z=0)
+                                    vertices.Add(new Shared.Math.Vector3(pt.x, pt.y, 0));
                                 }
-                                else if (col.Type == "Box")
-                                {
-                                    var center = new Shared.Math.Vector3(col.Position.x, col.Position.y, 0);
-                                    var size = new Shared.Math.Vector3(col.Size.x, col.Size.y, 0);
-                                    mapInstance.Colliders.Add(new Physics.BoxCollider(center, size));
-                                }
-                                else if (col.Type == "Circle")
-                                {
-                                    var center = new Shared.Math.Vector3(col.Position.x, col.Position.y, 0);
-                                    mapInstance.Colliders.Add(new Physics.CircleCollider(center, col.Radius));
-                                }
+                                mapInstance.Colliders.Add(new Physics.PolygonCollider(vertices));
                             }
 
                             ActiveMaps.TryAdd(mapId, mapInstance);
-                            Console.WriteLine($"[MapManager] Loaded Map {mapId} ({mapData.MapName}) with {mapData.ResourceSpawners.Count} resources and {mapData.Colliders.Count} colliders.");
+                            Console.WriteLine($"[MapManager] Loaded Map {mapId} ({mapData.MapName}) with {mapInstance.Colliders.Count} polygon colliders.");
                         }
                     }
                 }
