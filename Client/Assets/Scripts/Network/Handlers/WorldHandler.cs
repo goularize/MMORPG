@@ -20,12 +20,10 @@ namespace Client.Network.Handlers
         public static void HandleEntityPositionUpdate(Packet packet)
         {
             int entityId = packet.ReadInt();
-            float x = packet.ReadFloat();
-            float y = packet.ReadFloat();
-            float z = packet.ReadFloat();
+            var pos = packet.ReadVector3();
+            Vector3 unityPos = new Vector3(pos.X, pos.Y, pos.Z);
 
-            // When the server rubberbands us or when other players move
-            Debug.Log($"[WorldHandler] EntityPositionUpdate: Entity {entityId} moved to {x}, {y}, {z}");
+            Client.World.GameManager.Instance?.UpdateEntityPosition(entityId, unityPos);
         }
 
         public static void HandleVitalsUpdate(Packet packet)
@@ -33,16 +31,22 @@ namespace Client.Network.Handlers
             int entityId = packet.ReadInt();
             int health = packet.ReadInt();
             int mana = packet.ReadInt();
-
-            // We don't need to log this every time, it happens often (regen)
-            // Debug.Log($"[WorldHandler] VitalsUpdate: Entity {entityId} HP:{health} MP:{mana}");
         }
 
         public static void HandleEntitySpawn(Packet packet)
         {
             int entityId = packet.ReadInt();
-            // Typically includes type, appearance, position, etc.
-            Debug.Log($"[WorldHandler] EntitySpawn: Entity {entityId} spawned.");
+            string name = packet.ReadString();
+            var pos = packet.ReadVector3();
+            Vector3 unityPos = new Vector3(pos.X, pos.Y, pos.Z);
+
+            Client.World.GameManager.Instance?.SpawnRemoteEntity(entityId, name, unityPos);
+        }
+
+        public static void HandleEntityDespawn(Packet packet)
+        {
+            int entityId = packet.ReadInt();
+            Client.World.GameManager.Instance?.DespawnRemoteEntity(entityId);
         }
     }
 }

@@ -25,6 +25,7 @@ namespace Client.Network
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject); // Keep the network alive across scenes!
+                Application.runInBackground = true; // <--- Keep processing packets when window loses focus!
                 PacketHandler.Initialize(); // Register all network routes
             }
             else

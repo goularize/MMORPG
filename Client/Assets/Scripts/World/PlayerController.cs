@@ -11,6 +11,7 @@ namespace Client.World
 
         private float _lastSendTime;
         private const float SendRate = 0.1f; // Send movement 10 times a second
+        private bool _wasMoving = false;
 
         private void Update()
         {
@@ -30,20 +31,33 @@ namespace Client.World
                 if (UnityEngine.InputSystem.Keyboard.current.aKey.isPressed || UnityEngine.InputSystem.Keyboard.current.leftArrowKey.isPressed) moveX -= 1f;
             }
 
-            if (moveX != 0 || moveY != 0)
+            bool isMoving = (moveX != 0 || moveY != 0);
+
+            if (isMoving)
             {
                 Vector3 moveDir = new Vector3(moveX, moveY, 0).normalized;
                 transform.position += moveDir * speed * Time.deltaTime;
 
                 SendMovementPacket(transform.position);
+                _wasMoving = true;
+            }
+            else if (_wasMoving)
+            {
+                // We just stopped moving! Force one final exact position packet to the server.
+                ForceSendPacket(transform.position);
+                _wasMoving = false;
             }
         }
 
         private void SendMovementPacket(Vector3 position)
         {
             if (Time.time - _lastSendTime < SendRate) return;
-            _lastSendTime = Time.time;
+            ForceSendPacket(position);
+        }
 
+        private void ForceSendPacket(Vector3 position)
+        {
+            _lastSendTime = Time.time;
             using (Packet packet = new Packet(OpCode.PlayerMoveRequest))
             {
                 packet.Write(position.x);

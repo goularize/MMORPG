@@ -50,8 +50,13 @@ namespace Client.UI
             }
         }
 
+        private List<CharacterData> _cachedCharacters;
+        public static string SelectedCharacterName { get; private set; }
+
         public void OnCharacterListReceived(List<CharacterData> characters)
         {
+            _cachedCharacters = characters;
+
             // Clear old list
             foreach (Transform child in characterListContainer)
             {
@@ -59,6 +64,7 @@ namespace Client.UI
             }
 
             _selectedCharacterId = -1;
+            SelectedCharacterName = string.Empty;
             playButton.interactable = false;
             deleteButton.interactable = false;
 
@@ -80,9 +86,15 @@ namespace Client.UI
         private void SelectCharacter(int characterId)
         {
             _selectedCharacterId = characterId;
+            if (_cachedCharacters != null)
+            {
+                var ch = _cachedCharacters.Find(c => c.Id == characterId);
+                if (ch != null) SelectedCharacterName = ch.Name;
+            }
+
             playButton.interactable = true;
             deleteButton.interactable = true;
-            Debug.Log($"Selected character ID: {characterId}");
+            Debug.Log($"Selected character ID: {characterId} ({SelectedCharacterName})");
         }
 
         public void OnPlayClicked()
