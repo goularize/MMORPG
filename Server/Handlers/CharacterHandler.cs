@@ -85,6 +85,10 @@ namespace Server.Handlers
                         X = 0f,
                         Y = 0f,
                         Z = 0f,
+                        BindMapId = 1,
+                        BindX = 0f,
+                        BindY = 0f,
+                        BindZ = 0f,
                         Health = 100,
                         Mana = 50,
                         Strength = 10,
@@ -158,7 +162,9 @@ namespace Server.Handlers
                     Intelligence = characterData.Intelligence,
                     Constitution = characterData.Constitution,
                     Knowledge = characterData.Knowledge,
-                    Position = new Shared.Math.Vector3(characterData.X, characterData.Y, characterData.Z)
+                    Position = new Shared.Math.Vector3(characterData.X, characterData.Y, characterData.Z),
+                    BindMapId = characterData.BindMapId,
+                    BindPosition = new Shared.Math.Vector3(characterData.BindX, characterData.BindY, characterData.BindZ)
                 };
 
                 // Calculate all derived stats correctly

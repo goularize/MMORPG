@@ -35,6 +35,8 @@ namespace Server.Network
             // Targeting & Actions
             _handlers.Add(OpCode.EntityInteractRequest, InteractHandler.HandleInteractRequest);
             _handlers.Add(OpCode.EntityAttackRequest, CombatHandler.HandleAttackRequest);
+            // Binding
+            _handlers.Add(OpCode.SetBindPointRequest, BindHandler.HandleSetBindPointRequest);
 
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }

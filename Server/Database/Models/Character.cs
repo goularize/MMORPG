@@ -23,6 +23,11 @@ namespace Server.Database.Models
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
+        // Bind Location (Inn/Respawn)
+        public int BindMapId { get; set; } = 1;
+        public float BindX { get; set; }
+        public float BindY { get; set; }
+        public float BindZ { get; set; }
 
         // RPG Progression
         public int Level { get; set; } = 1;

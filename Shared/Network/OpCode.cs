@@ -41,6 +41,10 @@ namespace Shared.Network
 
         // Targeting & Actions
         EntityInteractRequest = 21,
-        EntityAttackRequest = 22
+        EntityAttackRequest = 22,
+
+        // Binding
+        SetBindPointRequest = 23,
+        SetBindPointResponse = 24
     }
 }

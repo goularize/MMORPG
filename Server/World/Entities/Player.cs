@@ -17,6 +17,9 @@ namespace Server.World.Entities
         
         // Movement tracking
         public System.DateTime LastMoveTime { get; set; } = System.DateTime.UtcNow;
+        // Bind Location
+        public int BindMapId { get; set; }
+        public Shared.Math.Vector3 BindPosition { get; set; }
 
         public Player(int id, string name, Server.Network.IClientConnection connection)
         {
