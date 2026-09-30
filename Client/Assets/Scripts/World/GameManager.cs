@@ -23,7 +23,26 @@ namespace Client.World
 
         private void Start()
         {
-            SpawnLocalPlayer();
+            LoadMap(CharacterHandler.CurrentMapId);
+        }
+
+        private void LoadMap(int mapId)
+        {
+            // Map the Server's MapId to the Unity Scene Name
+            string sceneName = "01_StartingVillage"; 
+            
+            // In the future, you can add more maps like: if (mapId == 2) sceneName = "02_Forest";
+
+            Debug.Log($"[GameManager] Loading Map Scene: {sceneName} for Map ID: {mapId}");
+            
+            // Load the map dynamically in the background, merging it with the GameScene
+            var loadOp = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Additive);
+            
+            // Once the map is fully loaded, spawn the player on it!
+            loadOp.completed += (asyncOp) => 
+            {
+                SpawnLocalPlayer();
+            };
         }
 
         private void SpawnLocalPlayer()
