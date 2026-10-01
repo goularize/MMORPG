@@ -48,5 +48,33 @@ namespace Client.Network.Handlers
             int entityId = packet.ReadInt();
             Client.World.GameManager.Instance?.DespawnRemoteEntity(entityId);
         }
+
+        public static void HandleEntityCombatEvent(Packet packet)
+        {
+            int attackerId = packet.ReadInt();
+            int targetId = packet.ReadInt();
+            int damage = packet.ReadInt();
+            bool isCrit = packet.ReadBool();
+            bool isDodge = packet.ReadBool();
+
+            GameObject attackerObj = Client.World.GameManager.Instance?.GetEntity(attackerId);
+            GameObject targetObj = Client.World.GameManager.Instance?.GetEntity(targetId);
+
+            if (attackerObj != null)
+            {
+                var charManager = attackerObj.GetComponent<Client.World.CharacterManager>();
+                if (charManager != null) charManager.TriggerAttack();
+            }
+
+            if (targetObj != null)
+            {
+                var charManager = targetObj.GetComponent<Client.World.CharacterManager>();
+                if (charManager != null)
+                {
+                    if (!isDodge) charManager.TriggerHit();
+                    charManager.ShowFloatingText(damage, isCrit, isDodge);
+                }
+            }
+        }
     }
 }

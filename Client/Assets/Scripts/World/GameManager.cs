@@ -116,5 +116,16 @@ namespace Client.World
                 }
             }
         }
+
+        public GameObject GetEntity(int entityId)
+        {
+            if (SpawnedEntities.TryGetValue(entityId, out GameObject obj))
+            {
+                return obj;
+            }
+            // Fallback: If it's not a remote entity, assume it's the local player.
+            // (Since the server doesn't send EntitySpawn for ourselves, our ID is not in SpawnedEntities)
+            return _localPlayer;
+        }
     }
 }

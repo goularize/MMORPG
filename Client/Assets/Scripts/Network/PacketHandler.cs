@@ -28,6 +28,7 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.EntityPositionUpdate, Handlers.WorldHandler.HandleEntityPositionUpdate);
             _packetHandlers.Add((int)OpCode.EntitySpawn, Handlers.WorldHandler.HandleEntitySpawn);
             _packetHandlers.Add((int)OpCode.EntityDespawn, Handlers.WorldHandler.HandleEntityDespawn);
+            _packetHandlers.Add((int)OpCode.EntityCombatEvent, Handlers.WorldHandler.HandleEntityCombatEvent);
 
             Debug.Log($"[PacketHandler] Initialized with {_packetHandlers.Count} routes.");
         }
