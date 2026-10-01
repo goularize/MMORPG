@@ -15,6 +15,10 @@ namespace Client.World
         private Vector2 _moveInput;
         private Rigidbody2D _rb;
 
+        [Header("Combat")]
+        public float attackCooldown = 1.5f;
+        private float _lastAttackTime;
+
         private void Awake()
         {
             _rb = GetComponent<Rigidbody2D>();
@@ -23,6 +27,7 @@ namespace Client.World
         private void Update()
         {
             HandleInput();
+            HandleCombatInput();
         }
 
         private void FixedUpdate()
@@ -68,6 +73,41 @@ namespace Client.World
                 // We just stopped moving! Force one final exact position packet to the server.
                 ForceSendPacket(transform.position);
                 _wasMoving = false;
+            }
+        }
+
+        private void HandleCombatInput()
+        {
+            if (UnityEngine.InputSystem.Mouse.current == null) return;
+
+            // Allow the player to hold the mouse down to auto-attack, or spam click
+            if (UnityEngine.InputSystem.Mouse.current.leftButton.isPressed)
+            {
+                if (Time.time - _lastAttackTime < attackCooldown) return;
+
+                // Raycast to find an entity under the mouse cursor
+                Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(UnityEngine.InputSystem.Mouse.current.position.ReadValue());
+                RaycastHit2D hit = Physics2D.Raycast(mouseWorldPos, Vector2.zero);
+
+                if (hit.collider != null)
+                {
+                    // Check if it's a remote entity (monsters/other players will have this script)
+                    var targetEntity = hit.collider.GetComponentInParent<NetworkEntity>();
+                    if (targetEntity != null)
+                    {
+                        _lastAttackTime = Time.time;
+                        SendAttackRequest(targetEntity.EntityId);
+                    }
+                }
+            }
+        }
+
+        private void SendAttackRequest(int targetId)
+        {
+            using (Packet packet = new Packet(OpCode.EntityAttackRequest))
+            {
+                packet.Write(targetId);
+                NetworkManager.Instance.SendPacket(packet);
             }
         }
 
