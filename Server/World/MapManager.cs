@@ -28,6 +28,7 @@ namespace Server.World
     public class MapManager
     {
         public ConcurrentDictionary<int, MapInstance> ActiveMaps { get; } = new();
+        private static int _nextNpcEntityId = 100000;
 
         public MapManager()
         {
@@ -36,6 +37,73 @@ namespace Server.World
             // Fallbacks in case no JSON files exist yet
             if (!ActiveMaps.ContainsKey(1)) ActiveMaps.TryAdd(1, new MapInstance(1));
             if (!ActiveMaps.ContainsKey(2)) ActiveMaps.TryAdd(2, new MapInstance(2));
+
+            SpawnInitialSpawners();
+        }
+
+        public void SpawnInitialSpawners()
+        {
+            if (Data.DataManager.Spawners.Count == 0) return;
+
+            var rng = new Random();
+            foreach (var spawner in Data.DataManager.Spawners)
+            {
+                if (!Data.DataManager.Npcs.TryGetValue(spawner.TemplateId, out var template))
+                {
+                    continue;
+                }
+
+                int mapId = 1;
+                if (!ActiveMaps.TryGetValue(mapId, out var map)) continue;
+
+                int count = Math.Max(1, spawner.Amount);
+                for (int i = 0; i < count; i++)
+                {
+                    int entityId = System.Threading.Interlocked.Increment(ref _nextNpcEntityId);
+                    var npc = new NPC(entityId, template.Name)
+                    {
+                        TemplateId = template.TemplateId,
+                        BehaviorType = template.BehaviorType,
+                        AggroRadius = template.AggroRadius,
+                        WanderRadius = template.WanderRadius,
+                        LeashRadius = template.LeashRadius,
+                        RespawnTimeSeconds = template.RespawnTimeSeconds,
+                        WalkSpeed = template.WalkSpeed,
+                        RunSpeed = template.RunSpeed,
+                        AttackRange = template.AttackRange,
+                        PackAssistRadius = template.PackAssistRadius,
+                        Strength = template.BaseStrength,
+                        Intelligence = template.BaseIntelligence,
+                        Constitution = template.BaseConstitution,
+                        Knowledge = template.BaseKnowledge,
+                        ExpYield = (long)(template.BaseExp * Math.Max(1, template.LevelRange[0]))
+                    };
+
+                    Shared.Math.Vector3 spawnPos;
+                    if (string.Equals(spawner.Type, "Area", StringComparison.OrdinalIgnoreCase) && spawner.Radius > 0)
+                    {
+                        float angle = (float)(rng.NextDouble() * Math.PI * 2.0);
+                        float dist = (float)(rng.NextDouble() * spawner.Radius);
+                        spawnPos = new Shared.Math.Vector3(
+                            spawner.X + (float)Math.Cos(angle) * dist,
+                            spawner.Y + (float)Math.Sin(angle) * dist,
+                            spawner.Z
+                        );
+                    }
+                    else
+                    {
+                        spawnPos = new Shared.Math.Vector3(spawner.X, spawner.Y, spawner.Z);
+                    }
+
+                    npc.SpawnPosition = spawnPos;
+                    npc.Position = spawnPos;
+                    npc.CalculateDerivedStats();
+                    npc.Health = npc.MaxHealth;
+                    npc.Mana = npc.MaxMana;
+
+                    map.AddNPC(npc);
+                }
+            }
         }
 
         private void LoadMapsFromDisk()

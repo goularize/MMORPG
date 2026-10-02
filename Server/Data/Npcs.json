@@ -12,6 +12,7 @@
     "BaseIntelligence": 2,
     "BaseConstitution": 8,
     "BaseKnowledge": 2,
+    "BaseExp": 25,
     "Interactions": []
   },
   {

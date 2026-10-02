@@ -65,6 +65,12 @@ namespace Server.Handlers
                 return;
             }
 
+            if (target is NPC friendlyNpc && friendlyNpc.BehaviorType == Shared.Enums.MobBehaviorType.Friendly)
+            {
+                Console.WriteLine($"[Combat] Player {player.Name} tried to attack friendly NPC {friendlyNpc.Name}.");
+                return;
+            }
+
             // Mark attack timestamp
             player.LastAttackTime = DateTime.UtcNow;
 
@@ -107,6 +113,19 @@ namespace Server.Handlers
                     // Apply Damage
                     target.Health -= finalDamage;
                     if (target.Health < 0) target.Health = 0;
+                }
+
+                if (target is NPC npc)
+                {
+                    if (npc.Health <= 0)
+                    {
+                        npc.Die(map);
+                        player.AddExp(npc.ExpYield);
+                    }
+                    else
+                    {
+                        npc.OnAttacked(player, map);
+                    }
                 }
             }
 

@@ -41,6 +41,9 @@ namespace Server.Network
             // Death & Respawn
             _handlers.Add(OpCode.PlayerRespawnRequest, PlayerActionHandler.HandleRespawnRequest);
 
+            // RPG Progression
+            _handlers.Add(OpCode.AllocateStatPointRequest, ProgressionHandler.HandleAllocateStatPoint);
+
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }
 

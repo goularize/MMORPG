@@ -10,6 +10,11 @@ namespace Server
 
         public static string GameVersion { get; private set; } = "0.1.0-alpha";
 
+        // RPG Progression
+        public static int ExpBase { get; private set; } = 100;
+        public static double ExpGrowthRate { get; private set; } = 1.5;
+        public static int StatPointsPerLevel { get; private set; } = 5;
+
         public static void Initialize()
         {
             var versionEnv = Environment.GetEnvironmentVariable("GAME_VERSION");
@@ -32,8 +37,29 @@ namespace Server
             {
                 RegenTickIntervalSeconds = tickInterval;
             }
+
+            if (int.TryParse(Environment.GetEnvironmentVariable("EXP_BASE"), out int expBase))
+            {
+                ExpBase = expBase;
+            }
+
+            if (double.TryParse(Environment.GetEnvironmentVariable("EXP_GROWTH_RATE"), System.Globalization.CultureInfo.InvariantCulture, out double expGrowthRate))
+            {
+                ExpGrowthRate = expGrowthRate;
+            }
+
+            if (int.TryParse(Environment.GetEnvironmentVariable("STAT_POINTS_PER_LEVEL"), out int statPoints))
+            {
+                StatPointsPerLevel = statPoints;
+            }
             
-            Console.WriteLine($"[Config] Running Version: {GameVersion} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s");
+            Console.WriteLine($"[Config] Running Version: {GameVersion} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s | EXP Base: {ExpBase}, Growth: {ExpGrowthRate}, StatPoints/Lvl: {StatPointsPerLevel}");
+        }
+
+        public static long GetExpForNextLevel(int currentLevel)
+        {
+            if (currentLevel < 1) currentLevel = 1;
+            return (long)Math.Floor(ExpBase * Math.Pow(currentLevel, ExpGrowthRate));
         }
     }
 }

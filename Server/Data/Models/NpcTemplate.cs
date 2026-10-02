@@ -17,6 +17,13 @@ namespace Server.Data.Models
         public string Type { get; set; } = "Enemy";
         public string Behavior { get; set; } = "Passive";
         public float AggroRadius { get; set; } = 0.0f;
+        public float WanderRadius { get; set; } = 5.0f;
+        public float LeashRadius { get; set; } = 20.0f;
+        public float RespawnTimeSeconds { get; set; } = 15.0f;
+        public float WalkSpeed { get; set; } = 2.0f;
+        public float RunSpeed { get; set; } = 3.5f;
+        public float AttackRange { get; set; } = 2.0f;
+        public float PackAssistRadius { get; set; } = 12.0f;
         public string PrefabName { get; set; } = string.Empty;
         public int[] LevelRange { get; set; } = new int[] { 1, 1 };
         public float[] StatVarianceRange { get; set; } = new float[] { 1.0f, 1.0f };
@@ -24,6 +31,23 @@ namespace Server.Data.Models
         public int BaseIntelligence { get; set; }
         public int BaseConstitution { get; set; }
         public int BaseKnowledge { get; set; }
+        public int BaseExp { get; set; } = 25;
         public List<NpcInteraction> Interactions { get; set; } = new List<NpcInteraction>();
+
+        public Shared.Enums.MobBehaviorType BehaviorType
+        {
+            get
+            {
+                if (System.Enum.TryParse<Shared.Enums.MobBehaviorType>(Behavior, true, out var parsed))
+                {
+                    return parsed;
+                }
+                if (string.Equals(Type, "Friendly", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return Shared.Enums.MobBehaviorType.Friendly;
+                }
+                return Shared.Enums.MobBehaviorType.Passive;
+            }
+        }
     }
 }

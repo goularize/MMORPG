@@ -25,5 +25,37 @@ namespace Shared.Math
             float dz = a.Z - b.Z;
             return (float)System.Math.Sqrt(dx * dx + dy * dy + dz * dz);
         }
+
+        public float Magnitude()
+        {
+            return (float)System.Math.Sqrt(X * X + Y * Y + Z * Z);
+        }
+
+        public Vector3 Normalized()
+        {
+            float mag = Magnitude();
+            if (mag > 0.00001f)
+            {
+                return new Vector3(X / mag, Y / mag, Z / mag);
+            }
+            return new Vector3(0, 0, 0);
+        }
+
+        public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+        public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+        public static Vector3 operator *(Vector3 a, float d) => new Vector3(a.X * d, a.Y * d, a.Z * d);
+        public static Vector3 operator *(float d, Vector3 a) => new Vector3(a.X * d, a.Y * d, a.Z * d);
+        public static Vector3 operator /(Vector3 a, float d) => new Vector3(a.X / d, a.Y / d, a.Z / d);
+
+        public static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta)
+        {
+            Vector3 toVector = target - current;
+            float dist = toVector.Magnitude();
+            if (dist <= maxDistanceDelta || dist < 0.00001f)
+            {
+                return target;
+            }
+            return current + toVector / dist * maxDistanceDelta;
+        }
     }
 }

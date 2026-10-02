@@ -55,6 +55,16 @@ namespace Server.World
             }
         }
 
+        public void AddNPC(NPC npc)
+        {
+            npc.MapId = MapId;
+            npc.Map = this;
+            if (NPCs.TryAdd(npc.Id, npc))
+            {
+                Console.WriteLine($"NPC {npc.Name} (ID: {npc.Id}, Behavior: {npc.BehaviorType}) spawned on Map {MapId}.");
+            }
+        }
+
         public void RemovePlayer(int playerId)
         {
             if (Players.TryRemove(playerId, out Player? player))
@@ -148,6 +158,8 @@ namespace Server.World
                 // Check distance to all NPCs
                 foreach (var npc in NPCs.Values)
                 {
+                    if (npc.CurrentState == Shared.Enums.AIState.Dead && npc.IsCorpseDecayed) continue;
+
                     if (Shared.Math.Vector3.Distance(player.Position, npc.Position) <= AOI_RADIUS)
                     {
                         nearbyEntities.Add(npc);

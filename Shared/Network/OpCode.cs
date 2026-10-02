@@ -52,6 +52,12 @@ namespace Shared.Network
         PlayerRespawnResponse = 26,
 
         // Combat Broadcasts
-        EntityCombatEvent = 27
+        EntityCombatEvent = 27,
+
+        // RPG Progression & Stats Allocation
+        PlayerExpUpdate = 28,
+        PlayerLevelUp = 29,
+        AllocateStatPointRequest = 30,
+        AllocateStatPointResponse = 31
     }
 }
