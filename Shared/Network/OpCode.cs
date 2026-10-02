@@ -58,6 +58,33 @@ namespace Shared.Network
         PlayerExpUpdate = 28,
         PlayerLevelUp = 29,
         AllocateStatPointRequest = 30,
-        AllocateStatPointResponse = 31
+        AllocateStatPointResponse = 31,
+
+        // Items & Inventory (Client -> Server)
+        MoveInventoryItemRequest = 70,
+        SplitItemStackRequest = 71,
+        UseConsumableItemRequest = 72,
+        EquipItemRequest = 73,
+        UnequipItemRequest = 74,
+        UpgradeItemRequest = 75,
+        LearnRecipeRequest = 76,
+        CraftItemRequest = 77,
+        DropItemRequest = 78,
+
+        // Items & Inventory (Server -> Client)
+        InventorySync = 80,
+        InventorySlotUpdate = 81,
+        EquippedItemsSync = 82,
+        UpgradeItemResponse = 83,
+        CraftItemResponse = 84,
+
+        // Loot Satchels & Harvesting (Client -> Server)
+        OpenLootSatchelRequest = 85,
+        LootItemRequest = 86,
+        LootAllRequest = 87,
+
+        // Loot Satchels & Harvesting (Server -> Client)
+        LootSatchelSync = 88,
+        LootSatchelClose = 89
     }
 }

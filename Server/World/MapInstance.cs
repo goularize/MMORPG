@@ -18,6 +18,9 @@ namespace Server.World
         // Thread-safe dictionary for Resources (Trees, Ores, etc.)
         public ConcurrentDictionary<int, Resource> Resources { get; } = new();
 
+        // Thread-safe dictionary for Loot Satchels (Ground loot bags)
+        public ConcurrentDictionary<int, LootSatchel> LootSatchels { get; } = new();
+
         // Server-authoritative collision providers loaded from Unity maps
         public List<Physics.ICollisionProvider> Colliders { get; } = new();
 
@@ -43,6 +46,7 @@ namespace Server.World
             if (Players.TryGetValue(id, out var player)) return player;
             if (NPCs.TryGetValue(id, out var npc)) return npc;
             if (Resources.TryGetValue(id, out var res)) return res;
+            if (LootSatchels.TryGetValue(id, out var satchel)) return satchel;
             return null;
         }
 
@@ -62,6 +66,31 @@ namespace Server.World
             if (NPCs.TryAdd(npc.Id, npc))
             {
                 Console.WriteLine($"NPC {npc.Name} (ID: {npc.Id}, Behavior: {npc.BehaviorType}) spawned on Map {MapId}.");
+            }
+        }
+
+        public void SpawnLootSatchel(LootSatchel satchel)
+        {
+            satchel.MapId = MapId;
+            if (LootSatchels.TryAdd(satchel.Id, satchel))
+            {
+                Console.WriteLine($"[Loot] Spawned satchel {satchel.Id} at {satchel.Position} (Owner: {satchel.OwnerPlayerId}, Gold: {satchel.Gold}, Items: {satchel.Items.Count}).");
+            }
+        }
+
+        public void DespawnLootSatchel(int satchelId)
+        {
+            if (LootSatchels.TryRemove(satchelId, out var satchel))
+            {
+                Console.WriteLine($"[Loot] Despawned satchel {satchelId} on Map {MapId}.");
+                using Shared.Network.Packet despawnPacket = new Shared.Network.Packet(Shared.Network.OpCode.EntityDespawn);
+                despawnPacket.Write(satchelId);
+                Broadcast(despawnPacket, satchel.Position);
+
+                foreach (var p in Players.Values)
+                {
+                    p.KnownEntities.Remove(satchelId);
+                }
             }
         }
 
@@ -121,6 +150,24 @@ namespace Server.World
                 res.Update();
             }
 
+            // Process Loot Satchels (Decay and Empty despawn)
+            List<int>? expiredSatchels = null;
+            foreach (var satchel in LootSatchels.Values)
+            {
+                if (satchel.IsExpired || satchel.IsEmpty)
+                {
+                    expiredSatchels ??= new List<int>();
+                    expiredSatchels.Add(satchel.Id);
+                }
+            }
+            if (expiredSatchels != null)
+            {
+                foreach (var id in expiredSatchels)
+                {
+                    DespawnLootSatchel(id);
+                }
+            }
+
             // Broadcast state updates to players based on their Area of Interest
             ProcessAreaOfInterest();
         }
@@ -174,6 +221,17 @@ namespace Server.World
                         // Even if depleted, we still might want players to know it's there (as a stump, or hidden if you prefer).
                         // Let's always add it, and if it's depleted, the client handles the visual state based on its Health.
                         nearbyEntities.Add(res);
+                    }
+                }
+
+                // Check distance to all Loot Satchels
+                foreach (var satchel in LootSatchels.Values)
+                {
+                    if (satchel.IsEmpty || satchel.IsExpired) continue;
+
+                    if (Shared.Math.Vector3.Distance(player.Position, satchel.Position) <= AOI_RADIUS)
+                    {
+                        nearbyEntities.Add(satchel);
                     }
                 }
 

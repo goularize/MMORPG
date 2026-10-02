@@ -76,32 +76,58 @@ namespace Server.Handlers
                         else
                         {
                             var newChar = new Character
-                    {
-                        AccountId = client.AccountId.Value,
-                        Name = name,
-                        AppearanceId = appearanceId,
-                        Level = 1,
-                        MapId = 1, // Start at MapId 1 (Starting Village)
-                        X = 0f,
-                        Y = 0f,
-                        Z = 0f,
-                        BindMapId = 1,
-                        BindX = 0f,
-                        BindY = 0f,
-                        BindZ = 0f,
-                        Health = 100,
-                        Mana = 50,
-                        Strength = 10,
-                        Intelligence = 10,
-                        Constitution = 10,
-                        Knowledge = 10
-                    };
+                            {
+                                AccountId = client.AccountId.Value,
+                                Name = name,
+                                AppearanceId = appearanceId,
+                                Level = 1,
+                                MapId = 1, // Start at MapId 1 (Starting Village)
+                                X = 0f,
+                                Y = 0f,
+                                Z = 0f,
+                                BindMapId = 1,
+                                BindX = 0f,
+                                BindY = 0f,
+                                BindZ = 0f,
+                                Health = 100,
+                                Mana = 50,
+                                Strength = 10,
+                                Intelligence = 10,
+                                Constitution = 10,
+                                Knowledge = 10,
+                                Gold = 100,
+                                InventorySlots = ServerConfig.DefaultBackpackSlots
+                            };
 
-                    db.Characters.Add(newChar);
-                    db.SaveChanges();
+                            db.Characters.Add(newChar);
+                            db.SaveChanges();
 
-                    isSuccess = true;
-                    message = "Character created successfully!";
+                            // Starter Kit
+                            var starterSword = ItemFactory.CreateItem(1001, newChar.Id, 1);
+                            if (starterSword != null) { starterSword.SlotIndex = 0; db.CharacterItems.Add(starterSword); }
+
+                            var starterTunic = ItemFactory.CreateItem(1301, newChar.Id, 1);
+                            if (starterTunic != null) { starterTunic.SlotIndex = 1; db.CharacterItems.Add(starterTunic); }
+
+                            var starterBoots = ItemFactory.CreateItem(1401, newChar.Id, 1);
+                            if (starterBoots != null) { starterBoots.SlotIndex = 2; db.CharacterItems.Add(starterBoots); }
+
+                            var hpPotions = ItemFactory.CreateItem(2001, newChar.Id, 5);
+                            if (hpPotions != null) { hpPotions.SlotIndex = 3; db.CharacterItems.Add(hpPotions); }
+
+                            var mpPotions = ItemFactory.CreateItem(2002, newChar.Id, 3);
+                            if (mpPotions != null) { mpPotions.SlotIndex = 4; db.CharacterItems.Add(mpPotions); }
+
+                            var weaponStones = ItemFactory.CreateItem(3004, newChar.Id, 3);
+                            if (weaponStones != null) { weaponStones.SlotIndex = 5; db.CharacterItems.Add(weaponStones); }
+
+                            var armorStones = ItemFactory.CreateItem(3005, newChar.Id, 3);
+                            if (armorStones != null) { armorStones.SlotIndex = 6; db.CharacterItems.Add(armorStones); }
+
+                            db.SaveChanges();
+
+                            isSuccess = true;
+                            message = "Character created successfully!";
                         }
                     }
                 }
@@ -162,12 +188,32 @@ namespace Server.Handlers
                     Intelligence = characterData.Intelligence,
                     Constitution = characterData.Constitution,
                     Knowledge = characterData.Knowledge,
+                    Gold = characterData.Gold,
+                    InventorySlots = characterData.InventorySlots > 0 ? characterData.InventorySlots : ServerConfig.DefaultBackpackSlots,
                     Position = new Shared.Math.Vector3(characterData.X, characterData.Y, characterData.Z),
                     BindMapId = characterData.BindMapId,
                     BindPosition = new Shared.Math.Vector3(characterData.BindX, characterData.BindY, characterData.BindZ)
                 };
 
-                // Calculate all derived stats correctly
+                // Load Inventory & Equipment
+                var dbItems = db.CharacterItems.Where(ci => ci.CharacterId == characterId).ToList();
+                foreach (var item in dbItems)
+                {
+                    if (item.IsEquipped && item.EquippedSlot.HasValue)
+                    {
+                        player.EquippedItems[item.EquippedSlot.Value] = item;
+                    }
+                    else
+                    {
+                        player.Inventory.Add(item);
+                    }
+                }
+
+                // Load Learned Recipes
+                var dbRecipes = db.CharacterLearnedRecipes.Where(clr => clr.CharacterId == characterId).Select(clr => clr.RecipeId).ToList();
+                player.LearnedRecipes.UnionWith(dbRecipes);
+
+                // Calculate all derived stats correctly with gear scaling
                 player.CalculateDerivedStats();
 
                 // Cap health/mana to max if somehow they exceeded it (or for new characters)
@@ -196,8 +242,6 @@ namespace Server.Handlers
             
             if (isSuccess)
             {
-                // Also send the initial stats sync to the client
-                // Note: Need to get the actual Player reference from the DB data again, or we can just find it in EntityManager
                 var activePlayer = GameLogic.MapMgr.GetPlayer(characterId);
                 if (activePlayer != null)
                 {
@@ -209,6 +253,10 @@ namespace Server.Handlers
                     statsPacket.Write(activePlayer.Defense);
                     statsPacket.Write(activePlayer.MagicDefense);
                     client.Send(statsPacket);
+
+                    // Sync Inventory & Equipment
+                    InventoryHandler.SendInventorySync(activePlayer);
+                    EquipmentHandler.SendEquippedItemsSync(activePlayer);
                 }
             }
         }

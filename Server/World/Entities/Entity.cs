@@ -14,10 +14,10 @@ namespace Server.World.Entities
         public int MapId { get; set; } = 1;
 
         // Vitals
-        public int Health { get; set; }
-        public int MaxHealth { get; set; }
-        public int Mana { get; set; }
-        public int MaxMana { get; set; }
+        public int Health { get; set; } = 100;
+        public int MaxHealth { get; set; } = 100;
+        public int Mana { get; set; } = 50;
+        public int MaxMana { get; set; } = 50;
 
         // Core Attributes
         public int Strength { get; set; }       // Physical Attack
@@ -38,6 +38,8 @@ namespace Server.World.Entities
         public float CritChance { get; set; } = 0.05f;
         public float CritMultiplier { get; set; } = 2.0f;
         public float DodgeChance { get; set; } = 0.05f;
+        public float MovementSpeed { get; set; } = 4.0f;
+        public float AttackSpeedBonus { get; set; } = 0.0f;
 
         protected DateTime _lastRegenTime = DateTime.UtcNow;
         protected bool _vitalsChanged = false;
@@ -51,6 +53,10 @@ namespace Server.World.Entities
             MagicAttack = System.Math.Max(1, (int)(10 + (Intelligence * 2) + (Level * 1.5)));
             Defense = System.Math.Max(0, (int)((Constitution * 1.5) + (Level * 0.5)));
             MagicDefense = System.Math.Max(0, (int)((Knowledge * 1.5) + (Level * 0.5)));
+
+            CritChance = 0.05f + (Intelligence * 0.0005f);
+            CritMultiplier = 2.0f + (Strength * 0.005f);
+            DodgeChance = 0.05f + (Knowledge * 0.0002f);
         }
 
         // Methods

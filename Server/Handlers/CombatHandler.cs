@@ -83,7 +83,7 @@ namespace Server.Handlers
             {
                 // Resources don't dodge or crit
                 finalDamage = Math.Max(1, player.Attack);
-                resourceTarget.TakeDamage(finalDamage);
+                resourceTarget.TakeDamage(finalDamage, map, player);
             }
             else
             {
@@ -94,8 +94,9 @@ namespace Server.Handlers
                 }
                 else
                 {
-                    // 2. Base Mitigation
-                    int baseDamage = Math.Max(1, player.Attack - (target.Defense / 2));
+                    // 2. Base Mitigation (Diminishing-Returns MMORPG Curve)
+                    float reduction = (float)target.Defense / (target.Defense + (40f * Math.Max(1, player.Level)));
+                    int baseDamage = Math.Max(1, (int)Math.Round(player.Attack * (1.0f - reduction)));
 
                     // 3. Variance (+/- 10%)
                     double variance = 0.9 + (_rng.NextDouble() * 0.2);
@@ -119,7 +120,7 @@ namespace Server.Handlers
                 {
                     if (npc.Health <= 0)
                     {
-                        npc.Die(map);
+                        npc.Die(map, player);
                         player.AddExp(npc.ExpYield);
                     }
                     else

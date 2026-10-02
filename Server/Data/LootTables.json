@@ -1,0 +1,126 @@
+[
+  {
+    "NpcTemplateId": 100,
+    "MinGold": 5,
+    "MaxGold": 15,
+    "GoldChance": 0.9,
+    "Entries": [
+      {
+        "ItemTemplateId": 3001,
+        "DropChance": 0.5,
+        "MinQuantity": 1,
+        "MaxQuantity": 2
+      },
+      {
+        "ItemTemplateId": 3004,
+        "DropChance": 0.2,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      },
+      {
+        "ItemTemplateId": 1001,
+        "DropChance": 0.1,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      },
+      {
+        "ItemTemplateId": 2001,
+        "DropChance": 0.35,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      }
+    ]
+  },
+  {
+    "NpcTemplateId": 202,
+    "MinGold": 6,
+    "MaxGold": 18,
+    "GoldChance": 0.9,
+    "Entries": [
+      {
+        "ItemTemplateId": 3001,
+        "DropChance": 0.6,
+        "MinQuantity": 1,
+        "MaxQuantity": 3
+      },
+      {
+        "ItemTemplateId": 3004,
+        "DropChance": 0.25,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      },
+      {
+        "ItemTemplateId": 1001,
+        "DropChance": 0.15,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      }
+    ]
+  },
+  {
+    "NpcTemplateId": 204,
+    "MinGold": 10,
+    "MaxGold": 25,
+    "GoldChance": 1.0,
+    "Entries": [
+      {
+        "ItemTemplateId": 3006,
+        "DropChance": 0.3,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      },
+      {
+        "ItemTemplateId": 1401,
+        "DropChance": 0.2,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      },
+      {
+        "ItemTemplateId": 1201,
+        "DropChance": 0.2,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      }
+    ]
+  },
+  {
+    "NpcTemplateId": 208,
+    "MinGold": 4,
+    "MaxGold": 12,
+    "GoldChance": 0.8,
+    "Entries": [
+      {
+        "ItemTemplateId": 2002,
+        "DropChance": 0.4,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      },
+      {
+        "ItemTemplateId": 1301,
+        "DropChance": 0.25,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      }
+    ]
+  },
+  {
+    "NpcTemplateId": 2001,
+    "MinGold": 2,
+    "MaxGold": 6,
+    "GoldChance": 0.8,
+    "Entries": [
+      {
+        "ItemTemplateId": 2001,
+        "DropChance": 0.5,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      },
+      {
+        "ItemTemplateId": 3005,
+        "DropChance": 0.2,
+        "MinQuantity": 1,
+        "MaxQuantity": 1
+      }
+    ]
+  }
+]

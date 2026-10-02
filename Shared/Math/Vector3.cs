@@ -57,5 +57,11 @@ namespace Shared.Math
             }
             return current + toVector / dist * maxDistanceDelta;
         }
+
+        public static bool operator ==(Vector3 a, Vector3 b) => a.X == b.X && a.Y == b.Y && a.Z == b.Z;
+        public static bool operator !=(Vector3 a, Vector3 b) => !(a == b);
+
+        public override bool Equals(object? obj) => obj is Vector3 other && this == other;
+        public override int GetHashCode() => System.HashCode.Combine(X, Y, Z);
     }
 }

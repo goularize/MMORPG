@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
+using Server.Database.Models;
 using Shared.Math;
 
 namespace Server.World.Entities
 {
     public class Resource : Entity
     {
+        private static readonly Random _rng = new();
+
         public string ResourceType { get; set; }
         public float RespawnTimeSeconds { get; set; }
         
@@ -39,7 +43,7 @@ namespace Server.World.Entities
             }
         }
 
-        public void TakeDamage(int amount)
+        public void TakeDamage(int amount, MapInstance? map = null, Player? harvester = null)
         {
             if (IsDepleted) return;
 
@@ -49,11 +53,42 @@ namespace Server.World.Entities
                 Health = 0;
                 _depletedTime = DateTime.UtcNow;
                 Console.WriteLine($"[Resource] {Name} ({Id}) was depleted.");
+
+                if (map != null && harvester != null)
+                {
+                    DropHarvestSatchel(map, harvester);
+                }
             }
             else
             {
                 Console.WriteLine($"[Resource] {Name} ({Id}) took {amount} damage, {Health} HP remaining.");
             }
+        }
+
+        private void DropHarvestSatchel(MapInstance map, Player harvester)
+        {
+            int templateId = 3001; // Default: Iron Ore
+            int minQty = 2;
+            int maxQty = 5;
+
+            if (ResourceType.Contains("Tree", StringComparison.OrdinalIgnoreCase) || 
+                ResourceType.Contains("Wood", StringComparison.OrdinalIgnoreCase))
+            {
+                templateId = 3003; // Oak Wood
+                minQty = 2;
+                maxQty = 4;
+            }
+
+            int yieldCount = _rng.Next(minQty, maxQty + 1);
+            var item = ItemFactory.CreateItem(templateId, 0, yieldCount, null, _rng);
+            var droppedItems = new List<CharacterItem>();
+            if (item != null)
+            {
+                droppedItems.Add(item);
+            }
+
+            var satchel = new LootSatchel(Position, harvester.Id, 0, droppedItems);
+            map.SpawnLootSatchel(satchel);
         }
 
         private void Respawn()

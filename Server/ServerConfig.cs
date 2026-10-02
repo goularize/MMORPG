@@ -15,6 +15,13 @@ namespace Server
         public static double ExpGrowthRate { get; private set; } = 1.5;
         public static int StatPointsPerLevel { get; private set; } = 5;
 
+        // Inventory Configuration
+        public static int DefaultBackpackSlots { get; private set; } = 20;
+
+        // World Loot Satchels
+        public static float LootOwnershipSeconds { get; private set; } = 30.0f;
+        public static float LootDecaySeconds { get; private set; } = 120.0f;
+
         public static void Initialize()
         {
             var versionEnv = Environment.GetEnvironmentVariable("GAME_VERSION");
@@ -52,8 +59,23 @@ namespace Server
             {
                 StatPointsPerLevel = statPoints;
             }
+
+            if (int.TryParse(Environment.GetEnvironmentVariable("DEFAULT_BACKPACK_SLOTS"), out int backpackSlots))
+            {
+                DefaultBackpackSlots = backpackSlots;
+            }
+
+            if (float.TryParse(Environment.GetEnvironmentVariable("LOOT_OWNERSHIP_SECONDS"), out float ownershipSec))
+            {
+                LootOwnershipSeconds = ownershipSec;
+            }
+
+            if (float.TryParse(Environment.GetEnvironmentVariable("LOOT_DECAY_SECONDS"), out float decaySec))
+            {
+                LootDecaySeconds = decaySec;
+            }
             
-            Console.WriteLine($"[Config] Running Version: {GameVersion} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s | EXP Base: {ExpBase}, Growth: {ExpGrowthRate}, StatPoints/Lvl: {StatPointsPerLevel}");
+            Console.WriteLine($"[Config] Running Version: {GameVersion} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s | EXP Base: {ExpBase}, Growth: {ExpGrowthRate} | Slots: {DefaultBackpackSlots} | Loot: {LootOwnershipSeconds}s owner / {LootDecaySeconds}s decay");
         }
 
         public static long GetExpForNextLevel(int currentLevel)

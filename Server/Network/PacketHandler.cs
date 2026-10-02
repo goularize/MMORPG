@@ -44,6 +44,28 @@ namespace Server.Network
             // RPG Progression
             _handlers.Add(OpCode.AllocateStatPointRequest, ProgressionHandler.HandleAllocateStatPoint);
 
+            // Items & Inventory
+            _handlers.Add(OpCode.MoveInventoryItemRequest, InventoryHandler.HandleMoveItem);
+            _handlers.Add(OpCode.SplitItemStackRequest, InventoryHandler.HandleSplitStack);
+            _handlers.Add(OpCode.UseConsumableItemRequest, InventoryHandler.HandleUseConsumable);
+            _handlers.Add(OpCode.DropItemRequest, InventoryHandler.HandleDropItem);
+
+            // Paperdoll Equipment
+            _handlers.Add(OpCode.EquipItemRequest, EquipmentHandler.HandleEquipItem);
+            _handlers.Add(OpCode.UnequipItemRequest, EquipmentHandler.HandleUnequipItem);
+
+            // Refinement (+1..+N)
+            _handlers.Add(OpCode.UpgradeItemRequest, RefinementHandler.HandleUpgradeItem);
+
+            // Crafting & Recipes
+            _handlers.Add(OpCode.LearnRecipeRequest, CraftingHandler.HandleLearnRecipe);
+            _handlers.Add(OpCode.CraftItemRequest, CraftingHandler.HandleCraftItem);
+
+            // Loot Satchels & Harvesting
+            _handlers.Add(OpCode.OpenLootSatchelRequest, LootHandler.HandleOpenLootSatchel);
+            _handlers.Add(OpCode.LootItemRequest, LootHandler.HandleLootItem);
+            _handlers.Add(OpCode.LootAllRequest, LootHandler.HandleLootAll);
+
             Console.WriteLine($"Initialized PacketHandler with {_handlers.Count} routes.");
         }
 

@@ -1,0 +1,19 @@
+[
+  {
+    "RecipeId": 4001,
+    "Name": "Steel Longsword",
+    "ResultItemTemplateId": 1004,
+    "ResultQuantity": 1,
+    "RequiredGold": 50,
+    "Ingredients": [
+      {
+        "ItemTemplateId": 3002,
+        "Quantity": 5
+      },
+      {
+        "ItemTemplateId": 3003,
+        "Quantity": 2
+      }
+    ]
+  }
+]

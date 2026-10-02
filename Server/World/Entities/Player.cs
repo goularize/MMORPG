@@ -15,6 +15,13 @@ namespace Server.World.Entities
         public long Exp { get; set; }
         public int StatPoints { get; set; }
         
+        // Currency & Inventory
+        public long Gold { get; set; } = 0;
+        public int InventorySlots { get; set; } = 20;
+        public Dictionary<Shared.Enums.EquipmentSlot, Server.Database.Models.CharacterItem> EquippedItems { get; } = new();
+        public List<Server.Database.Models.CharacterItem> Inventory { get; } = new();
+        public HashSet<int> LearnedRecipes { get; } = new();
+
         // Movement tracking
         public System.DateTime LastMoveTime { get; set; } = System.DateTime.UtcNow;
         // Bind Location
@@ -115,6 +122,68 @@ namespace Server.World.Entities
             SaveProgressionToDatabase();
         }
 
+        public override void CalculateDerivedStats()
+        {
+            // 1. Gather equipment stats
+            int gearPhysicalAttack = 0;
+            int gearMagicAttack = 0;
+            int gearPhysicalDefense = 0;
+            int gearMagicDefense = 0;
+            int gearStr = 0;
+            int gearInt = 0;
+            int gearCon = 0;
+            int gearKnow = 0;
+            float gearCritChance = 0f;
+            float gearCritMultiplier = 0f;
+            float gearDodgeChance = 0f;
+            float gearMoveSpeed = 0f;
+            float gearAttackSpeed = 0f;
+
+            foreach (var item in EquippedItems.Values)
+            {
+                float upgradeFactor = 1.0f + (item.UpgradeLevel * 0.05f);
+
+                gearPhysicalAttack += (int)System.Math.Round(item.RolledPhysicalAttack * upgradeFactor);
+                gearMagicAttack += (int)System.Math.Round(item.RolledMagicAttack * upgradeFactor);
+                gearPhysicalDefense += (int)System.Math.Round(item.RolledPhysicalDefense * upgradeFactor);
+                gearMagicDefense += (int)System.Math.Round(item.RolledMagicDefense * upgradeFactor);
+
+                gearStr += (int)System.Math.Round(item.RolledStrength * upgradeFactor);
+                gearInt += (int)System.Math.Round(item.RolledIntelligence * upgradeFactor);
+                gearCon += (int)System.Math.Round(item.RolledConstitution * upgradeFactor);
+                gearKnow += (int)System.Math.Round(item.RolledKnowledge * upgradeFactor);
+
+                gearCritChance += item.RolledCritChance;
+                gearCritMultiplier += item.RolledCritMultiplier;
+                gearDodgeChance += item.RolledDodgeChance;
+                gearMoveSpeed += item.RolledMovementSpeed;
+                gearAttackSpeed += item.RolledAttackSpeedBonus;
+            }
+
+            int totalStr = Strength + gearStr;
+            int totalInt = Intelligence + gearInt;
+            int totalCon = Constitution + gearCon;
+            int totalKnow = Knowledge + gearKnow;
+
+            // 2. Vitals & Derived attributes
+            MaxHealth = System.Math.Max(1, 50 + (totalCon * 10) + (Level * 15));
+            MaxMana = System.Math.Max(1, 20 + (totalKnow * 5) + (Level * 8));
+
+            // 3. Pillar 2: Core Attributes Multiplier on Weapon/Armor
+            Attack = System.Math.Max(1, (int)System.Math.Round(10 + (totalStr * 2) + (Level * 1.5) + (gearPhysicalAttack * (1.0f + (totalStr / 100.0f)))));
+            MagicAttack = System.Math.Max(1, (int)System.Math.Round(10 + (totalInt * 2) + (Level * 1.5) + (gearMagicAttack * (1.0f + (totalInt / 100.0f)))));
+            Defense = System.Math.Max(0, (int)System.Math.Round((totalCon * 1.5) + (Level * 0.5) + (gearPhysicalDefense * (1.0f + (totalCon / 200.0f)))));
+            MagicDefense = System.Math.Max(0, (int)System.Math.Round((totalKnow * 1.5) + (Level * 0.5) + (gearMagicDefense * (1.0f + (totalKnow / 200.0f)))));
+
+            // 4. Secondary combat stats
+            CritChance = System.Math.Clamp(0.05f + (totalInt * 0.0005f) + gearCritChance, 0.05f, 0.75f);
+            CritMultiplier = System.Math.Max(1.5f, 2.0f + (totalStr * 0.005f) + gearCritMultiplier);
+            DodgeChance = System.Math.Clamp(0.05f + (totalKnow * 0.0002f) + gearDodgeChance, 0.05f, 0.50f);
+            MovementSpeed = System.Math.Max(2.0f, 4.0f + gearMoveSpeed);
+            AttackSpeedBonus = System.Math.Clamp(gearAttackSpeed, 0f, 1.0f);
+            BaseAttackSpeed = System.Math.Max(0.5f, 1.5f * (1.0f - AttackSpeedBonus));
+        }
+
         public void SaveProgressionToDatabase()
         {
             int playerId = Id;
@@ -127,6 +196,8 @@ namespace Server.World.Entities
             int intelligence = Intelligence;
             int constitution = Constitution;
             int knowledge = Knowledge;
+            long gold = Gold;
+            int slots = InventorySlots;
 
             System.Threading.Tasks.Task.Run(() =>
             {
@@ -145,6 +216,8 @@ namespace Server.World.Entities
                         dbChar.Intelligence = intelligence;
                         dbChar.Constitution = constitution;
                         dbChar.Knowledge = knowledge;
+                        dbChar.Gold = gold;
+                        dbChar.InventorySlots = slots;
                         db.SaveChanges();
                     }
                 }

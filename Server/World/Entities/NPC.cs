@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using Server.Data;
+using Server.Database.Models;
 using Shared.Enums;
 using Shared.Math;
 using Shared.Network;
@@ -249,7 +252,8 @@ namespace Server.World.Entities
 
             if (!isDodge)
             {
-                int baseDamage = Math.Max(1, Attack - (target.Defense / 2));
+                float reduction = (float)target.Defense / (target.Defense + (40f * Math.Max(1, Level)));
+                int baseDamage = Math.Max(1, (int)Math.Round(Attack * (1.0f - reduction)));
                 double variance = 0.9 + (_rng.NextDouble() * 0.2);
                 baseDamage = (int)(baseDamage * variance);
 
@@ -331,13 +335,52 @@ namespace Server.World.Entities
             }
         }
 
-        public void Die(MapInstance? map)
+        public void Die(MapInstance? map, Player? killer = null)
         {
             CurrentState = AIState.Dead;
             Target = null;
             Health = 0;
             _deathTime = DateTime.UtcNow;
             Console.WriteLine($"[Mob Defeated] {Name} ({Id}) was killed.");
+
+            if (map != null && killer != null)
+            {
+                DropLoot(map, killer);
+            }
+        }
+
+        private void DropLoot(MapInstance map, Player killer)
+        {
+            if (!DataManager.LootTables.TryGetValue(TemplateId, out var lootTable))
+            {
+                return;
+            }
+
+            long droppedGold = 0;
+            if (lootTable.MaxGold > 0 && _rng.NextDouble() <= lootTable.GoldChance)
+            {
+                droppedGold = _rng.Next(lootTable.MinGold, lootTable.MaxGold + 1);
+            }
+
+            var droppedItems = new List<CharacterItem>();
+            foreach (var entry in lootTable.Entries)
+            {
+                if (_rng.NextDouble() <= entry.DropChance)
+                {
+                    int qty = _rng.Next(entry.MinQuantity, entry.MaxQuantity + 1);
+                    var item = ItemFactory.CreateItem(entry.ItemTemplateId, 0, qty, null, _rng);
+                    if (item != null)
+                    {
+                        droppedItems.Add(item);
+                    }
+                }
+            }
+
+            if (droppedGold > 0 || droppedItems.Count > 0)
+            {
+                var satchel = new LootSatchel(Position, killer.Id, droppedGold, droppedItems);
+                map.SpawnLootSatchel(satchel);
+            }
         }
 
         public void Respawn(MapInstance? map)

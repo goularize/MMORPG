@@ -44,6 +44,14 @@ namespace Server.Database.Models
         public int Constitution { get; set; }
         public int Knowledge { get; set; }
 
+        // Currency & Inventory
+        public long Gold { get; set; } = 0;
+        public int InventorySlots { get; set; } = 20;
+
+        // Navigation Collections
+        public System.Collections.Generic.List<CharacterItem> InventoryItems { get; set; } = new();
+        public System.Collections.Generic.List<CharacterLearnedRecipe> LearnedRecipes { get; set; } = new();
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
