@@ -35,11 +35,35 @@ namespace Client.World
             // Load the map dynamically in the background, merging it with the GameScene
             var loadOp = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Additive);
             
-            // Once the map is fully loaded, spawn the player on it!
-            loadOp.completed += (asyncOp) => 
+            StartCoroutine(TrackMapLoad(loadOp));
+        }
+
+        private System.Collections.IEnumerator TrackMapLoad(AsyncOperation loadOp)
+        {
+            while (!loadOp.isDone)
             {
-                SpawnLocalPlayer();
-            };
+                if (Client.UI.LoadingScreenUI.Instance != null)
+                {
+                    Client.UI.LoadingScreenUI.Instance.UpdateProgress(loadOp.progress, "Loading Map Assets...");
+                }
+                yield return null;
+            }
+
+            if (Client.UI.LoadingScreenUI.Instance != null)
+            {
+                Client.UI.LoadingScreenUI.Instance.UpdateProgress(1f, "Synchronizing World State...");
+            }
+
+            // Wait a brief moment for initial server packets (like InventorySync, EntitySpawns)
+            // Ideally this would wait for a specific 'WorldReady' packet, but this is a placeholder.
+            yield return new WaitForSeconds(0.5f);
+
+            SpawnLocalPlayer();
+
+            if (Client.UI.LoadingScreenUI.Instance != null)
+            {
+                Client.UI.LoadingScreenUI.Instance.Hide();
+            }
         }
 
         private void SpawnLocalPlayer()

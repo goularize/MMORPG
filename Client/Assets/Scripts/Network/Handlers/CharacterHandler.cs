@@ -69,6 +69,9 @@ namespace Client.Network.Handlers
 
                 Debug.Log($"[CharacterHandler] Selection successful. Loading MapId {mapId}. Spawning at {x}, {y}, {z}");
                 
+                // Show loading screen
+                Client.UI.LoadingScreenUI.ShowLoading("Loading World...");
+
                 // Load the main game scene
                 UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
             }
