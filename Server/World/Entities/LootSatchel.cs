@@ -7,6 +7,8 @@ namespace Server.World.Entities
 {
     public class LootSatchel : Entity
     {
+        public override Shared.Enums.EntityType Type => Shared.Enums.EntityType.LootSatchel;
+
         private static int _nextSatchelEntityId = 500000;
 
         public int OwnerPlayerId { get; set; }

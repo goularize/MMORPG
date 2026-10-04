@@ -4,6 +4,8 @@ namespace Server.World.Entities
 {
     public class Player : Entity
     {
+        public override Shared.Enums.EntityType Type => Shared.Enums.EntityType.Player;
+
         // AoI Tracking
         public HashSet<int> KnownEntities { get; } = new();
 

@@ -7,6 +7,8 @@ namespace Server.World.Entities
 {
     public class Resource : Entity
     {
+        public override Shared.Enums.EntityType Type => Shared.Enums.EntityType.Resource;
+
         private static readonly Random _rng = new();
 
         public string ResourceType { get; set; }

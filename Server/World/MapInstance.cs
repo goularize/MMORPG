@@ -253,6 +253,8 @@ namespace Server.World
                         
                         using Shared.Network.Packet spawnPacket = new Shared.Network.Packet(Shared.Network.OpCode.EntitySpawn);
                         spawnPacket.Write(entity.Id);
+                        spawnPacket.Write((byte)entity.Type);
+                        spawnPacket.Write(entity.PrefabName);
                         spawnPacket.Write(entity.Name);
                         spawnPacket.Write(entity.Position);
                         player.Connection.Send(spawnPacket);

@@ -1,3 +1,4 @@
+#nullable enable
 namespace Shared.Math
 {
     public struct Vector3

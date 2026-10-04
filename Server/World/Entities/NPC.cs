@@ -10,6 +10,9 @@ namespace Server.World.Entities
 {
     public class NPC : Entity
     {
+        public override Shared.Enums.EntityType Type => Shared.Enums.EntityType.Enemy;
+        public override string PrefabName => Server.Data.DataManager.Npcs.TryGetValue(TemplateId, out var template) ? template.PrefabName : "Enemy_Slime";
+
         public int SpawnId { get; set; }
         public int TemplateId { get; set; }
         public MobBehaviorType BehaviorType { get; set; } = MobBehaviorType.Passive;

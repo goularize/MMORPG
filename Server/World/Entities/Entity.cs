@@ -8,6 +8,9 @@ namespace Server.World.Entities
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public Vector3 Position { get; set; }
+        
+        public abstract Shared.Enums.EntityType Type { get; }
+        public virtual string PrefabName => "Character";
 
         // RPG Progression
         public int Level { get; set; } = 1;

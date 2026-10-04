@@ -8,6 +8,8 @@ namespace Server.Tests
     // A concrete implementation of Entity just for testing
     public class TestEntity : Entity
     {
+        public override Shared.Enums.EntityType Type => Shared.Enums.EntityType.Player;
+
         public TestEntity()
         {
             Id = 1;
