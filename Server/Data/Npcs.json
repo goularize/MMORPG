@@ -36,5 +36,21 @@
         "ActionValue": 15
       }
     ]
+  },
+  {
+    "Interactions": [],
+    "BaseKnowledge": 1,
+    "TemplateId": 101,
+    "BaseIntelligence": 1,
+    "BaseStrength": 5,
+    "Name": "Slime",
+    "Type": "Enemy",
+    "BaseConstitution": 5,
+    "BaseExp": 15,
+    "Behavior": "Aggressive",
+    "StatVarianceRange": [0.9, 1.1],
+    "LevelRange": [1, 3],
+    "PrefabName": "Enemy_Slime",
+    "AggroRadius": 6
   }
 ]

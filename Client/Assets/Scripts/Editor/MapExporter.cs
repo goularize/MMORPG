@@ -84,5 +84,73 @@ namespace Client.Editor
                 EditorUtility.DisplayDialog("Success!", $"Exported {exportData.Colliders.Count} polygons to {savePath}.\n\nThis file is ready for the .NET Server!", "Awesome");
             }
         }
+
+        [MenuItem("MMORPG/Export Spawners")]
+        public static void ExportSpawners()
+        {
+            Client.World.EntitySpawner[] spawners = FindObjectsOfType<Client.World.EntitySpawner>();
+            
+            if (spawners.Length == 0)
+            {
+                EditorUtility.DisplayDialog("Warning", "No EntitySpawner components found in the scene!", "OK");
+                return;
+            }
+
+            // Build JSON manually or use wrapper to match Server format
+            List<object> spawnerList = new List<object>();
+            foreach (var s in spawners)
+            {
+                spawnerList.Add(new {
+                    Type = s.isArea ? "Area" : "Point",
+                    TemplateId = s.templateId,
+                    X = s.transform.position.x,
+                    Y = s.transform.position.y,
+                    Z = s.transform.position.z, // Mapping Z
+                    Radius = s.isArea ? s.radius : 0f,
+                    Amount = s.amount,
+                    RotationY = s.transform.eulerAngles.y
+                });
+            }
+
+            // Use Newtonsoft or standard Unity JsonUtility (Unity JsonUtility can't do top-level lists easily, so we manually format or use wrapper)
+            // A simple JSON builder since it's just a flat array
+            string json = "[\n";
+            for(int i=0; i<spawners.Length; i++)
+            {
+                var s = spawners[i];
+                string typeStr = s.isArea ? "Area" : "Point";
+                json += "  {\n";
+                json += $"    \"Type\": \"{typeStr}\",\n";
+                json += $"    \"TemplateId\": {s.templateId},\n";
+                json += $"    \"X\": {s.transform.position.x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\n";
+                json += $"    \"Y\": {s.transform.position.y.ToString(System.Globalization.CultureInfo.InvariantCulture)},\n";
+                json += $"    \"Z\": {s.transform.position.z.ToString(System.Globalization.CultureInfo.InvariantCulture)},\n";
+                json += $"    \"Radius\": {s.radius.ToString(System.Globalization.CultureInfo.InvariantCulture)},\n";
+                json += $"    \"Amount\": {s.amount},\n";
+                json += $"    \"RotationY\": {s.transform.eulerAngles.y.ToString(System.Globalization.CultureInfo.InvariantCulture)}\n";
+                json += "  }" + (i < spawners.Length - 1 ? "," : "") + "\n";
+            }
+            json += "]";
+
+            // Automatically find the Server/Data path!
+            string projectRoot = Directory.GetParent(Application.dataPath).Parent.FullName;
+            string serverDataPath = Path.Combine(projectRoot, "Server", "Data", "Spawners.json");
+
+            if (File.Exists(serverDataPath))
+            {
+                File.WriteAllText(serverDataPath, json);
+                Debug.Log($"[MapExporter] Successfully exported {spawners.Length} spawners directly to {serverDataPath}");
+                EditorUtility.DisplayDialog("Success!", $"Exported {spawners.Length} spawners directly to the Server's Data folder!\n\nRestart the Server to see them.", "Awesome");
+            }
+            else
+            {
+                string savePath = EditorUtility.SaveFilePanel("Export Spawners", "", "Spawners.json", "json");
+                if (!string.IsNullOrEmpty(savePath))
+                {
+                    File.WriteAllText(savePath, json);
+                    EditorUtility.DisplayDialog("Success", "Exported Spawners.json", "OK");
+                }
+            }
+        }
     }
 }
