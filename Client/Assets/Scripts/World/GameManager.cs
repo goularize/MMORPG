@@ -8,9 +8,6 @@ namespace Client.World
     {
         public static GameManager Instance { get; private set; }
 
-        [Header("Prefabs")]
-        public GameObject playerPrefab;
-        
         [Header("State")]
         private GameObject _localPlayer;
         public Dictionary<int, GameObject> SpawnedEntities { get; private set; } = new Dictionary<int, GameObject>();
@@ -47,19 +44,20 @@ namespace Client.World
 
         private void SpawnLocalPlayer()
         {
-            if (playerPrefab == null)
+            GameObject dynamicPrefab = Resources.Load<GameObject>("Prefabs/Entities/Character");
+            if (dynamicPrefab == null)
             {
-                Debug.LogError("[GameManager] Player prefab is not assigned!");
+                Debug.LogError("[GameManager] Character prefab could not be loaded from Resources!");
                 return;
             }
 
             Vector3 spawnPos = CharacterHandler.SpawnPosition;
-            _localPlayer = Instantiate(playerPrefab, spawnPos, Quaternion.identity);
+            _localPlayer = Instantiate(dynamicPrefab, spawnPos, Quaternion.identity);
             _localPlayer.name = "LocalPlayer";
 
-            // Initialize visual state via the CharacterManager
-            var charManager = _localPlayer.GetComponent<CharacterManager>();
-            if (charManager != null) charManager.SetName(Client.UI.CharacterSelectionUI.SelectedCharacterName);
+            // Initialize visual state via the EntityManager
+            var entityManager = _localPlayer.GetComponent<EntityManager>();
+            if (entityManager != null) entityManager.SetName(Client.UI.CharacterSelectionUI.SelectedCharacterName);
             
             // Set the camera to follow the player
             Camera.main.transform.SetParent(_localPlayer.transform);
@@ -68,23 +66,32 @@ namespace Client.World
             Debug.Log($"[GameManager] Spawned local player at {spawnPos} for Map {CharacterHandler.CurrentMapId}");
         }
 
-        public void SpawnRemoteEntity(int entityId, string entityName, Vector3 pos)
+        public void SpawnRemoteEntity(int entityId, Shared.Enums.EntityType type, string prefabName, string entityName, Vector3 pos)
         {
             if (SpawnedEntities.ContainsKey(entityId)) return;
 
-            GameObject newEntity = Instantiate(playerPrefab, pos, Quaternion.identity);
-            newEntity.name = $"Remote_{entityId}_{entityName}";
+            GameObject prefabToSpawn = Resources.Load<GameObject>($"Prefabs/Entities/{prefabName}");
+            if (prefabToSpawn == null)
+            {
+                Debug.LogError($"[GameManager] Missing Prefab in Resources: {prefabName}. Falling back to Character prefab!");
+                prefabToSpawn = Resources.Load<GameObject>("Prefabs/Entities/Character");
+                if (prefabToSpawn == null) return;
+            }
 
-            // Initialize visual state via the CharacterManager
-            var charManager = newEntity.GetComponent<CharacterManager>();
-            if (charManager != null) charManager.SetName(entityName);
+            GameObject newEntity = Instantiate(prefabToSpawn, pos, Quaternion.identity);
+            newEntity.name = $"{type}_{entityId}_{entityName}";
+
+            // Initialize visual state via the EntityManager (if it has one)
+            var entityManager = newEntity.GetComponent<EntityManager>();
+            if (entityManager != null) entityManager.SetName(entityName);
 
             // Disable local input control
             var controller = newEntity.GetComponent<PlayerController>();
             if (controller != null) controller.enabled = false;
 
             // Add and initialize network synchronization
-            var netEntity = newEntity.AddComponent<NetworkEntity>();
+            var netEntity = newEntity.GetComponent<NetworkEntity>();
+            if (netEntity == null) netEntity = newEntity.AddComponent<NetworkEntity>();
             netEntity.Initialize(entityId, entityName, pos);
 
             SpawnedEntities.Add(entityId, newEntity);

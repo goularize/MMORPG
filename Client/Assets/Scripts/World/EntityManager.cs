@@ -3,7 +3,7 @@ using TMPro;
 
 namespace Client.World
 {
-    public class CharacterManager : MonoBehaviour
+    public class EntityManager : MonoBehaviour
     {
         [Header("Visuals")]
         public TextMeshPro nameText;
@@ -54,7 +54,7 @@ namespace Client.World
             }
             else
             {
-                Debug.LogWarning($"[{gameObject.name}] CharacterManager is missing the NameText reference! Please assign it in the Inspector.");
+                Debug.LogWarning($"[{gameObject.name}] EntityManager is missing the NameText reference! Please assign it in the Inspector.");
             }
         }
 

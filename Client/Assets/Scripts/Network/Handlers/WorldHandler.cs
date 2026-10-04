@@ -36,11 +36,13 @@ namespace Client.Network.Handlers
         public static void HandleEntitySpawn(Packet packet)
         {
             int entityId = packet.ReadInt();
+            Shared.Enums.EntityType type = (Shared.Enums.EntityType)packet.ReadByte();
+            string prefabName = packet.ReadString();
             string name = packet.ReadString();
             var pos = packet.ReadVector3();
             Vector3 unityPos = new Vector3(pos.X, pos.Y, pos.Z);
 
-            Client.World.GameManager.Instance?.SpawnRemoteEntity(entityId, name, unityPos);
+            Client.World.GameManager.Instance?.SpawnRemoteEntity(entityId, type, prefabName, name, unityPos);
         }
 
         public static void HandleEntityDespawn(Packet packet)
@@ -62,17 +64,17 @@ namespace Client.Network.Handlers
 
             if (attackerObj != null)
             {
-                var charManager = attackerObj.GetComponent<Client.World.CharacterManager>();
-                if (charManager != null) charManager.TriggerAttack();
+                var entityManager = attackerObj.GetComponent<Client.World.EntityManager>();
+                if (entityManager != null) entityManager.TriggerAttack();
             }
 
             if (targetObj != null)
             {
-                var charManager = targetObj.GetComponent<Client.World.CharacterManager>();
-                if (charManager != null)
+                var entityManager = targetObj.GetComponent<Client.World.EntityManager>();
+                if (entityManager != null)
                 {
-                    if (!isDodge) charManager.TriggerHit();
-                    charManager.ShowFloatingText(damage, isCrit, isDodge);
+                    if (!isDodge) entityManager.TriggerHit();
+                    entityManager.ShowFloatingText(damage, isCrit, isDodge);
                 }
             }
         }
