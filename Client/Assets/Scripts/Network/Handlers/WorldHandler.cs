@@ -5,6 +5,11 @@ namespace Client.Network.Handlers
 {
     public static class WorldHandler
     {
+        private static int _localMaxHealth = 100;
+        private static int _localMaxMana = 50;
+        private static int _localHealth = 100;
+        private static int _localMana = 50;
+
         public static void HandleStatsUpdate(Packet packet)
         {
             int maxHealth = packet.ReadInt();
@@ -14,7 +19,15 @@ namespace Client.Network.Handlers
             int defense = packet.ReadInt();
             int magicDefense = packet.ReadInt();
 
+            _localMaxHealth = maxHealth;
+            _localMaxMana = maxMana;
+
             Debug.Log($"[WorldHandler] Stats Update -> MaxHP: {maxHealth}, MaxMP: {maxMana}, Atk: {attack}, Def: {defense}");
+            
+            if (Client.UI.PlayerHUDUI.Instance != null)
+            {
+                Client.UI.PlayerHUDUI.Instance.UpdateVitals(_localHealth, _localMaxHealth, _localMana, _localMaxMana);
+            }
         }
 
         public static void HandleEntityPositionUpdate(Packet packet)
@@ -31,6 +44,17 @@ namespace Client.Network.Handlers
             int entityId = packet.ReadInt();
             int health = packet.ReadInt();
             int mana = packet.ReadInt();
+
+            if (entityId == CharacterHandler.LocalPlayerId)
+            {
+                _localHealth = health;
+                _localMana = mana;
+
+                if (Client.UI.PlayerHUDUI.Instance != null)
+                {
+                    Client.UI.PlayerHUDUI.Instance.UpdateVitals(_localHealth, _localMaxHealth, _localMana, _localMaxMana);
+                }
+            }
         }
 
         public static void HandleEntitySpawn(Packet packet)

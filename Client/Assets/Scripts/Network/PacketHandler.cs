@@ -30,6 +30,10 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.EntityDespawn, Handlers.WorldHandler.HandleEntityDespawn);
             _packetHandlers.Add((int)OpCode.EntityCombatEvent, Handlers.WorldHandler.HandleEntityCombatEvent);
 
+            _packetHandlers.Add((int)OpCode.PlayerExpUpdate, Handlers.ProgressionHandler.HandleExpUpdate);
+            _packetHandlers.Add((int)OpCode.PlayerLevelUp, Handlers.ProgressionHandler.HandleLevelUp);
+            _packetHandlers.Add((int)OpCode.AllocateStatPointResponse, Handlers.ProgressionHandler.HandleStatPointResponse);
+
             Debug.Log($"[PacketHandler] Initialized with {_packetHandlers.Count} routes.");
         }
 

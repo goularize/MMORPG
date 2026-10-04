@@ -53,6 +53,7 @@ namespace Client.Network.Handlers
 
         public static int CurrentMapId { get; private set; }
         public static Vector3 SpawnPosition { get; private set; }
+        public static int LocalPlayerId { get; set; }
 
         public static void HandleSelectResponse(Packet packet)
         {

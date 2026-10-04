@@ -101,6 +101,9 @@ namespace Client.UI
         {
             if (_selectedCharacterId == -1) return;
 
+            // Set local player ID so the client knows which entity it owns
+            Client.Network.Handlers.CharacterHandler.LocalPlayerId = _selectedCharacterId;
+
             using (Packet packet = new Packet(OpCode.CharacterSelectRequest))
             {
                 packet.Write(_selectedCharacterId);
