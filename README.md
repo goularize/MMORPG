@@ -1,64 +1,125 @@
-# MMORPG Project
+# ⚔️ MMORPG
 
-A cross-platform MMORPG project built with C# and .NET 8.
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
+[![Unity 2022.3+](https://img.shields.io/badge/Unity-2022.3%2B-black.svg)](https://unity.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Architecture
+An open-source, production-oriented reference architecture and development blueprint for building authoritative Massively Multiplayer Online Role-Playing Games (MMORPGs) using **C# 12 / .NET 8** and **Unity**.
 
-This repository contains the backend and shared logic for the game. The Unity client will be developed in the future and placed in the `Client/` directory.
+---
 
-- **`Server/`**: A .NET Console Application acting as the authoritative game server.
-- **`Shared/`**: A .NET Class Library containing shared code (models, network packets, enums) used by both the Server and the Unity Client.
-- **`Client/`**: The Unity Game Client natively linked to the Shared backend logic.
+## 🏛️ Architecture Overview
 
-## Features Currently Implemented
+The repository is organized into three core tiers designed for zero-duplication networking:
 
-* **Live Unity Client**: Natively compiling the `.NET 8` Shared logic via OS-level directory junctions for 0-duplication networking.
-* **Secure Authentication**: End-to-end Registration and Sign-in backed by PostgreSQL and BCrypt password hashing.
-* **Database Integration**: Entity Framework Core 8 with Code-First Migrations and DotNetEnv integration.
-* **Custom Binary Protocol**: Lightweight TCP packet serialization/deserialization for high-throughput networking.
-* **Authoritative Game Loop**: Fixed-timestep 30 TPS synchronous update loop to prevent race conditions.
-* **Entity System**: Complete OOP hierarchy for Players and NPCs managed by an RAM-based EntityManager.
-* **Area of Interest (AoI)**: Distance-based entity culling to limit bandwidth usage and dynamically trigger Spawn/Despawn packets for clients.
+- **[`Server/`](Server/)**: Authoritative .NET 8 Console Application running a fixed-timestep 30 TPS synchronous game loop, handling database persistence, combat validation, spatial partitioning, and client sessions.
+- **[`Shared/`](Shared/)**: .NET 8 Class Library containing binary packet encoders/decoders, OpCodes, game models, combat formulas, and math utilities.
+- **[`Client/`](Client/)**: Unity game client natively linked to `Shared/` via OS directory junctions, guaranteeing protocol synchronization with zero manual code duplication.
 
-## Getting Started
+---
+
+## ✨ Key Features Implemented
+
+The MMORPG Blueprint is an end-to-end reference implementation covering the full spectrum of multiplayer game architecture:
+
+### 🏛️ Authoritative Core & Networking
+* **Fixed-Tick Authoritative Game Loop**: 30 Ticks Per Second (`GameLogic.cs`) synchronous heartbeat isolating game simulation from asynchronous socket threads.
+* **High-Throughput Binary Protocol**: Custom 4-byte header framing (`[Length: 2B][OpCode: 2B]`) with zero-allocation binary reader/writer (`Packet.cs`).
+* **Zero-Duplication Unity Integration**: OS-level directory junctions (`setup_client.sh` / `setup_client.bat`) seamlessly compiling backend `Shared/` contracts directly inside Unity.
+* **Anti-Cheat Speed & Movement Validation**: Authoritative distance verification per tick with automated client rubberbanding on speed-hack detection.
+
+### 🗺️ World Engine, Spatials & Collisions
+* **Multi-Map Routing & Instances**: Centralized `MapManager` and isolated `MapInstance` zones routing players and entities via `MapId`.
+* **Area of Interest (AoI) Culling**: Distance-based spatial observer management dynamically broadcasting entity spawn, despawn, and state deltas.
+* **Hybrid Collision System**: Server-authoritative 2D/3D collision checks with `BoxCollider`, `CircleCollider`, and `PolygonCollider` support.
+* **Static JSON Data Pipeline**: Centralized `DataManager` loading JSON templates for Items, Recipes, Mobs, Spawners, and Loot Tables.
+
+### ⚔️ RPG Combat, Progression & Mob AI
+* **Authoritative Combat Pipeline**: Attack range verification, weapon reach validation, swing cooldowns, and hit/dodge/crit resolution.
+* **Primary & Derived Attributes**: STR, AGI, INT, and STA directly driving physical damage, attack speed, evasion, maximum mana, and armor mitigation.
+* **Formula-Driven Progression**: Configurable exponential EXP curves, monster kill EXP yield, level-up broadcasts, and unspent stat point distribution.
+* **Advanced Mob AI State Machine**: Passive, Neutral, Aggressive, and Pack-Alert behaviors (calling nearby packmates into combat), with leashing and respawn loops.
+* **Death & Bind Point Respawn Flow**: Innkeeper interaction, persistent character bind coordinates, and client death/revival state machines.
+
+### 🎒 Inventory, Equipment, Crafting & Loot
+* **Paperdoll Equipment Architecture**: Dedicated equipment slots (Head, Chest, MainHand, OffHand, etc.) with real-time stat aggregation.
+* **Grid Backpack Inventory**: Full support for moving items, splitting stacks, using consumables, and dropping items into the world.
+* **Item Refinement & Upgrades**: Multi-tier item upgrading mechanics with progressive stat improvements.
+* **Recipe Learning & Crafting**: Crafting system consuming material requirements and registering learned character recipes.
+* **Interactive World Loot Satchels**: Dropped ground loot bags with 30s killer ownership protection and 120s (configurable) world decay timers.
+* **Resource Node Harvesting**: World gathering nodes (e.g., Oak Trees, Mining veins) with harvest charges, depleted states, and respawn cycles.
+
+### 💬 Chat, Lobby & Account Security
+* **Multi-Channel Chat**: Spatial Local chat (AoI filtered), Global announcements, and direct private Whispers.
+* **Chat Moderation & Auditing**: Runtime profanity filtering and configurable PostgreSQL chat logging for audit trails.
+* **Full Account & Character Lifecycle**: End-to-end BCrypt registration/sign-in, character slot limits, character creation, selection, and deletion.
+
+### 🎮 Unity Client & Editor Tooling
+* **Comprehensive UI Suite**: Sign-In / Sign-Up, Character Creation, Character Selection, Loading Screen overlay (masking async scene loading), Player HUD, and Experience Bar.
+* **Floating Combat Text**: Real-time visual feedback for damage numbers, critical strikes, and dodges/misses.
+* **Remote Entity Interpolation**: Smooth position smoothing and rotation tracking across network ticks.
+* **Custom Editor Tools**: Unity Map Exporter tool, Pixel Art asset importer setup, and automated Enemy Prefab generator.
+
+### 🧪 Automated Testing Suite
+* **Comprehensive Test Coverage**: 53+ automated unit and integration tests (`Tests/Server.Tests/`) covering database persistence, combat formulas, mob AI, chat channels, loot tables, and inventory actions.
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Docker](https://www.docker.com/) (For local database hosting)
+- [Docker & Docker Compose](https://www.docker.com/) (for PostgreSQL database)
+- [Unity Hub & Unity 2022.3 LTS or newer](https://unity.com/)
 
-### Running the Database
-1. Copy the environment variables: `cp Server/.env.example Server/.env`
-2. Start the PostgreSQL container:
+### 1. Running the Database
 ```bash
+cp Server/.env.example Server/.env
 docker-compose up -d
 ```
 
-### Running the Server
+### 2. Running the Server
 ```bash
 cd Server
 dotnet run
 ```
 
-### Running the Unity Client
-Because the Client and Server share the exact same networking and math code, we use directory symlinks to avoid duplicating files. Before opening the Unity project for the first time, run the setup script for your OS from the root of the repository:
+### 3. Setting Up the Unity Client
+Run the setup script once to link the shared backend logic into Unity's Asset hierarchy:
 
-**Windows:**
-Double-click `setup_client.bat` or run:
-```cmd
-.\setup_client.bat
-```
+- **Linux / macOS**:
+  ```bash
+  chmod +x setup_client.sh
+  ./setup_client.sh
+  ```
+- **Windows**:
+  ```cmd
+  setup_client.bat
+  ```
 
-**Mac / Linux:**
-```bash
-chmod +x setup_client.sh
-./setup_client.sh
-```
-After running the script, open the `Client/` folder using Unity Hub.
+Open the `Client/` folder in Unity Hub and press Play!
 
-## Documentation
+---
 
-- [Base Architecture](docs/design/base_architecture.md)
-- [Client Architecture](docs/client/architecture.md)
-- [Network Architecture](docs/server/network.md)
-- [Entity System](docs/server/entity_system.md)
-- [Database Setup](docs/server/database.md)
+## 🗺️ Roadmap & Project Management
+
+Check out our [Development Roadmap](ROADMAP.md) to see completed milestones and upcoming systems:
+- World Engine, Map Exporting & Spatial Grid Partitioning
+- Skill/Spell Systems & Status Effects (Buffs/Debuffs)
+- Social Infrastructure (Parties, Guilds, Player Trading)
+- Multi-node Distributed Clustering & Anti-Cheat Hardening
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting pull requests.
+
+For AI assistants and agents, please refer to [AGENTS.md](AGENTS.md).
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
