@@ -52,6 +52,7 @@ namespace Client.UI
 
         private List<CharacterData> _cachedCharacters;
         public static string SelectedCharacterName { get; private set; }
+        public static int SelectedCharacterLevel { get; private set; } = 1;
 
         public void OnCharacterListReceived(List<CharacterData> characters)
         {
@@ -65,6 +66,7 @@ namespace Client.UI
 
             _selectedCharacterId = -1;
             SelectedCharacterName = string.Empty;
+            SelectedCharacterLevel = 1;
             playButton.interactable = false;
             deleteButton.interactable = false;
 
@@ -89,12 +91,16 @@ namespace Client.UI
             if (_cachedCharacters != null)
             {
                 var ch = _cachedCharacters.Find(c => c.Id == characterId);
-                if (ch != null) SelectedCharacterName = ch.Name;
+                if (ch != null)
+                {
+                    SelectedCharacterName = ch.Name;
+                    SelectedCharacterLevel = ch.Level;
+                }
             }
 
             playButton.interactable = true;
             deleteButton.interactable = true;
-            Debug.Log($"Selected character ID: {characterId} ({SelectedCharacterName})");
+            Debug.Log($"Selected character ID: {characterId} ({SelectedCharacterName}, Lv.{SelectedCharacterLevel})");
         }
 
         public void OnPlayClicked()

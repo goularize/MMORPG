@@ -260,6 +260,26 @@ namespace Server.Handlers
                     vitalsPacket.Write(activePlayer.Mana);
                     client.Send(vitalsPacket);
 
+                    // Sync Progression & Base Attributes
+                    long expToNextLevel = ServerConfig.GetExpForNextLevel(activePlayer.Level);
+                    using Packet progPacket = new Packet(OpCode.PlayerProgressionSync);
+                    progPacket.Write(activePlayer.Level);
+                    progPacket.Write(activePlayer.Exp);
+                    progPacket.Write(expToNextLevel);
+                    progPacket.Write(activePlayer.StatPoints);
+                    progPacket.Write(activePlayer.Strength);
+                    progPacket.Write(activePlayer.Intelligence);
+                    progPacket.Write(activePlayer.Constitution);
+                    progPacket.Write(activePlayer.Knowledge);
+                    client.Send(progPacket);
+
+                    // Sync Exp Bar specifically
+                    using Packet expPacket = new Packet(OpCode.PlayerExpUpdate);
+                    expPacket.Write(activePlayer.Id);
+                    expPacket.Write(activePlayer.Exp);
+                    expPacket.Write(expToNextLevel);
+                    client.Send(expPacket);
+
                     // Sync Inventory & Equipment
                     InventoryHandler.SendInventorySync(activePlayer);
                     EquipmentHandler.SendEquippedItemsSync(activePlayer);

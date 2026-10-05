@@ -33,6 +33,7 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.PlayerExpUpdate, Handlers.ProgressionHandler.HandleExpUpdate);
             _packetHandlers.Add((int)OpCode.PlayerLevelUp, Handlers.ProgressionHandler.HandleLevelUp);
             _packetHandlers.Add((int)OpCode.AllocateStatPointResponse, Handlers.ProgressionHandler.HandleStatPointResponse);
+            _packetHandlers.Add((int)OpCode.PlayerProgressionSync, Handlers.ProgressionHandler.HandleProgressionSync);
 
             Debug.Log($"[PacketHandler] Initialized with {_packetHandlers.Count} routes.");
         }

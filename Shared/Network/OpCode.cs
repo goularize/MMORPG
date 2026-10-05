@@ -59,6 +59,7 @@ namespace Shared.Network
         PlayerLevelUp = 29,
         AllocateStatPointRequest = 30,
         AllocateStatPointResponse = 31,
+        PlayerProgressionSync = 32,
 
         // Items & Inventory (Client -> Server)
         MoveInventoryItemRequest = 70,

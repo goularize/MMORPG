@@ -218,5 +218,31 @@ namespace Server.Tests
             Assert.NotNull(response);
             Assert.False(response.ReadBool()); // isSuccess == false
         }
+
+        [Fact]
+        public void PlayerProgressionSync_PacketStructure_MatchesExpectedPayload()
+        {
+            // Simulate packet written by Server
+            using var writePacket = new Packet(OpCode.PlayerProgressionSync);
+            writePacket.Write(5);             // Level
+            writePacket.Write(250L);          // Exp
+            writePacket.Write(500L);          // ExpToNextLevel
+            writePacket.Write(10);            // StatPoints
+            writePacket.Write(15);            // Strength
+            writePacket.Write(12);            // Intelligence
+            writePacket.Write(14);            // Constitution
+            writePacket.Write(11);            // Knowledge
+
+            using var readPacket = new Packet(writePacket.ToArray());
+            Assert.Equal(OpCode.PlayerProgressionSync, readPacket.PacketId);
+            Assert.Equal(5, readPacket.ReadInt());
+            Assert.Equal(250L, readPacket.ReadLong());
+            Assert.Equal(500L, readPacket.ReadLong());
+            Assert.Equal(10, readPacket.ReadInt());
+            Assert.Equal(15, readPacket.ReadInt());
+            Assert.Equal(12, readPacket.ReadInt());
+            Assert.Equal(14, readPacket.ReadInt());
+            Assert.Equal(11, readPacket.ReadInt());
+        }
     }
 }

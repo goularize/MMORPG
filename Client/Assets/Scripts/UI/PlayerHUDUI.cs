@@ -34,6 +34,24 @@ namespace Client.UI
             {
                 nameText.text = CharacterSelectionUI.SelectedCharacterName;
             }
+
+            if (levelText != null)
+            {
+                int lvl = Network.Handlers.ProgressionHandler.Level > 0 
+                    ? Network.Handlers.ProgressionHandler.Level 
+                    : CharacterSelectionUI.SelectedCharacterLevel;
+                if (lvl > 0)
+                {
+                    levelText.text = lvl.ToString();
+                }
+            }
+
+            UpdateVitals(
+                Network.Handlers.WorldHandler.LocalHealth,
+                Network.Handlers.WorldHandler.LocalMaxHealth,
+                Network.Handlers.WorldHandler.LocalMana,
+                Network.Handlers.WorldHandler.LocalMaxMana
+            );
         }
 
         public void UpdateVitals(int currentHealth, int maxHealth, int currentMana, int maxMana)

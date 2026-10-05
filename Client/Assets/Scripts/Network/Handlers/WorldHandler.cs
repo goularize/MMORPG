@@ -10,6 +10,17 @@ namespace Client.Network.Handlers
         private static int _localHealth = 100;
         private static int _localMana = 50;
 
+        public static int LocalMaxHealth => _localMaxHealth;
+        public static int LocalMaxMana => _localMaxMana;
+        public static int LocalHealth => _localHealth;
+        public static int LocalMana => _localMana;
+        public static int Attack { get; private set; }
+        public static int MagicAttack { get; private set; }
+        public static int Defense { get; private set; }
+        public static int MagicDefense { get; private set; }
+
+        public static event System.Action OnStatsUpdated;
+
         public static void HandleStatsUpdate(Packet packet)
         {
             int maxHealth = packet.ReadInt();
@@ -21,6 +32,10 @@ namespace Client.Network.Handlers
 
             _localMaxHealth = maxHealth;
             _localMaxMana = maxMana;
+            Attack = attack;
+            MagicAttack = magicAttack;
+            Defense = defense;
+            MagicDefense = magicDefense;
 
             Debug.Log($"[WorldHandler] Stats Update -> MaxHP: {maxHealth}, MaxMP: {maxMana}, Atk: {attack}, Def: {defense}");
             
@@ -28,6 +43,8 @@ namespace Client.Network.Handlers
             {
                 Client.UI.PlayerHUDUI.Instance.UpdateVitals(_localHealth, _localMaxHealth, _localMana, _localMaxMana);
             }
+
+            OnStatsUpdated?.Invoke();
         }
 
         public static void HandleEntityPositionUpdate(Packet packet)
@@ -54,6 +71,8 @@ namespace Client.Network.Handlers
                 {
                     Client.UI.PlayerHUDUI.Instance.UpdateVitals(_localHealth, _localMaxHealth, _localMana, _localMaxMana);
                 }
+
+                OnStatsUpdated?.Invoke();
             }
         }
 

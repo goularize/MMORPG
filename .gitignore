@@ -482,3 +482,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local OS-level directory junction / symlink for Shared library
+Client/Assets/Scripts/Shared
+Client/Assets/Scripts/Shared.meta

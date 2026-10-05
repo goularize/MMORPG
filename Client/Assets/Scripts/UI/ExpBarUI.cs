@@ -26,8 +26,14 @@ namespace Client.UI
 
         private void Start()
         {
-            // Initialize with empty if desired, but server will sync it shortly.
-            UpdateExp(0, 100);
+            if (Network.Handlers.ProgressionHandler.ExpToNextLevel > 0)
+            {
+                UpdateExp(Network.Handlers.ProgressionHandler.CurrentExp, Network.Handlers.ProgressionHandler.ExpToNextLevel);
+            }
+            else
+            {
+                UpdateExp(0, 100);
+            }
         }
 
         public void UpdateExp(long currentExp, long expToNextLevel)
