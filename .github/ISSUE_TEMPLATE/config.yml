@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discord Community
+    url: https://discord.gg/your-discord-link
+    about: Join the community to chat about architecture, design, and MMORPG development.

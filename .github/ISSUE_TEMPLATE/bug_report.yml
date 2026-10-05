@@ -1,0 +1,74 @@
+name: "Bug Report"
+description: "Report a reproducible bug, desynchronization, packet fault, or runtime exception."
+title: "[BUG]: <short summary>"
+labels: ["type: bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the MMORPG Blueprint! Please provide as much context as possible to help us triage and fix this issue quickly.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Where is the bug occurring?
+      options:
+        - Server (.NET 8 Authoritative Server)
+        - Client (Unity Game Client)
+        - Shared (Protocol / Packets / Contracts)
+        - Database (EF Core / PostgreSQL)
+        - Build & Tooling (Docker, setup scripts)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the issue in detail...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the behavior.
+      placeholder: |
+        1. Start the server via `dotnet run`
+        2. Launch client and connect with user 'player1'
+        3. Perform action...
+        4. Observe unexpected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs Actual Behavior
+      description: What did you expect to happen versus what actually happened?
+      placeholder: |
+        Expected: The player vitals should regenerate every 1 second.
+        Actual: Vitals did not tick and an unhandled exception occurred in GameLogic.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server / Client Logs
+      description: Relevant logs, stack traces, or packet dumps.
+      render: shell
+      placeholder: Paste console output or stack trace here...
+
+  - type: checkboxes
+    id: environment
+    attributes:
+      label: Environment Confirmation
+      options:
+        - label: I verified that the Unity Client symlinks are properly initialized (`setup_client.sh` / `setup_client.bat`).
+          required: false
+        - label: The database container is up (`docker-compose up -d`) and migrations have run.
+          required: false

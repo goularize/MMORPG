@@ -1,0 +1,39 @@
+name: "Architecture RFC"
+description: "Request for Comments (RFC) on foundational architectural decisions, networking protocols, or persistence models."
+title: "[RFC]: <title of architectural proposal>"
+labels: ["type: rfc"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for foundational changes that impact concurrency, spatial indexing, packet serialization, multi-server clustering, or persistence architecture.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Executive Summary
+      description: Brief 2-3 paragraph summary of the proposed architectural shift.
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation & Trade-offs
+      description: Why is this change necessary? What are the performance, maintainability, or scalability trade-offs?
+    validations:
+      required: true
+
+  - type: textarea
+    id: detailed_design
+    attributes:
+      label: Detailed Technical Design
+      description: Class hierarchy, data structures, concurrency handling, and network packet structures.
+    validations:
+      required: true
+
+  - type: textarea
+    id: migration
+    attributes:
+      label: Migration & Compatibility
+      description: How does this affect existing client/server builds, database migrations, or backwards compatibility?

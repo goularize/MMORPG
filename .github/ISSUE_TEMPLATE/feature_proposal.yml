@@ -1,0 +1,49 @@
+name: "Feature Proposal"
+description: "Suggest a new gameplay system, networking enhancement, or architectural improvement."
+title: "[FEATURE]: <short summary>"
+labels: ["type: feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We welcome proposals for new game systems and architectural modules that align with our vision of creating a clean, authoritative MMORPG development blueprint!
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Target Component
+      options:
+        - Server (.NET 8 Core Logic)
+        - Client (Unity Client Integration)
+        - Shared (Protocol & Data Models)
+        - Tooling & Pipelines
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Motivation
+      description: Is your feature related to a problem or gap in the current implementation?
+      placeholder: What problem does this solve or what blueprint capability does this add?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / Architecture
+      description: Describe the design, packet changes, and game loop responsibilities.
+      placeholder: |
+        - Packets involved: `C2S_...`, `S2C_...`
+        - Server Authoritative Validation: How is client input validated?
+        - Game Loop Timing: Where does this execute in `GameLogic.Update()`?
+        - Client Prediction / Interpolation: How does the client present this?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any other approaches or designs you considered?
