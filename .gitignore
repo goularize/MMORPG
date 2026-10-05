@@ -486,3 +486,6 @@ $RECYCLE.BIN/
 # Local OS-level directory junction / symlink for Shared library
 Client/Assets/Scripts/Shared
 Client/Assets/Scripts/Shared.meta
+
+# CodeGraph local index
+.codegraph/
