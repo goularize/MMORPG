@@ -1,7 +1,7 @@
 name: "Feature Proposal"
 description: "Suggest a new gameplay system, networking enhancement, or architectural improvement."
 title: "[FEATURE]: <short summary>"
-labels: ["type: feature"]
+labels: ["type: feat"]
 body:
   - type: markdown
     attributes:
