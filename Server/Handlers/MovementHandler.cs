@@ -16,6 +16,10 @@ namespace Server.Handlers
             float targetX = packet.ReadFloat();
             float targetY = packet.ReadFloat();
             float targetZ = packet.ReadFloat();
+
+            // NaN/Infinity make every comparison below false (speed check and collision both pass), so drop them here.
+            if (!float.IsFinite(targetX) || !float.IsFinite(targetY) || !float.IsFinite(targetZ)) return;
+
             Vector3 targetPosition = new Vector3(targetX, targetY, targetZ);
 
             // 2. Look up the active Player entity from the World

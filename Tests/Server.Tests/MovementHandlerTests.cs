@@ -81,5 +81,33 @@ namespace Server.Tests
             Assert.Equal(100, entityId);
             Assert.Equal(0.0f, rubberbandPos.X); // Tells client to snap back to 0
         }
+
+        [Theory]
+        [InlineData(float.NaN, 0f, 0f)]
+        [InlineData(0f, float.NaN, 0f)]
+        [InlineData(0f, 0f, float.NaN)]
+        [InlineData(float.PositiveInfinity, 0f, 0f)]
+        [InlineData(0f, float.NegativeInfinity, 0f)]
+        public void HandleMoveRequest_ShouldIgnore_NonFiniteCoordinates(float x, float y, float z)
+        {
+            var client = new MockClientConnection { AccountId = 1, PlayerId = 100 };
+            var player = new Player(100, "NaNHacker", client);
+            player.Position = new Vector3(1, 2, 0);
+            player.Health = 100;
+            player.LastMoveTime = System.DateTime.UtcNow.AddSeconds(-1);
+
+            GameLogic.MapMgr.ActiveMaps[1].Players.Clear();
+            GameLogic.MapMgr.AddPlayer(player);
+
+            using var writePacket = new Packet(OpCode.PlayerMoveRequest);
+            writePacket.Write(x);
+            writePacket.Write(y);
+            writePacket.Write(z);
+            using var packet = new Packet(writePacket.ToArray());
+
+            MovementHandler.HandleMoveRequest(client, packet);
+
+            Assert.Equal(new Vector3(1, 2, 0), player.Position);
+        }
     }
 }
