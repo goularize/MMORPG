@@ -133,3 +133,12 @@ Always declare the affected tier in the scope `(<tier>)` or hierarchical subsyst
 3. Fill out the **Pull Request Template** completely.
 4. Link the relevant issue or RFC.
 5. PRs require review and approval before merging.
+
+## Issue Tracking & Nomenclature
+
+When filing retroactive documentation issues or logging new gaps identified during codebase audits, we use a structured identification prefix in the issue title or tracking ledger:
+
+*   **`Sx-NN`** (e.g., `S1-01`): Indicates a **Closed / Retroactive Feature**. "S" represents the Audit Step number, and "NN" is the sequential index. These issues document features that were previously developed.
+*   **`Sx-Gy`** (e.g., `S2-G4`): Indicates an **Open Gap / Bug / Feature Request**. "S" represents the Audit Step, and "G" stands for an identified "Gap" that needs to be addressed.
+
+Please ensure all new issues are linked to the central `MMORPG` GitHub Project board for tracking.
