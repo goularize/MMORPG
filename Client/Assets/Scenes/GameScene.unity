@@ -261,7 +261,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 4.140625
+  orthographic size: 8.28125
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -404,10 +404,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6dcbd1ad6cd1294097c25261950bff2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Client.World.GameManager
-  playerPrefab: {fileID: 5138590305078686130, guid: 9ac39a000ec712744a4f26a8002d3cc2, type: 3}
-  enemyPrefab: {fileID: 8519147218325412206, guid: 938aaf1e3b886cf4a846068723d55c14, type: 3}
-  lootSatchelPrefab: {fileID: 0}
-  resourcePrefab: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
