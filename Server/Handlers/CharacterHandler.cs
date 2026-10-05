@@ -254,6 +254,12 @@ namespace Server.Handlers
                     statsPacket.Write(activePlayer.MagicDefense);
                     client.Send(statsPacket);
 
+                    using Packet vitalsPacket = new Packet(OpCode.VitalsUpdate);
+                    vitalsPacket.Write(activePlayer.Id);
+                    vitalsPacket.Write(activePlayer.Health);
+                    vitalsPacket.Write(activePlayer.Mana);
+                    client.Send(vitalsPacket);
+
                     // Sync Inventory & Equipment
                     InventoryHandler.SendInventorySync(activePlayer);
                     EquipmentHandler.SendEquippedItemsSync(activePlayer);
