@@ -142,3 +142,17 @@ When filing retroactive documentation issues or logging new gaps identified duri
 *   **`Sx-Gy`** (e.g., `S2-G4`): Indicates an **Open Gap / Bug / Feature Request**. "S" represents the Audit Step, and "G" stands for an identified "Gap" that needs to be addressed.
 
 Please ensure all new issues are linked to the central `MMORPG` GitHub Project board for tracking.
+
+### Board Status Workflow
+
+Issue status on the `MMORPG` project board follows the work, not the commit:
+
+| Status | When |
+|---|---|
+| **Backlog / Todo** | Triaged, not started. |
+| **In Progress** | Work on the issue has started. |
+| **In Review** | The work is committed and/or a Pull Request is open. **Committing or opening a PR never moves an issue to Done.** |
+| **Done** | The change has been reviewed and merged into `main`. |
+
+- Move the issue to **In Progress** when you start it and to **In Review** as soon as you commit the work or open the PR.
+- Do **not** close the issue by hand when you commit. Reference it in commit messages with `Refs #<n>`, and put `Closes #<n>` in the **PR description** so the issue closes (and moves to **Done**) only when the PR is merged.
