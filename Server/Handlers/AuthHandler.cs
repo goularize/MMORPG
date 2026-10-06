@@ -48,17 +48,11 @@ namespace Server.Handlers
                     // Hash the password for security
                     string hash = BCrypt.Net.BCrypt.HashPassword(password);
                     
-                    int defaultSlots = 3;
-                    if (int.TryParse(Environment.GetEnvironmentVariable("DEFAULT_CHARACTER_SLOT"), out int envSlots))
-                    {
-                        defaultSlots = envSlots;
-                    }
-
                     var newAccount = new Account
                     {
                         Username = username,
                         PasswordHash = hash,
-                        CharacterSlots = defaultSlots
+                        CharacterSlots = ServerConfig.DefaultCharacterSlots
                     };
                     
                     db.Accounts.Add(newAccount);

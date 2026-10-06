@@ -28,7 +28,7 @@ namespace Server
             PacketHandler.Initialize();
 
             // Start the Networking Layer
-            GameServer server = new GameServer(7777);
+            GameServer server = new GameServer(ServerConfig.ServerPort);
             server.Start();
 
             // Start the World Logic Layer

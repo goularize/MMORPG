@@ -1,9 +1,14 @@
 using System;
+using System.Globalization;
 
 namespace Server
 {
     public static class ServerConfig
     {
+        // Defaults live here (not scattered in handlers); .env values override them.
+        public static int ServerPort { get; private set; } = 7777;
+        public static int DefaultCharacterSlots { get; private set; } = 3;
+
         public static int BaseHealthRes { get; private set; } = 5;
         public static int BaseManaRes { get; private set; } = 3;
         public static double RegenTickIntervalSeconds { get; private set; } = 1.0;
@@ -27,79 +32,67 @@ namespace Server
         public static float LootOwnershipSeconds { get; private set; } = 30.0f;
         public static float LootDecaySeconds { get; private set; } = 120.0f;
 
+        /// <summary>
+        /// Reads every setting from the environment. Idempotent: a missing or invalid value always falls back to
+        /// its default, so calling it again (e.g. in tests) never leaves a stale value behind.
+        /// </summary>
         public static void Initialize()
         {
             var versionEnv = Environment.GetEnvironmentVariable("GAME_VERSION");
-            if (!string.IsNullOrEmpty(versionEnv))
+            GameVersion = !string.IsNullOrEmpty(versionEnv) ? versionEnv : Shared.Constants.GameRules.GameVersion;
+
+            ServerPort = ReadInt("SERVER_PORT", 7777, min: 1, max: 65535);
+            DefaultCharacterSlots = ReadInt("DEFAULT_CHARACTER_SLOT", 3, min: 1);
+
+            BaseHealthRes = ReadInt("BASE_HEALTH_RES", 5, min: 0);
+            BaseManaRes = ReadInt("BASE_MANA_RES", 3, min: 0);
+            RegenTickIntervalSeconds = ReadDouble("REGEN_TICK_INTERVAL_SECONDS", 1.0, min: 0);
+            RegenCooldownSeconds = ReadDouble("REGEN_COOLDOWN_SECONDS", 5.0, min: 0);
+
+            MaxPendingCommandsPerClient = ReadInt("MAX_PENDING_COMMANDS_PER_CLIENT", 128, min: 1);
+            CommandBudgetMs = ReadDouble("COMMAND_BUDGET_MS", 10.0, min: 0.001);
+
+            ExpBase = ReadInt("EXP_BASE", 100, min: 1);
+            ExpGrowthRate = ReadDouble("EXP_GROWTH_RATE", 1.5, min: 0);
+            StatPointsPerLevel = ReadInt("STAT_POINTS_PER_LEVEL", 5, min: 0);
+
+            DefaultBackpackSlots = ReadInt("DEFAULT_BACKPACK_SLOTS", 20, min: 1);
+
+            LootOwnershipSeconds = (float)ReadDouble("LOOT_OWNERSHIP_SECONDS", 30.0, min: 0);
+            LootDecaySeconds = (float)ReadDouble("LOOT_DECAY_SECONDS", 120.0, min: 0);
+
+            Console.WriteLine($"[Config] Running Version: {GameVersion} | Port: {ServerPort} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s (blocked {RegenCooldownSeconds}s after combat) | EXP Base: {ExpBase}, Growth: {ExpGrowthRate} | Slots: {DefaultBackpackSlots} | Loot: {LootOwnershipSeconds}s owner / {LootDecaySeconds}s decay");
+        }
+
+        // All numeric settings are parsed with the invariant culture: ".env" files always use '.' as the decimal
+        // separator, but the current culture of the host (e.g. pt-BR) would read "0.5" as 5.
+        private static int ReadInt(string name, int fallback, int min = int.MinValue, int max = int.MaxValue)
+        {
+            string? raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(raw)) return fallback;
+
+            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) && value >= min && value <= max)
             {
-                GameVersion = versionEnv;
+                return value;
             }
 
-            if (int.TryParse(Environment.GetEnvironmentVariable("BASE_HEALTH_RES"), out int hpRes))
+            Console.WriteLine($"[Config] Ignoring invalid {name}='{raw}' (expected an integer between {min} and {max}); using {fallback}.");
+            return fallback;
+        }
+
+        private static double ReadDouble(string name, double fallback, double min = double.MinValue)
+        {
+            string? raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(raw)) return fallback;
+
+            if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double value)
+                && double.IsFinite(value) && value >= min)
             {
-                BaseHealthRes = hpRes;
+                return value;
             }
 
-            if (int.TryParse(Environment.GetEnvironmentVariable("BASE_MANA_RES"), out int mpRes))
-            {
-                BaseManaRes = mpRes;
-            }
-
-            if (double.TryParse(Environment.GetEnvironmentVariable("REGEN_TICK_INTERVAL_SECONDS"), out double tickInterval))
-            {
-                RegenTickIntervalSeconds = tickInterval;
-            }
-
-            // Reset first so a missing/invalid value falls back to the default on re-initialization.
-            RegenCooldownSeconds = 5.0;
-            if (double.TryParse(Environment.GetEnvironmentVariable("REGEN_COOLDOWN_SECONDS"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double regenCooldown) && regenCooldown >= 0)
-            {
-                RegenCooldownSeconds = regenCooldown;
-            }
-
-            MaxPendingCommandsPerClient = 128;
-            if (int.TryParse(Environment.GetEnvironmentVariable("MAX_PENDING_COMMANDS_PER_CLIENT"), out int maxPending) && maxPending > 0)
-            {
-                MaxPendingCommandsPerClient = maxPending;
-            }
-
-            CommandBudgetMs = 10.0;
-            if (double.TryParse(Environment.GetEnvironmentVariable("COMMAND_BUDGET_MS"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double budgetMs) && budgetMs > 0)
-            {
-                CommandBudgetMs = budgetMs;
-            }
-
-            if (int.TryParse(Environment.GetEnvironmentVariable("EXP_BASE"), out int expBase))
-            {
-                ExpBase = expBase;
-            }
-
-            if (double.TryParse(Environment.GetEnvironmentVariable("EXP_GROWTH_RATE"), System.Globalization.CultureInfo.InvariantCulture, out double expGrowthRate))
-            {
-                ExpGrowthRate = expGrowthRate;
-            }
-
-            if (int.TryParse(Environment.GetEnvironmentVariable("STAT_POINTS_PER_LEVEL"), out int statPoints))
-            {
-                StatPointsPerLevel = statPoints;
-            }
-
-            if (int.TryParse(Environment.GetEnvironmentVariable("DEFAULT_BACKPACK_SLOTS"), out int backpackSlots))
-            {
-                DefaultBackpackSlots = backpackSlots;
-            }
-
-            if (float.TryParse(Environment.GetEnvironmentVariable("LOOT_OWNERSHIP_SECONDS"), out float ownershipSec))
-            {
-                LootOwnershipSeconds = ownershipSec;
-            }
-
-            if (float.TryParse(Environment.GetEnvironmentVariable("LOOT_DECAY_SECONDS"), out float decaySec))
-            {
-                LootDecaySeconds = decaySec;
-            }
-            
-            Console.WriteLine($"[Config] Running Version: {GameVersion} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s (blocked {RegenCooldownSeconds}s after combat) | EXP Base: {ExpBase}, Growth: {ExpGrowthRate} | Slots: {DefaultBackpackSlots} | Loot: {LootOwnershipSeconds}s owner / {LootDecaySeconds}s decay");
+            Console.WriteLine($"[Config] Ignoring invalid {name}='{raw}' (expected a number >= {min}); using {fallback}.");
+            return fallback;
         }
 
         public static long GetExpForNextLevel(int currentLevel)
