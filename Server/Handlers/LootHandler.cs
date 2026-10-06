@@ -79,6 +79,7 @@ namespace Server.Handlers
                 return;
             }
 
+            bool fullyLooted;
             lock (satchel.Lock)
             {
                 var itemToLoot = satchel.Items.FirstOrDefault(i => i.Id == itemId);
@@ -88,75 +89,17 @@ namespace Server.Handlers
                     return;
                 }
 
-                var template = DataManager.Items.TryGetValue(itemToLoot.TemplateId, out var tmpl) ? tmpl : null;
-                int maxStack = template?.MaxStack ?? 1;
-                bool itemAdded = false;
-
-                // 1. Try stacking into existing inventory stack if stackable
-                if (maxStack > 1)
-                {
-                    var existingStack = player.Inventory.FirstOrDefault(i => i.TemplateId == itemToLoot.TemplateId && i.Quantity < maxStack);
-                    if (existingStack != null)
-                    {
-                        int space = maxStack - existingStack.Quantity;
-                        if (itemToLoot.Quantity <= space)
-                        {
-                            existingStack.Quantity += itemToLoot.Quantity;
-                            satchel.Items.Remove(itemToLoot);
-                            InventoryHandler.SaveDbItem(existingStack);
-                            InventoryHandler.SendInventorySlotUpdate(player, existingStack, existingStack.BagIndex, existingStack.SlotIndex);
-                            itemAdded = true;
-                        }
-                        else
-                        {
-                            // Partial stack merge
-                            int? freeSlot = InventoryHandler.FindFirstEmptySlot(player, 0);
-                            if (!freeSlot.HasValue)
-                            {
-                                SendLootSatchelClose(player, satchelId, "Inventory is full.");
-                                return;
-                            }
-
-                            existingStack.Quantity += space;
-                            InventoryHandler.SaveDbItem(existingStack);
-                            InventoryHandler.SendInventorySlotUpdate(player, existingStack, existingStack.BagIndex, existingStack.SlotIndex);
-
-                            itemToLoot.Quantity -= space;
-                            satchel.Items.Remove(itemToLoot);
-
-                            itemToLoot.CharacterId = player.Id;
-                            itemToLoot.BagIndex = 0;
-                            itemToLoot.SlotIndex = freeSlot.Value;
-                            player.Inventory.Add(itemToLoot);
-                            InventoryHandler.SaveDbItem(itemToLoot);
-                            InventoryHandler.SendInventorySlotUpdate(player, itemToLoot, 0, freeSlot.Value);
-                            itemAdded = true;
-                        }
-                    }
-                }
-
-                // 2. Put into empty slot
-                if (!itemAdded)
-                {
-                    int? freeSlot = InventoryHandler.FindFirstEmptySlot(player, 0);
-                    if (!freeSlot.HasValue)
-                    {
-                        SendLootSatchelClose(player, satchelId, "Inventory is full.");
-                        return;
-                    }
-
-                    satchel.Items.Remove(itemToLoot);
-                    itemToLoot.CharacterId = player.Id;
-                    itemToLoot.BagIndex = 0;
-                    itemToLoot.SlotIndex = freeSlot.Value;
-                    player.Inventory.Add(itemToLoot);
-                    InventoryHandler.SaveDbItem(itemToLoot);
-                    InventoryHandler.SendInventorySlotUpdate(player, itemToLoot, 0, freeSlot.Value);
-                }
+                fullyLooted = TryMoveToInventory(player, satchel, itemToLoot);
             }
 
             // Satchels only live in memory, so whatever left one must be durable before it can be lost
             PersistenceService.Instance.Expedite(player.Id);
+
+            if (!fullyLooted)
+            {
+                SendLootSatchelClose(player, satchelId, "Inventory is full.");
+                return;
+            }
 
             if (satchel.IsEmpty)
             {
@@ -215,39 +158,10 @@ namespace Server.Handlers
                 var itemsToProcess = satchel.Items.ToList();
                 foreach (var item in itemsToProcess)
                 {
-                    var template = DataManager.Items.TryGetValue(item.TemplateId, out var tmpl) ? tmpl : null;
-                    int maxStack = template?.MaxStack ?? 1;
-                    bool itemAdded = false;
-
-                    if (maxStack > 1)
+                    if (!TryMoveToInventory(player, satchel, item))
                     {
-                        var existing = player.Inventory.FirstOrDefault(i => i.TemplateId == item.TemplateId && i.Quantity + item.Quantity <= maxStack);
-                        if (existing != null)
-                        {
-                            existing.Quantity += item.Quantity;
-                            satchel.Items.Remove(item);
-                            InventoryHandler.SaveDbItem(existing);
-                            InventoryHandler.SendInventorySlotUpdate(player, existing, existing.BagIndex, existing.SlotIndex);
-                            itemAdded = true;
-                        }
-                    }
-
-                    if (!itemAdded)
-                    {
-                        int? freeSlot = InventoryHandler.FindFirstEmptySlot(player, 0);
-                        if (!freeSlot.HasValue)
-                        {
-                            inventoryFull = true;
-                            break;
-                        }
-
-                        satchel.Items.Remove(item);
-                        item.CharacterId = player.Id;
-                        item.BagIndex = 0;
-                        item.SlotIndex = freeSlot.Value;
-                        player.Inventory.Add(item);
-                        InventoryHandler.SaveDbItem(item);
-                        InventoryHandler.SendInventorySlotUpdate(player, item, 0, freeSlot.Value);
+                        inventoryFull = true;
+                        break;
                     }
                 }
             }
@@ -268,6 +182,50 @@ namespace Server.Handlers
                     SendLootSatchelClose(player, satchelId, "Inventory full. Some items could not be looted.");
                 }
             }
+        }
+
+        /// <summary>
+        /// Moves a satchel item into the player's backpack: tops up existing partial stacks first, then puts what is
+        /// left in the first free slot. Returns false when the backpack ran out of room; whatever did fit has been
+        /// moved and the rest stays in the satchel with its quantity reduced. Caller holds the satchel lock.
+        /// </summary>
+        private static bool TryMoveToInventory(Player player, LootSatchel satchel, CharacterItem item)
+        {
+            int maxStack = DataManager.Items.TryGetValue(item.TemplateId, out var template) ? template.MaxStack : 1;
+
+            if (maxStack > 1)
+            {
+                var partialStacks = player.Inventory
+                    .Where(i => i.TemplateId == item.TemplateId && i.Quantity < maxStack)
+                    .ToList();
+
+                foreach (var stack in partialStacks)
+                {
+                    int moved = Math.Min(maxStack - stack.Quantity, item.Quantity);
+                    stack.Quantity += moved;
+                    item.Quantity -= moved;
+                    InventoryHandler.SaveDbItem(stack);
+                    InventoryHandler.SendInventorySlotUpdate(player, stack, stack.BagIndex, stack.SlotIndex);
+
+                    if (item.Quantity <= 0)
+                    {
+                        satchel.Items.Remove(item);
+                        return true;
+                    }
+                }
+            }
+
+            int? freeSlot = InventoryHandler.FindFirstEmptySlot(player, 0);
+            if (!freeSlot.HasValue) return false;
+
+            satchel.Items.Remove(item);
+            item.CharacterId = player.Id;
+            item.BagIndex = 0;
+            item.SlotIndex = freeSlot.Value;
+            player.Inventory.Add(item);
+            InventoryHandler.SaveDbItem(item);
+            InventoryHandler.SendInventorySlotUpdate(player, item, 0, freeSlot.Value);
+            return true;
         }
 
         public static void SendLootSatchelSync(Player player, LootSatchel satchel)
