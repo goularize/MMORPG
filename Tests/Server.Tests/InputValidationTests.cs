@@ -1,0 +1,146 @@
+using System;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Server.Database;
+using Server.Database.Models;
+using Server.Handlers;
+using Shared.Constants;
+using Shared.Network;
+using Xunit;
+
+namespace Server.Tests
+{
+    public class InputValidationTests
+    {
+        [Theory]
+        [InlineData("bob", true)]
+        [InlineData("Bob_the-2nd", true)]
+        [InlineData("ab", false)]
+        [InlineData("", false)]
+        [InlineData("has space", false)]
+        [InlineData("emoji😀name", false)]
+        [InlineData("acento_é", false)]
+        public void Username_Rules(string username, bool valid) =>
+            Assert.Equal(valid, InputRules.ValidateUsername(username) == null);
+
+        [Fact]
+        public void Username_TooLong_IsRejected() =>
+            Assert.NotNull(InputRules.ValidateUsername(new string('a', InputRules.UsernameMaxLength + 1)));
+
+        [Theory]
+        [InlineData("12345678", true)]
+        [InlineData("short", false)]
+        [InlineData("", false)]
+        public void Password_Rules(string password, bool valid) =>
+            Assert.Equal(valid, InputRules.ValidatePassword(password) == null);
+
+        [Fact]
+        public void Password_OverBCryptLimit_IsRejectedByBytes()
+        {
+            Assert.Null(InputRules.ValidatePassword(new string('a', InputRules.PasswordMaxBytes)));
+            Assert.NotNull(InputRules.ValidatePassword(new string('a', InputRules.PasswordMaxBytes + 1)));
+            // 40 two-byte characters = 80 bytes, though only 40 chars
+            Assert.NotNull(InputRules.ValidatePassword(new string('é', 40)));
+        }
+
+        [Theory]
+        [InlineData("Thrall", true)]
+        [InlineData("Lady Jaina", true)]
+        [InlineData("Bo", false)]
+        [InlineData(" Thrall", false)]
+        [InlineData("Thrall ", false)]
+        [InlineData("Two  Spaces", false)]
+        [InlineData("Thr@ll", false)]
+        [InlineData("Drop'; --", false)]
+        public void CharacterName_Rules(string name, bool valid) =>
+            Assert.Equal(valid, InputRules.ValidateCharacterName(name) == null);
+
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(1, true)]
+        [InlineData(InputRules.MaxAppearanceId, true)]
+        [InlineData(InputRules.MaxAppearanceId + 1, false)]
+        [InlineData(-5, false)]
+        public void AppearanceId_Rules(int id, bool valid) =>
+            Assert.Equal(valid, InputRules.IsValidAppearanceId(id));
+
+        private static void UseFreshDb()
+        {
+            string name = Guid.NewGuid().ToString();
+            AppDbContext.Factory = () =>
+            {
+                var ctx = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(name).Options);
+                ctx.Database.EnsureCreated();
+                return ctx;
+            };
+        }
+
+        private static (bool ok, string message) SignUp(MockClientConnection client, string user, string pass)
+        {
+            using var w = new Packet(OpCode.SignUpRequest);
+            w.Write(ServerConfig.GameVersion);
+            w.Write(user);
+            w.Write(pass);
+            using var r = new Packet(w.ToArray());
+            AuthHandler.HandleSignUpRequest(client, r);
+            var resp = client.SentPackets.Last();
+            return (resp.ReadBool(), resp.ReadString());
+        }
+
+        [Fact]
+        public void SignUp_WithInvalidInput_CreatesNoAccount()
+        {
+            UseFreshDb();
+            var client = new MockClientConnection { AccountId = null };
+
+            Assert.False(SignUp(client, "ab", "longenough").ok);
+            Assert.False(SignUp(client, "valid_name", "short").ok);
+            Assert.False(SignUp(client, new string('a', 500), "longenough").ok); // would overflow the DB column
+
+            using var db = AppDbContext.Factory();
+            Assert.Empty(db.Accounts);
+            Assert.Null(client.AccountId);
+        }
+
+        [Fact]
+        public void SignUp_WithValidInput_Succeeds_AndDuplicateIgnoringCaseIsRejected()
+        {
+            UseFreshDb();
+
+            Assert.True(SignUp(new MockClientConnection { AccountId = null }, "Valid_Name", "longenough").ok);
+            Assert.False(SignUp(new MockClientConnection { AccountId = null }, "valid_name", "longenough").ok);
+        }
+
+        private static string CreateCharacter(string name, int appearance)
+        {
+            var client = new MockClientConnection();
+            using var w = new Packet(OpCode.CharacterCreateRequest);
+            w.Write(name);
+            w.Write(appearance);
+            using var r = new Packet(w.ToArray());
+            CharacterHandler.HandleCreateRequest(client, r);
+            var resp = client.SentPackets.Single();
+            return resp.ReadBool() ? "ok" : resp.ReadString();
+        }
+
+        [Fact]
+        public void CharacterCreate_ValidatesNameAndAppearance_AndTrims()
+        {
+            UseFreshDb();
+            using (var db = AppDbContext.Factory())
+            {
+                db.Accounts.Add(new Account { Id = 1, Username = "test", PasswordHash = "hash", CharacterSlots = 5 });
+                db.SaveChanges();
+            }
+
+            Assert.NotEqual("ok", CreateCharacter("x", 1));
+            Assert.NotEqual("ok", CreateCharacter(new string('a', 200), 1));
+            Assert.NotEqual("ok", CreateCharacter("Bad@Name", 1));
+            Assert.Equal("Invalid appearance.", CreateCharacter("Thrall", 9999));
+            Assert.Equal("ok", CreateCharacter("  Thrall  ", 1));
+
+            using var check = AppDbContext.Factory();
+            Assert.Equal("Thrall", check.Characters.Single().Name);
+        }
+    }
+}

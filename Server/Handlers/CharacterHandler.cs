@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Shared.Constants;
 using Shared.Network;
 using Server.Database;
 using Server.Database.Models;
@@ -40,15 +42,17 @@ namespace Server.Handlers
         {
             if (client.AccountId == null) return;
 
-            string name = packet.ReadString();
+            string name = packet.ReadString().Trim();
             int appearanceId = packet.ReadInt();
 
             bool isSuccess = false;
             string message;
 
-            if (string.IsNullOrWhiteSpace(name))
+            string? invalid = InputRules.ValidateCharacterName(name);
+            if (invalid == null && !InputRules.IsValidAppearanceId(appearanceId)) invalid = "Invalid appearance.";
+            if (invalid != null)
             {
-                message = "Name cannot be empty.";
+                message = invalid;
             }
             else
             {
@@ -100,7 +104,17 @@ namespace Server.Handlers
                             };
 
                             db.Characters.Add(newChar);
-                            db.SaveChanges();
+                            try
+                            {
+                                db.SaveChanges();
+                            }
+                            catch (DbUpdateException)
+                            {
+                                // Lost a race with a concurrent creation of the same name (unique index)
+                                db.Entry(newChar).State = EntityState.Detached;
+                                SendCreateResponse(client, false, "Name is already taken.");
+                                return;
+                            }
 
                             // Starter Kit
                             var starterSword = ItemFactory.CreateItem(1001, newChar.Id, 1);
@@ -133,6 +147,11 @@ namespace Server.Handlers
                 }
             }
 
+            SendCreateResponse(client, isSuccess, message);
+        }
+
+        private static void SendCreateResponse(IClientConnection client, bool isSuccess, string message)
+        {
             using Packet response = new Packet(OpCode.CharacterCreateResponse);
             response.Write(isSuccess);
             response.Write(message);

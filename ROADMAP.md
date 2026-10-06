@@ -89,6 +89,7 @@
 - [x] **Single-Threaded World Mutation (Command Queue)**: Network threads only frame and enqueue; the 30 TPS game loop drains a per-client-capped, time-budgeted `GameCommandQueue` (see `docs/server-threading.md`).
 - [x] **Resilient Fixed-Timestep Game Loop**: Exception-guarded ticks, catch-up with a step cap, and lag reporting (`FixedTimestepClock`, see `docs/server-threading.md`).
 - [x] **Network I/O Hardening**: Serialized `Send` with a write timeout, inbound frame length validation (min header / max cap) and partial-packet / pre-sign-in read timeouts (`ClientConnection`, see `docs/server-threading.md`).
+- [x] **Input Validation**: Shared `InputRules` (username/password/character-name format and length, BCrypt 72-byte cap, appearance range) enforced by the auth and character handlers; unique-index races on sign-up/creation answer "already taken" instead of dropping the client.
 - [ ] **Zero-Allocation Packet Pooling**: Implement `ArrayPool<byte>` socket buffer pooling to eliminate GC pressure during heavy network traffic.
 - [ ] **State Delta Compression**: Pack entity position updates and omit unchanged fields to minimize bandwidth.
 - [x] **Graceful Disconnect & Combat Logging Protection**: A disconnect while tagged in combat leaves the character in the world, defenseless, for a linger period; a reconnect resumes it (`Player.BeginLinger`, see `docs/server-threading.md`).

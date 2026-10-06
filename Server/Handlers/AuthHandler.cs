@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Shared.Constants;
 using Shared.Network;
 using Server.Database;
 using Server.Database.Models;
@@ -53,9 +55,10 @@ namespace Server.Handlers
             bool isSuccess = false;
             string message;
 
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            string? invalid = InputRules.ValidateUsername(username) ?? InputRules.ValidatePassword(password);
+            if (invalid != null)
             {
-                message = "Username and password cannot be empty.";
+                message = invalid;
             }
             else
             {
@@ -80,12 +83,20 @@ namespace Server.Handlers
                     };
                     
                     db.Accounts.Add(newAccount);
-                    db.SaveChanges();
-                    
-                    isSuccess = true;
-                    message = "Account created successfully!";
-                    BindSession(client, newAccount.Id);
-                    Console.WriteLine($"[Client {client.Id}] Account created for '{username}'.");
+                    try
+                    {
+                        db.SaveChanges();
+
+                        isSuccess = true;
+                        message = "Account created successfully!";
+                        BindSession(client, newAccount.Id);
+                        Console.WriteLine($"[Client {client.Id}] Account created for '{username}'.");
+                    }
+                    catch (DbUpdateException)
+                    {
+                        // Lost a race with a concurrent sign-up of the same name (unique index)
+                        message = "Username is already taken.";
+                    }
                 }
             }
 
@@ -124,10 +135,14 @@ namespace Server.Handlers
             bool isSuccess = false;
             string message = "Invalid credentials.";
 
+            // Cheap bounds before touching the database or BCrypt; the message stays generic on purpose
+            bool plausible = username.Length <= InputRules.UsernameMaxLength
+                && System.Text.Encoding.UTF8.GetByteCount(password) <= InputRules.PasswordMaxBytes;
+
             using var db = AppDbContext.Factory();
             
             // Find the user by username
-            var account = db.Accounts.FirstOrDefault(a => a.Username.ToLower() == username.ToLower());
+            var account = plausible ? db.Accounts.FirstOrDefault(a => a.Username.ToLower() == username.ToLower()) : null;
             
             if (account != null)
             {
