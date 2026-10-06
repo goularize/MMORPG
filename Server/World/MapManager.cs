@@ -43,18 +43,27 @@ namespace Server.World
 
         public void SpawnInitialSpawners()
         {
-            if (Data.DataManager.Spawners.Count == 0) return;
+            SpawnSpawners(Data.DataManager.Spawners, Data.DataManager.Npcs);
+        }
 
+        // Spawns every spawner's NPCs into the map named by its MapId. Returns the number of NPCs spawned.
+        public int SpawnSpawners(IEnumerable<Data.Models.SpawnerTemplate> spawners, IReadOnlyDictionary<int, Data.Models.NpcTemplate> npcTemplates)
+        {
+            int spawned = 0;
             var rng = new Random();
-            foreach (var spawner in Data.DataManager.Spawners)
+            foreach (var spawner in spawners)
             {
-                if (!Data.DataManager.Npcs.TryGetValue(spawner.TemplateId, out var template))
+                if (!npcTemplates.TryGetValue(spawner.TemplateId, out var template))
                 {
+                    Console.WriteLine($"[MapManager] Spawner skipped: unknown NPC template {spawner.TemplateId} (Map {spawner.MapId}).");
                     continue;
                 }
 
-                int mapId = 1;
-                if (!ActiveMaps.TryGetValue(mapId, out var map)) continue;
+                if (!ActiveMaps.TryGetValue(spawner.MapId, out var map))
+                {
+                    Console.WriteLine($"[MapManager] Spawner skipped: map {spawner.MapId} does not exist (NPC template {spawner.TemplateId}).");
+                    continue;
+                }
 
                 int count = Math.Max(1, spawner.Amount);
                 for (int i = 0; i < count; i++)
@@ -102,8 +111,11 @@ namespace Server.World
                     npc.Mana = npc.MaxMana;
 
                     map.AddNPC(npc);
+                    spawned++;
                 }
             }
+
+            return spawned;
         }
 
         private void LoadMapsFromDisk()

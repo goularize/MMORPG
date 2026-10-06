@@ -44,7 +44,8 @@
 - [x] **Bind Locations & Inns**: Innkeeper interaction, persistent character bind coordinates, and respawn flow (`BindHandler`).
 - [x] **Unity Map Exporter Tool**: Editor tool (`MapExporter.cs`) exporting `CompositeCollider2D` polygons directly to server JSON. *(Verified: Completed)*
 - [x] **Static JSON Data Pipeline**: Centralized `DataManager` loading JSON templates for Items, Recipes, Mobs, Spawners, and Loot Tables. *(Verified: Completed)*
-- [ ] **Multi-Map Spawner Routing**: Currently spawners load into Map 1 by default; extend `SpawnerTemplate` with `MapId` routing and dynamic timed wave controllers. *(Partially completed)*
+- [x] **Multi-Map Spawner Routing**: `SpawnerTemplate.MapId` routes each spawner to its map (defaults to Map 1 for legacy data; unknown maps are skipped with a log line). *(Server side completed; the Unity spawner exporter still needs to write `MapId`, tracked in #187)*
+- [ ] **Dynamic Timed Wave Controllers**: Time-driven spawner waves on top of the per-map spawner routing.
 - [ ] **Spatial Grid / Quadtree Partitioning**: Implement a 2D spatial grid within `MapInstance` to replace $O(N)$ linear scans for high-density maps (1,000+ entities per map). *(Missing / Next up)*
 
 > *Plus emerging features, architectural refinements, and quality-of-life improvements identified during active development sprints.*

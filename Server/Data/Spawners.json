@@ -2,6 +2,7 @@
   {
     "Type": "Area",
     "TemplateId": 101,
+    "MapId": 1,
     "X": 15.7,
     "Y": 10.2,
     "Z": 0,
