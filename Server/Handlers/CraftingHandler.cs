@@ -126,19 +126,19 @@ namespace Server.Handlers
                 return;
             }
 
-            // Deduct Gold & Materials
-            player.Gold -= recipe.RequiredGold;
-            foreach (var ingredient in recipe.Ingredients)
-            {
-                DeductMaterial(player, ingredient.ItemTemplateId, ingredient.Quantity);
-            }
-
-            // Create resulting item
+            // Instantiate the result first so a failure aborts before any cost is charged
             var craftedItem = ItemFactory.CreateItem(recipe.ResultItemTemplateId, player.Id, recipe.ResultQuantity);
             if (craftedItem == null)
             {
                 SendCraftResponse(player, false, 0, "Failed to instantiate crafted item.");
                 return;
+            }
+
+            // Deduct Gold & Materials
+            player.Gold -= recipe.RequiredGold;
+            foreach (var ingredient in recipe.Ingredients)
+            {
+                DeductMaterial(player, ingredient.ItemTemplateId, ingredient.Quantity);
             }
 
             craftedItem.BagIndex = 0;

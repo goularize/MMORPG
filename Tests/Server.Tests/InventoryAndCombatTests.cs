@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
+using Server.Data.Models;
 using Server.Database;
 using Server.Database.Models;
 using Server.Handlers;
@@ -362,6 +363,53 @@ namespace Server.Tests
             Assert.Equal(250, player.Gold); // 50 gold deducted
             var craftedSword = player.Inventory.FirstOrDefault(i => i.TemplateId == 1004);
             Assert.NotNull(craftedSword);   // Steel Longsword crafted!
+        }
+
+        [Fact]
+        public void CraftingHandler_ResultItemCannotBeCreated_RefundsNothingBecauseNothingWasCharged()
+        {
+            string dbName = Guid.NewGuid().ToString();
+            AppDbContext.Factory = () => GetInMemoryDbContext(dbName);
+
+            var client = new MockClientConnection { AccountId = 1, PlayerId = 1008 };
+            var player = new Player(1008, "UnluckyCrafter", client) { Gold = 300 };
+            player.LearnedRecipes.Add(99001);
+            GameLogic.MapMgr.ActiveMaps[1].Players[1008] = player;
+
+            // Recipe whose result item template does not exist, so ItemFactory.CreateItem returns null
+            DataManager.Recipes[99001] = new RecipeTemplate
+            {
+                RecipeId = 99001,
+                ResultItemTemplateId = 987654,
+                RequiredGold = 50,
+                Ingredients = new List<RecipeIngredient> { new() { ItemTemplateId = 3002, Quantity = 5 } }
+            };
+
+            try
+            {
+                var ingots = ItemFactory.CreateItem(3002, player.Id, 5)!;
+                ingots.SlotIndex = 0;
+                player.Inventory.Add(ingots);
+
+                using var craftPacket = new Packet(OpCode.CraftItemRequest);
+                craftPacket.Write(99001);
+                using var readCraftPacket = new Packet(craftPacket.ToArray());
+
+                CraftingHandler.HandleCraftItem(client, readCraftPacket);
+
+                Assert.Equal(300, player.Gold);
+                var remaining = Assert.Single(player.Inventory);
+                Assert.Equal(3002, remaining.TemplateId);
+                Assert.Equal(5, remaining.Quantity);
+
+                var response = client.SentPackets.Last();
+                Assert.Equal(OpCode.CraftItemResponse, response.PacketId);
+                Assert.False(response.ReadBool());
+            }
+            finally
+            {
+                DataManager.Recipes.Remove(99001);
+            }
         }
 
         [Fact]
