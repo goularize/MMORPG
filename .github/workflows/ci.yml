@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# Least privilege: CI only needs to read the repository
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build
+        run: dotnet build MMORPG.sln --configuration Release
+
+      - name: Test
+        run: dotnet test MMORPG.sln --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
+          if-no-files-found: ignore
+
+  # Enforces the branching flow: topic branch -> develop (tested) -> main (release)
+  pr-rules:
+    name: PR Rules
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check branch flow and PR title
+        env:
+          # Passed through env (never interpolated into the script): branch names and titles are attacker-controlled
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -eu
+          topic='^(feat|fix|docs|refactor|perf|test|chore|hotfix)/[A-Za-z0-9._-]+$'
+
+          if [ "$BASE" = "main" ]; then
+            if [ "$HEAD" != "develop" ] || [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+              if ! printf '%s' "$HEAD" | grep -Eq '^hotfix/[A-Za-z0-9._-]+$' || [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+                echo "::error::PRs into main must come from develop (a release) or a hotfix/* branch of this repository."
+                exit 1
+              fi
+            fi
+          elif [ "$BASE" = "develop" ]; then
+            if [ "$HEAD" = "develop" ]; then
+              echo "::error::develop cannot be the source of a PR into itself."
+              exit 1
+            fi
+            if ! printf '%s' "$HEAD" | grep -Eq "$topic"; then
+              echo "::error::Branch '$HEAD' must be named <type>/<short-desc> with type feat, fix, docs, refactor, perf, test, chore or hotfix."
+              exit 1
+            fi
+          fi
+
+          # Release PRs (develop -> main) are titled freely; everything else follows Conventional Commits / the [Tier] triage tags
+          if [ "$HEAD" != "develop" ]; then
+            if ! printf '%s' "$TITLE" | grep -Eq '^(feat|fix|docs|refactor|perf|test|chore)(\([a-z0-9/_-]+\))?!?: .+'; then
+              echo "::error::PR title must follow Conventional Commits, e.g. 'feat(server/combat): add crit rolls'."
+              exit 1
+            fi
+          fi

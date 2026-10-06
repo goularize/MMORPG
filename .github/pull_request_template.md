@@ -1,7 +1,9 @@
+<!-- Target branch: `develop`. Only release (develop -> main) and hotfix PRs target `main`. Title: Conventional Commit, e.g. `feat(server/combat): add crit rolls`. -->
+
 ## Description
 <!-- Provide a clear, concise summary of the changes made and the motivation behind them. -->
 
-Fixes #(issue)
+Refs #(issue) <!-- topic PRs into develop use Refs; the release PR into main uses Closes -->
 
 ## Type of Change
 - [ ] Bug fix (non-breaking change which fixes an issue)

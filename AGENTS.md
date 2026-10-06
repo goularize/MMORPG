@@ -10,7 +10,8 @@ If you are an AI assistant or agent working on this codebase, please adhere to t
 ## Git & Version Control Rules
 1. **NEVER COMMIT WITHOUT PERMISSION**: Do not use `git add` or `git commit` unless the user explicitly tells you to commit the current changes.
 2. **NEVER PUSH WITHOUT PERMISSION**: Being asked to commit is **NOT** permission to push. Do not use `git push` unless the user explicitly types the words instructing you to push to the remote repository.
-3. **Conventional Commits & Scopes**: When authorized to commit, always strictly follow the Conventional Commits specification and tier scopes outlined in [CONTRIBUTING.md](CONTRIBUTING.md) (e.g., `feat(server/combat): ...`, `fix(client/ui): ...`).
+3. **Branches & PRs**: `main` and `develop` are protected (PR-only, CI required). Work on a `<type>/<short-desc>` branch cut from `develop` and open the PR into `develop`; only releases (`develop` -> `main`) and `hotfix/*` target `main`. See CONTRIBUTING.md.
+4. **Conventional Commits & Scopes**: When authorized to commit, always strictly follow the Conventional Commits specification and tier scopes outlined in [CONTRIBUTING.md](CONTRIBUTING.md) (e.g., `feat(server/combat): ...`, `fix(client/ui): ...`).
 
 ## Architecture Rules
 1. **Shared Logic**: Any code that needs to be understood by BOTH the `.NET Server` and the `Unity Client` (such as network packet definitions, game constants, enums, or math utilities) MUST be placed in the `Shared` class library.
