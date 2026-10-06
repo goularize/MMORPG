@@ -71,7 +71,12 @@ jobs:
               echo "::error::develop cannot be the source of a PR into itself."
               exit 1
             fi
-            if ! printf '%s' "$HEAD" | grep -Eq "$topic"; then
+            # Dependabot opens its PRs from dependabot/* branches of this repository
+            is_dependabot=false
+            if [ "$HEAD_REPO" = "$THIS_REPO" ] && printf '%s' "$HEAD" | grep -Eq '^dependabot/[A-Za-z0-9._/-]+$'; then
+              is_dependabot=true
+            fi
+            if [ "$is_dependabot" = false ] && ! printf '%s' "$HEAD" | grep -Eq "$topic"; then
               echo "::error::Branch '$HEAD' must be named <type>/<short-desc> with type feat, fix, docs, refactor, perf, test, chore or hotfix."
               exit 1
             fi

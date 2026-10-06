@@ -5,12 +5,26 @@ updates:
     target-branch: develop
     schedule:
       interval: weekly
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(deps)"
+    # The solution targets .NET 8: stay on the 8.x line of the EF Core / Npgsql packages until the runtime moves
+    ignore:
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Npgsql.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      nuget-minor-and-patch:
+        update-types: ["minor", "patch"]
   - package-ecosystem: github-actions
     directory: "/"
     target-branch: develop
     schedule:
       interval: weekly
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(infra)"
+    groups:
+      actions:
+        patterns: ["*"]
