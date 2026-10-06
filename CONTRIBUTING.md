@@ -75,10 +75,25 @@ Before writing code, please familiarize yourself with the non-negotiable archite
 
 ## Branching & Git Workflow
 
-- **`main`**: Production-ready, stable codebase. Direct pushes to `main` are restricted.
-- **`feature/<short-desc>`**: For new gameplay mechanics, network systems, or client features.
-- **`fix/<short-desc>`**: For bug fixes, race condition patches, or regression fixes.
-- **`docs/<short-desc>`**: For documentation, diagrams, and architectural RFCs.
+Nobody pushes to `develop` or `main`: both are protected and only change through Pull Requests that pass CI.
+
+- **`main`**: Released, stable code. Only updated by a release PR from `develop` (or an urgent `hotfix/*`).
+- **`develop`**: Integration branch. Every feature and fix lands here first, is tested here, and is promoted to `main` as a release.
+- **Topic branches**, named `<type>/<short-desc>` and cut from `develop`:
+  - `feat/<short-desc>`: new gameplay mechanics, network systems, or client features.
+  - `fix/<short-desc>`: bug fixes, race condition patches, or regression fixes.
+  - `docs/<short-desc>`: documentation, diagrams, and architectural RFCs.
+  - `refactor/`, `perf/`, `test/`, `chore/<short-desc>`: as in the commit types below.
+  - `hotfix/<short-desc>`: urgent production fix, cut from `main` and merged into both `main` and `develop`.
+
+```
+feat/xyz ──PR──▶ develop ──PR (release)──▶ main
+  (fork or branch)  tested, squash-merged     merge commit, new version built
+```
+
+1. Create a topic branch from `develop` (in a fork if you do not have write access) and push it.
+2. Open a PR **into `develop`**. CI (`Build & Test`, `PR Rules`) must pass. It is squash-merged, so the PR title becomes the Conventional Commit on `develop`.
+3. When `develop` is ready to ship, a maintainer opens a PR **`develop` → `main`**. Once merged, the new version is built.
 
 ### Conventional Commits
 All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification (`<type>(<scope>): <description>`):
@@ -130,9 +145,10 @@ Always declare the affected tier in the scope `(<tier>)` or hierarchical subsyst
 
 1. Ensure your code builds with zero errors or warnings (`dotnet build MMORPG.sln`).
 2. Run existing automated tests and add new tests covering your changes (`dotnet test`).
+   Target your PR at `develop` (never `main`, unless it is a release or hotfix).
 3. Fill out the **Pull Request Template** completely.
 4. Link the relevant issue or RFC.
-5. PRs require review and approval before merging.
+5. PRs require passing CI (and, for external contributors, maintainer approval) before merging. PR titles follow Conventional Commits (the CI `PR Rules` check enforces it).
 
 ## Issue Tracking & Nomenclature
 
@@ -152,7 +168,8 @@ Issue status on the `MMORPG` project board follows the work, not the commit:
 | **Backlog / Todo** | Triaged, not started. |
 | **In Progress** | Work on the issue has started. |
 | **In Review** | The work is committed and/or a Pull Request is open. **Committing or opening a PR never moves an issue to Done.** |
-| **Done** | The change has been reviewed and merged into `main`. |
+| **Done** | The change has been reviewed, merged into `develop`, and released to `main`. |
 
 - Move the issue to **In Progress** when you start it and to **In Review** as soon as you commit the work or open the PR.
-- Do **not** close the issue by hand when you commit. Reference it in commit messages with `Refs #<n>`, and put `Closes #<n>` in the **PR description** so the issue closes (and moves to **Done**) only when the PR is merged.
+- GitHub only auto-closes issues when a PR reaches the default branch (`main`). A PR into `develop` therefore leaves its issue open and **In Review** (still reference it with `Refs #<n>`); the release PR (`develop` → `main`) lists every shipped issue as `Closes #<n>`, which closes them and moves them to **Done**.
+- Do **not** close the issue by hand when you commit. Reference it in commit messages and topic PRs with `Refs #<n>`.
