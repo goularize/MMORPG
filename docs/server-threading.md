@@ -112,3 +112,15 @@ save every online player, then flush the persistence queue (see `docs/persistenc
   and a connection that has not signed in must send something within `PRE_AUTH_IDLE_TIMEOUT_SECONDS` (default 30);
   `0` disables either. Signed-in idle clients are not timed out (there is no heartbeat packet yet).
 - **Oversized outbound packets:** `Packet.ToArray` throws if a payload exceeds the 2-byte length header (65535).
+
+## Abuse protection
+
+- **Sign-in / sign-up throttling** (`AuthHandler`, `FailureThrottle`): failed sign-ins and sign-ups are counted per
+  remote address. `SIGNIN_MAX_FAILURES` (default 5) failures within `SIGNIN_FAILURE_WINDOW_SECONDS` (60) lock the
+  address out for `SIGNIN_LOCKOUT_SECONDS` (60); a locked address is refused *before* any BCrypt work, even with the
+  right password, and a successful sign-in clears its failures. It is keyed by address, not username, so an attacker
+  cannot lock a victim's account out. Behind a proxy or NAT every client shares one address; revisit when one is added.
+- **Chat** (`ChatHandler`): messages over `InputRules.ChatMaxMessageLength` (200) are refused with a notice, not
+  truncated. Each player has a token bucket (`CHAT_BURST` 5, refilling `CHAT_MESSAGES_PER_SECOND` 1); messages over it
+  are dropped and the player is told once per flood.
+- **Not covered:** transport encryption (credentials still travel in plaintext) is tracked separately in the TLS RFC.

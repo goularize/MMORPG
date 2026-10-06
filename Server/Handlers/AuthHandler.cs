@@ -11,6 +11,19 @@ namespace Server.Handlers
 {
     public static class AuthHandler
     {
+        private const string LockedOutMessage = "Too many failed attempts. Please try again later.";
+
+        // Failed sign-ins and sign-ups per remote address; a locked address is refused before any BCrypt work
+        private static FailureThrottle _throttle = CreateThrottle();
+
+        private static FailureThrottle CreateThrottle() => new(
+            ServerConfig.SignInMaxFailures,
+            TimeSpan.FromSeconds(ServerConfig.SignInFailureWindowSeconds),
+            TimeSpan.FromSeconds(ServerConfig.SignInLockoutSeconds));
+
+        /// <summary>Forgets all failures and re-reads the limits from <see cref="ServerConfig"/>.</summary>
+        public static void ResetThrottle() => _throttle = CreateThrottle();
+
         /// <summary>
         /// Binds the database account to the network session. An account has one session at a time: a previous
         /// connection of the same account is disconnected (this also frees accounts held by a dead connection).
@@ -56,7 +69,11 @@ namespace Server.Handlers
             string message;
 
             string? invalid = InputRules.ValidateUsername(username) ?? InputRules.ValidatePassword(password);
-            if (invalid != null)
+            if (_throttle.IsLocked(client.RemoteAddress))
+            {
+                message = LockedOutMessage;
+            }
+            else if (invalid != null)
             {
                 message = invalid;
             }
@@ -100,6 +117,8 @@ namespace Server.Handlers
                 }
             }
 
+            if (!isSuccess) _throttle.RecordFailure(client.RemoteAddress);
+
             using Packet response = new Packet(OpCode.SignUpResponse);
             response.Write(isSuccess);
             response.Write(message);
@@ -135,6 +154,16 @@ namespace Server.Handlers
             bool isSuccess = false;
             string message = "Invalid credentials.";
 
+            if (_throttle.IsLocked(client.RemoteAddress))
+            {
+                Console.WriteLine($"[Client {client.Id}] Sign In refused: {client.RemoteAddress} is locked out.");
+                using Packet locked = new Packet(OpCode.SignInResponse);
+                locked.Write(false);
+                locked.Write(LockedOutMessage);
+                client.Send(locked);
+                return;
+            }
+
             // Cheap bounds before touching the database or BCrypt; the message stays generic on purpose
             bool plausible = username.Length <= InputRules.UsernameMaxLength
                 && System.Text.Encoding.UTF8.GetByteCount(password) <= InputRules.PasswordMaxBytes;
@@ -156,8 +185,13 @@ namespace Server.Handlers
                 }
             }
             
-            if (!isSuccess)
+            if (isSuccess)
             {
+                _throttle.Reset(client.RemoteAddress);
+            }
+            else
+            {
+                _throttle.RecordFailure(client.RemoteAddress);
                 Console.WriteLine($"[Client {client.Id}] Sign In Failed.");
             }
 

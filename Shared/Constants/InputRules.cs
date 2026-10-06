@@ -19,6 +19,8 @@ namespace Shared.Constants
         public const int CharacterNameMinLength = 3;
         public const int CharacterNameMaxLength = 20;
 
+        public const int ChatMaxMessageLength = 200;
+
         public const int MinAppearanceId = 1;
         public const int MaxAppearanceId = 10;
 

@@ -10,6 +10,7 @@ namespace Server
     public class ClientConnection : IClientConnection
     {
         public int Id { get; }
+        public string RemoteAddress { get; }
 
         // Written by one thread and read by others (read loop vs game thread). A Nullable<int> is two fields and
         // can tear, so each value is stored as a single int where 0 means "none" (IDs start at 1).
@@ -42,6 +43,8 @@ namespace Server
         {
             Id = id;
             _tcpClient = tcpClient;
+            // Captured now: the socket's endpoint is unavailable once the connection is closed
+            RemoteAddress = (tcpClient.Client.RemoteEndPoint as System.Net.IPEndPoint)?.Address.ToString() ?? "unknown";
             _stream = tcpClient.GetStream();
             _receiveBuffer = new byte[4096]; // 4KB buffer for incoming data
             // A client that stops reading must not stall the thread holding _sendLock (often the game loop) forever

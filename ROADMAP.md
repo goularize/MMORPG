@@ -91,6 +91,7 @@
 - [x] **Network I/O Hardening**: Serialized `Send` with a write timeout, inbound frame length validation (min header / max cap) and partial-packet / pre-sign-in read timeouts (`ClientConnection`, see `docs/server-threading.md`).
 - [x] **Input Validation**: Shared `InputRules` (username/password/character-name format and length, BCrypt 72-byte cap, appearance range) enforced by the auth and character handlers; unique-index races on sign-up/creation answer "already taken" instead of dropping the client.
 - [x] **Static Data Validation (fail fast)**: `DataManager` loads all-or-nothing and `DataValidator` reports every duplicate id, bad value and dangling item/NPC reference at startup (see `docs/static-data.md`).
+- [x] **Abuse Protection**: Per-address sign-in/sign-up failure lockout (`FailureThrottle`), plus chat length cap and per-player token-bucket rate limit (see `docs/server-threading.md`). TLS stays in its own RFC.
 - [ ] **Zero-Allocation Packet Pooling**: Implement `ArrayPool<byte>` socket buffer pooling to eliminate GC pressure during heavy network traffic.
 - [ ] **State Delta Compression**: Pack entity position updates and omit unchanged fields to minimize bandwidth.
 - [x] **Graceful Disconnect & Combat Logging Protection**: A disconnect while tagged in combat leaves the character in the world, defenseless, for a linger period; a reconnect resumes it (`Player.BeginLinger`, see `docs/server-threading.md`).

@@ -24,6 +24,10 @@ namespace Server.World.Entities
         
         // Currency & Inventory
         public long Gold { get; set; } = 0;
+
+        // Chat flood control (game thread only)
+        public Server.Network.TokenBucket ChatBucket { get; } = new(ServerConfig.ChatBurst, ServerConfig.ChatMessagesPerSecond);
+        public bool ChatLimitNotified { get; set; }
         public int InventorySlots { get; set; } = 20;
         public Dictionary<Shared.Enums.EquipmentSlot, Server.Database.Models.CharacterItem> EquippedItems { get; } = new();
         public List<Server.Database.Models.CharacterItem> Inventory { get; } = new();
