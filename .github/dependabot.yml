@@ -14,9 +14,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "Npgsql.EntityFrameworkCore*"
         update-types: ["version-update:semver-major"]
+    # One PR per week for every NuGet update (majors included) instead of one per package and project
     groups:
-      nuget-minor-and-patch:
-        update-types: ["minor", "patch"]
+      nuget:
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: "/"
     target-branch: develop
