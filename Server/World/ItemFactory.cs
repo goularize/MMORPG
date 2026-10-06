@@ -96,8 +96,6 @@ namespace Server.World
 
         private static void RollSecondaryAffixes(CharacterItem item, ItemTemplate template, int count, Random rng)
         {
-            if (count <= 0) return;
-
             // Pool of possible affix types
             var availableAffixes = new List<string>
             {
@@ -111,7 +109,7 @@ namespace Server.World
             };
 
             // Prioritize template secondary ranges if specified
-            if (template.CritChance.HasValue && !item.RolledCritChance.Equals(0f))
+            if (template.CritChance.HasValue)
             {
                 item.RolledCritChance = template.CritChance.Roll(rng) * 0.01f;
                 availableAffixes.Remove("CritChance");
@@ -125,7 +123,7 @@ namespace Server.World
                 count--;
             }
 
-            // Shuffle and pick remaining affixes
+            // Shuffle and pick remaining affixes (none for Common items; template ranges above are inherent and always apply)
             for (int i = 0; i < count && availableAffixes.Count > 0; i++)
             {
                 int index = rng.Next(availableAffixes.Count);

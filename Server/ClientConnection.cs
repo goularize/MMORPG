@@ -10,6 +10,7 @@ namespace Server
     public class ClientConnection : IClientConnection
     {
         public int Id { get; }
+        public string RemoteAddress { get; }
 
         // Written by one thread and read by others (read loop vs game thread). A Nullable<int> is two fields and
         // can tear, so each value is stored as a single int where 0 means "none" (IDs start at 1).
@@ -33,6 +34,7 @@ namespace Server
         private readonly byte[] _receiveBuffer;
         private readonly Action<int> _onDisconnect;
         private int _closed;
+        private readonly object _sendLock = new();
 
         // Packet framing variables
         private byte[]? _packetBytes;
@@ -41,8 +43,12 @@ namespace Server
         {
             Id = id;
             _tcpClient = tcpClient;
+            // Captured now: the socket's endpoint is unavailable once the connection is closed
+            RemoteAddress = (tcpClient.Client.RemoteEndPoint as System.Net.IPEndPoint)?.Address.ToString() ?? "unknown";
             _stream = tcpClient.GetStream();
             _receiveBuffer = new byte[4096]; // 4KB buffer for incoming data
+            // A client that stops reading must not stall the thread holding _sendLock (often the game loop) forever
+            _stream.WriteTimeout = (int)(ServerConfig.SendTimeoutSeconds * 1000);
             _onDisconnect = onDisconnect;
         }
 
@@ -60,8 +66,27 @@ namespace Server
             {
                 while (_tcpClient.Connected)
                 {
-                    // Read incoming bytes
-                    int bytesRead = await _stream.ReadAsync(_receiveBuffer, 0, _receiveBuffer.Length);
+                    // Read incoming bytes. A half-received packet must complete quickly (slow-drip attacks) and a
+                    // connection that has not signed in yet must not idle forever holding a socket.
+                    bool midPacket = _packetBytes is { Length: > 0 };
+                    double timeoutSeconds = midPacket ? ServerConfig.PacketCompletionTimeoutSeconds
+                        : AccountId == null ? ServerConfig.PreAuthIdleTimeoutSeconds
+                        : 0;
+
+                    using var readTimeout = new CancellationTokenSource();
+                    if (timeoutSeconds > 0) readTimeout.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+
+                    int bytesRead;
+                    try
+                    {
+                        bytesRead = await _stream.ReadAsync(_receiveBuffer, 0, _receiveBuffer.Length, readTimeout.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Console.WriteLine($"Client {Id} timed out ({(midPacket ? "incomplete packet" : "no sign-in")}). Disconnecting.");
+                        Disconnect();
+                        break;
+                    }
 
                     if (bytesRead == 0)
                     {
@@ -104,10 +129,11 @@ namespace Server
                 // Read the expected length of the packet from the first 2 bytes (header)
                 ushort expectedLength = BitConverter.ToUInt16(_packetBytes, 0);
 
-                // Security check: if length is 0, someone is sending corrupt data. Prevent infinite loop.
-                if (expectedLength == 0)
+                // Security check: a frame must at least hold its own header (length + opcode) and must not exceed
+                // the inbound cap, otherwise we would buffer attacker-chosen amounts of data waiting for it.
+                if (expectedLength < Packet.HeaderSize || expectedLength > ServerConfig.MaxInboundPacketBytes)
                 {
-                    Console.WriteLine($"Client {Id} sent a corrupt packet (length 0). Disconnecting.");
+                    Console.WriteLine($"Client {Id} sent a packet with invalid length {expectedLength}. Disconnecting.");
                     Disconnect();
                     return;
                 }
@@ -150,11 +176,14 @@ namespace Server
         {
             try
             {
-                if (_tcpClient != null && _tcpClient.Connected)
+                byte[] data = packet.ToArray();
+                // Game-loop and network threads both send; unsynchronized writes could interleave frames
+                lock (_sendLock)
                 {
-                    byte[] data = packet.ToArray();
-                    // Note: In a production environment, you might want to use _stream.WriteAsync to avoid blocking
-                    _stream.Write(data, 0, data.Length);
+                    if (IsConnected && _tcpClient.Connected)
+                    {
+                        _stream.Write(data, 0, data.Length);
+                    }
                 }
             }
             catch (Exception ex)

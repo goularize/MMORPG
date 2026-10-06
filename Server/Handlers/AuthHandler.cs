@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Shared.Constants;
 using Shared.Network;
 using Server.Database;
 using Server.Database.Models;
@@ -9,6 +11,19 @@ namespace Server.Handlers
 {
     public static class AuthHandler
     {
+        private const string LockedOutMessage = "Too many failed attempts. Please try again later.";
+
+        // Failed sign-ins and sign-ups per remote address; a locked address is refused before any BCrypt work
+        private static FailureThrottle _throttle = CreateThrottle();
+
+        private static FailureThrottle CreateThrottle() => new(
+            ServerConfig.SignInMaxFailures,
+            TimeSpan.FromSeconds(ServerConfig.SignInFailureWindowSeconds),
+            TimeSpan.FromSeconds(ServerConfig.SignInLockoutSeconds));
+
+        /// <summary>Forgets all failures and re-reads the limits from <see cref="ServerConfig"/>.</summary>
+        public static void ResetThrottle() => _throttle = CreateThrottle();
+
         /// <summary>
         /// Binds the database account to the network session. An account has one session at a time: a previous
         /// connection of the same account is disconnected (this also frees accounts held by a dead connection).
@@ -53,9 +68,14 @@ namespace Server.Handlers
             bool isSuccess = false;
             string message;
 
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            string? invalid = InputRules.ValidateUsername(username) ?? InputRules.ValidatePassword(password);
+            if (_throttle.IsLocked(client.RemoteAddress))
             {
-                message = "Username and password cannot be empty.";
+                message = LockedOutMessage;
+            }
+            else if (invalid != null)
+            {
+                message = invalid;
             }
             else
             {
@@ -80,14 +100,24 @@ namespace Server.Handlers
                     };
                     
                     db.Accounts.Add(newAccount);
-                    db.SaveChanges();
-                    
-                    isSuccess = true;
-                    message = "Account created successfully!";
-                    BindSession(client, newAccount.Id);
-                    Console.WriteLine($"[Client {client.Id}] Account created for '{username}'.");
+                    try
+                    {
+                        db.SaveChanges();
+
+                        isSuccess = true;
+                        message = "Account created successfully!";
+                        BindSession(client, newAccount.Id);
+                        Console.WriteLine($"[Client {client.Id}] Account created for '{username}'.");
+                    }
+                    catch (DbUpdateException)
+                    {
+                        // Lost a race with a concurrent sign-up of the same name (unique index)
+                        message = "Username is already taken.";
+                    }
                 }
             }
+
+            if (!isSuccess) _throttle.RecordFailure(client.RemoteAddress);
 
             using Packet response = new Packet(OpCode.SignUpResponse);
             response.Write(isSuccess);
@@ -124,10 +154,24 @@ namespace Server.Handlers
             bool isSuccess = false;
             string message = "Invalid credentials.";
 
+            if (_throttle.IsLocked(client.RemoteAddress))
+            {
+                Console.WriteLine($"[Client {client.Id}] Sign In refused: {client.RemoteAddress} is locked out.");
+                using Packet locked = new Packet(OpCode.SignInResponse);
+                locked.Write(false);
+                locked.Write(LockedOutMessage);
+                client.Send(locked);
+                return;
+            }
+
+            // Cheap bounds before touching the database or BCrypt; the message stays generic on purpose
+            bool plausible = username.Length <= InputRules.UsernameMaxLength
+                && System.Text.Encoding.UTF8.GetByteCount(password) <= InputRules.PasswordMaxBytes;
+
             using var db = AppDbContext.Factory();
             
             // Find the user by username
-            var account = db.Accounts.FirstOrDefault(a => a.Username.ToLower() == username.ToLower());
+            var account = plausible ? db.Accounts.FirstOrDefault(a => a.Username.ToLower() == username.ToLower()) : null;
             
             if (account != null)
             {
@@ -141,8 +185,13 @@ namespace Server.Handlers
                 }
             }
             
-            if (!isSuccess)
+            if (isSuccess)
             {
+                _throttle.Reset(client.RemoteAddress);
+            }
+            else
+            {
+                _throttle.RecordFailure(client.RemoteAddress);
                 Console.WriteLine($"[Client {client.Id}] Sign In Failed.");
             }
 

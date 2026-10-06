@@ -24,6 +24,10 @@ namespace Server.World.Entities
         
         // Currency & Inventory
         public long Gold { get; set; } = 0;
+
+        // Chat flood control (game thread only)
+        public Server.Network.TokenBucket ChatBucket { get; } = new(ServerConfig.ChatBurst, ServerConfig.ChatMessagesPerSecond);
+        public bool ChatLimitNotified { get; set; }
         public int InventorySlots { get; set; } = 20;
         public Dictionary<Shared.Enums.EquipmentSlot, Server.Database.Models.CharacterItem> EquippedItems { get; } = new();
         public List<Server.Database.Models.CharacterItem> Inventory { get; } = new();
@@ -190,6 +194,8 @@ namespace Server.World.Entities
             float gearDodgeChance = 0f;
             float gearMoveSpeed = 0f;
             float gearAttackSpeed = 0f;
+            int gearHealthRegen = 0;
+            int gearManaRegen = 0;
 
             foreach (var item in EquippedItems.Values)
             {
@@ -210,6 +216,8 @@ namespace Server.World.Entities
                 gearDodgeChance += item.RolledDodgeChance;
                 gearMoveSpeed += item.RolledMovementSpeed;
                 gearAttackSpeed += item.RolledAttackSpeedBonus;
+                gearHealthRegen += item.RolledHealthRegen;
+                gearManaRegen += item.RolledManaRegen;
             }
 
             int totalStr = Strength + gearStr;
@@ -231,6 +239,8 @@ namespace Server.World.Entities
             CritChance = System.Math.Clamp(0.05f + (totalInt * 0.0005f) + gearCritChance, 0.05f, 0.75f);
             CritMultiplier = System.Math.Max(1.5f, 2.0f + (totalStr * 0.005f) + gearCritMultiplier);
             DodgeChance = System.Math.Clamp(0.05f + (totalKnow * 0.0002f) + gearDodgeChance, 0.05f, 0.50f);
+            HealthRegenBonus = gearHealthRegen;
+            ManaRegenBonus = gearManaRegen;
             MovementSpeed = System.Math.Max(Shared.Constants.GameRules.MinPlayerMoveSpeed, Shared.Constants.GameRules.BasePlayerMoveSpeed + gearMoveSpeed);
             AttackSpeedBonus = System.Math.Clamp(gearAttackSpeed, 0f, 1.0f);
             BaseAttackSpeed = System.Math.Max(Shared.Constants.GameRules.MinPlayerAttackInterval, Shared.Constants.GameRules.BasePlayerAttackInterval * (1.0f - AttackSpeedBonus));

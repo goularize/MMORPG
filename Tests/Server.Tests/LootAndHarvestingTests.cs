@@ -50,7 +50,7 @@ namespace Server.Tests
             Assert.True(DataManager.LootTables.ContainsKey(202));  // Angry Goblin
             Assert.True(DataManager.LootTables.ContainsKey(204));  // Wolf Alpha
             Assert.True(DataManager.LootTables.ContainsKey(208));  // Zombie
-            Assert.True(DataManager.LootTables.ContainsKey(2001)); // Slime
+            Assert.True(DataManager.LootTables.ContainsKey(101)); // Slime
 
             var goblinTable = DataManager.LootTables[202];
             Assert.InRange(goblinTable.MinGold, 1, 10);
@@ -337,6 +337,105 @@ namespace Server.Tests
             var harvestSatchel = map.LootSatchels.Values.FirstOrDefault(s => s.OwnerPlayerId == harvester.Id && s.Position == tree.Position);
             Assert.NotNull(harvestSatchel);
             Assert.Contains(harvestSatchel.Items, i => i.TemplateId == 3003); // Oak Wood
+        }
+
+        // --- Partial stack merges (S5-G3) ---
+
+        private (MockClientConnection client, Player player, MapInstance map) SetupLooter(int id, int slots)
+        {
+            AppDbContext.Factory = () => GetInMemoryDbContext(Guid.NewGuid().ToString());
+            var map = GameLogic.MapMgr.GetMap(1)!;
+            var client = new MockClientConnection { AccountId = 1, PlayerId = id };
+            var player = new Player(id, "Looter" + id, client) { MapId = 1, Position = new Vector3(0, 0, 0), InventorySlots = slots };
+            map.Players[id] = player;
+            return (client, player, map);
+        }
+
+        private static void LootAll(MockClientConnection client, LootSatchel satchel)
+        {
+            using var write = new Packet(OpCode.LootAllRequest);
+            write.Write(satchel.Id);
+            using var read = new Packet(write.ToArray());
+            LootHandler.HandleLootAll(client, read);
+        }
+
+        [Fact]
+        public void HandleLootAll_FillsExistingStack_AndPlacesRemainderInFreeSlot()
+        {
+            var (client, player, map) = SetupLooter(701, slots: 5);
+            var existing = ItemFactory.CreateItem(3001, player.Id, 90)!; // max stack 99
+            existing.SlotIndex = 0;
+            player.Inventory.Add(existing);
+            var satchel = new LootSatchel(new Vector3(0, 0, 0), player.Id, 45, new[] { ItemFactory.CreateItem(3001, 0, 20)! });
+            map.SpawnLootSatchel(satchel);
+
+            LootAll(client, satchel);
+
+            Assert.Equal(99, existing.Quantity);
+            var remainder = Assert.Single(player.Inventory, i => i != existing);
+            Assert.Equal(11, remainder.Quantity);
+            Assert.True(satchel.IsEmpty);
+        }
+
+        [Fact]
+        public void HandleLootAll_WithFullInventory_StillTopsUpTheStack_AndLeavesOnlyTheRemainder()
+        {
+            var (client, player, map) = SetupLooter(702, slots: 1); // the stack below is the only slot
+            var existing = ItemFactory.CreateItem(3001, player.Id, 90)!;
+            existing.SlotIndex = 0;
+            player.Inventory.Add(existing);
+            var ore = ItemFactory.CreateItem(3001, 0, 20)!;
+            var satchel = new LootSatchel(new Vector3(0, 0, 0), player.Id, 45, new[] { ore });
+            map.SpawnLootSatchel(satchel);
+
+            LootAll(client, satchel);
+
+            Assert.Equal(99, existing.Quantity);
+            var left = Assert.Single(satchel.Items);
+            Assert.Equal(11, left.Quantity);
+            Assert.True(map.LootSatchels.ContainsKey(satchel.Id)); // not despawned, loot remains
+            Assert.Contains(client.SentPackets, p => p.PacketId == OpCode.LootSatchelClose);
+        }
+
+        [Fact]
+        public void HandleLootAll_SpreadsAcrossSeveralPartialStacks()
+        {
+            var (client, player, map) = SetupLooter(703, slots: 2);
+            var a = ItemFactory.CreateItem(3001, player.Id, 95)!; a.SlotIndex = 0;
+            var b = ItemFactory.CreateItem(3001, player.Id, 98)!; b.SlotIndex = 1;
+            player.Inventory.Add(a);
+            player.Inventory.Add(b);
+            var satchel = new LootSatchel(new Vector3(0, 0, 0), player.Id, 45, new[] { ItemFactory.CreateItem(3001, 0, 8)! });
+            map.SpawnLootSatchel(satchel);
+
+            LootAll(client, satchel);
+
+            Assert.Equal(99, a.Quantity); // took 4
+            Assert.Equal(99, b.Quantity); // took 1
+            Assert.Equal(3, satchel.Items.Single().Quantity); // no free slot for the rest
+        }
+
+        [Fact]
+        public void HandleLootItem_WithFullInventory_StillTopsUpTheStack()
+        {
+            var (client, player, map) = SetupLooter(704, slots: 1);
+            var existing = ItemFactory.CreateItem(3001, player.Id, 90)!;
+            existing.SlotIndex = 0;
+            player.Inventory.Add(existing);
+            var ore = ItemFactory.CreateItem(3001, 0, 20)!;
+            var satchel = new LootSatchel(new Vector3(0, 0, 0), player.Id, 45, new[] { ore });
+            map.SpawnLootSatchel(satchel);
+
+            using (var write = new Packet(OpCode.LootItemRequest))
+            {
+                write.Write(satchel.Id);
+                write.Write(ore.Id.ToString());
+                using var read = new Packet(write.ToArray());
+                LootHandler.HandleLootItem(client, read);
+            }
+
+            Assert.Equal(99, existing.Quantity);
+            Assert.Equal(11, Assert.Single(satchel.Items).Quantity);
         }
     }
 }

@@ -1,6 +1,9 @@
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Shared.Constants;
 using Shared.Network;
+using Server.Data;
 using Server.Database;
 using Server.Database.Models;
 using Server.Network;
@@ -40,15 +43,17 @@ namespace Server.Handlers
         {
             if (client.AccountId == null) return;
 
-            string name = packet.ReadString();
+            string name = packet.ReadString().Trim();
             int appearanceId = packet.ReadInt();
 
             bool isSuccess = false;
             string message;
 
-            if (string.IsNullOrWhiteSpace(name))
+            string? invalid = InputRules.ValidateCharacterName(name);
+            if (invalid == null && !InputRules.IsValidAppearanceId(appearanceId)) invalid = "Invalid appearance.";
+            if (invalid != null)
             {
-                message = "Name cannot be empty.";
+                message = invalid;
             }
             else
             {
@@ -75,56 +80,57 @@ namespace Server.Handlers
                         }
                         else
                         {
+                            var start = DataManager.CharacterCreation;
                             var newChar = new Character
                             {
                                 AccountId = client.AccountId.Value,
                                 Name = name,
                                 AppearanceId = appearanceId,
                                 Level = 1,
-                                MapId = 1, // Start at MapId 1 (Starting Village)
-                                X = 0f,
-                                Y = 0f,
-                                Z = 0f,
-                                BindMapId = 1,
-                                BindX = 0f,
-                                BindY = 0f,
-                                BindZ = 0f,
-                                Health = 100,
-                                Mana = 50,
-                                Strength = 10,
-                                Intelligence = 10,
-                                Constitution = 10,
-                                Knowledge = 10,
-                                Gold = 100,
+                                MapId = start.StartMapId,
+                                X = start.StartX,
+                                Y = start.StartY,
+                                Z = start.StartZ,
+                                BindMapId = start.StartMapId,
+                                BindX = start.StartX,
+                                BindY = start.StartY,
+                                BindZ = start.StartZ,
+                                Health = start.Health,
+                                Mana = start.Mana,
+                                Strength = start.Strength,
+                                Intelligence = start.Intelligence,
+                                Constitution = start.Constitution,
+                                Knowledge = start.Knowledge,
+                                Gold = start.Gold,
                                 InventorySlots = ServerConfig.DefaultBackpackSlots
                             };
 
+                            // The starter kit hangs off the character, so one SaveChanges stores both or neither
+                            int slot = 0;
+                            foreach (var starter in start.StarterItems)
+                            {
+                                var item = ItemFactory.CreateItem(starter.TemplateId, 0, starter.Quantity);
+                                if (item == null)
+                                {
+                                    Console.WriteLine($"[Error] Character creation aborted: starter item {starter.TemplateId} could not be created.");
+                                    SendCreateResponse(client, false, "Character creation is unavailable right now.");
+                                    return;
+                                }
+                                item.SlotIndex = slot++;
+                                newChar.InventoryItems.Add(item);
+                            }
+
                             db.Characters.Add(newChar);
-                            db.SaveChanges();
-
-                            // Starter Kit
-                            var starterSword = ItemFactory.CreateItem(1001, newChar.Id, 1);
-                            if (starterSword != null) { starterSword.SlotIndex = 0; db.CharacterItems.Add(starterSword); }
-
-                            var starterTunic = ItemFactory.CreateItem(1301, newChar.Id, 1);
-                            if (starterTunic != null) { starterTunic.SlotIndex = 1; db.CharacterItems.Add(starterTunic); }
-
-                            var starterBoots = ItemFactory.CreateItem(1401, newChar.Id, 1);
-                            if (starterBoots != null) { starterBoots.SlotIndex = 2; db.CharacterItems.Add(starterBoots); }
-
-                            var hpPotions = ItemFactory.CreateItem(2001, newChar.Id, 5);
-                            if (hpPotions != null) { hpPotions.SlotIndex = 3; db.CharacterItems.Add(hpPotions); }
-
-                            var mpPotions = ItemFactory.CreateItem(2002, newChar.Id, 3);
-                            if (mpPotions != null) { mpPotions.SlotIndex = 4; db.CharacterItems.Add(mpPotions); }
-
-                            var weaponStones = ItemFactory.CreateItem(3004, newChar.Id, 3);
-                            if (weaponStones != null) { weaponStones.SlotIndex = 5; db.CharacterItems.Add(weaponStones); }
-
-                            var armorStones = ItemFactory.CreateItem(3005, newChar.Id, 3);
-                            if (armorStones != null) { armorStones.SlotIndex = 6; db.CharacterItems.Add(armorStones); }
-
-                            db.SaveChanges();
+                            try
+                            {
+                                db.SaveChanges();
+                            }
+                            catch (DbUpdateException)
+                            {
+                                // Lost a race with a concurrent creation of the same name (unique index)
+                                SendCreateResponse(client, false, "Name is already taken.");
+                                return;
+                            }
 
                             isSuccess = true;
                             message = "Character created successfully!";
@@ -133,6 +139,11 @@ namespace Server.Handlers
                 }
             }
 
+            SendCreateResponse(client, isSuccess, message);
+        }
+
+        private static void SendCreateResponse(IClientConnection client, bool isSuccess, string message)
+        {
             using Packet response = new Packet(OpCode.CharacterCreateResponse);
             response.Write(isSuccess);
             response.Write(message);

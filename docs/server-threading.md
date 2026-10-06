@@ -33,6 +33,12 @@ touch nothing but the database and the sender's own connection.
 entry (`EnterWorld`) to the game thread. Other handlers needing a slow I/O step should follow the same
 "load off-thread, apply on the game thread" shape.
 
+**Inventory ownership:** `Player.Inventory`, `EquippedItems` and `LearnedRecipes` are plain collections with no locks
+because only the game thread touches them: every inventory, equipment, crafting, refinement and loot packet is a
+`World` lane packet, and `CharacterSelectRequest` fills a brand-new `Player` off-thread *before* posting it to the game
+thread (nothing else can see it yet). `PacketRoutingTests` pins the lane list, so moving one of these handlers to the
+`Session` lane would fail a test instead of silently racing.
+
 ## Guarantees and safeguards (`GameCommandQueue`)
 
 - **Ordering:** one FIFO queue, so a client's packets are handled in arrival order, and its disconnect
@@ -94,3 +100,27 @@ saves lingering players like any other online player.
 or `q` on an interactive console). Shutdown order is: stop the game loop, stop the listener and disconnect clients,
 save every online player, then flush the persistence queue (see `docs/persistence.md`). The listen port comes from
 `SERVER_PORT`.
+
+## Network I/O hardening (`ClientConnection`)
+
+- **Serialized sends:** `Send` is called from both the game loop and network threads; writes are taken under a
+  per-connection lock so frames never interleave. A stalled peer cannot block the lock holder forever: writes time
+  out after `SEND_TIMEOUT_SECONDS` (default 5) and the client is disconnected.
+- **Frame validation:** an inbound length below the 4-byte header or above `MAX_INBOUND_PACKET_BYTES` (default 4096)
+  disconnects the client instead of buffering data waiting for the frame to complete.
+- **Read timeouts:** a half-received packet must complete within `PACKET_COMPLETION_TIMEOUT_SECONDS` (default 10)
+  and a connection that has not signed in must send something within `PRE_AUTH_IDLE_TIMEOUT_SECONDS` (default 30);
+  `0` disables either. Signed-in idle clients are not timed out (there is no heartbeat packet yet).
+- **Oversized outbound packets:** `Packet.ToArray` throws if a payload exceeds the 2-byte length header (65535).
+
+## Abuse protection
+
+- **Sign-in / sign-up throttling** (`AuthHandler`, `FailureThrottle`): failed sign-ins and sign-ups are counted per
+  remote address. `SIGNIN_MAX_FAILURES` (default 5) failures within `SIGNIN_FAILURE_WINDOW_SECONDS` (60) lock the
+  address out for `SIGNIN_LOCKOUT_SECONDS` (60); a locked address is refused *before* any BCrypt work, even with the
+  right password, and a successful sign-in clears its failures. It is keyed by address, not username, so an attacker
+  cannot lock a victim's account out. Behind a proxy or NAT every client shares one address; revisit when one is added.
+- **Chat** (`ChatHandler`): messages over `InputRules.ChatMaxMessageLength` (200) are refused with a notice, not
+  truncated. Each player has a token bucket (`CHAT_BURST` 5, refilling `CHAT_MESSAGES_PER_SECOND` 1); messages over it
+  are dropped and the player is told once per flood.
+- **Not covered:** transport encryption (credentials still travel in plaintext) is tracked separately in the TLS RFC.

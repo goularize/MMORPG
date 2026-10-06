@@ -104,7 +104,7 @@
     ]
   },
   {
-    "NpcTemplateId": 2001,
+    "NpcTemplateId": 101,
     "MinGold": 2,
     "MaxGold": 6,
     "GoldChance": 0.8,

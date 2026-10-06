@@ -35,8 +35,27 @@ namespace Server.Handlers
                 targetName = packet.ReadString();
             }
 
-            // Clean/Sanitize message here if needed
             if (string.IsNullOrWhiteSpace(message)) return;
+
+            // Oversized input is refused, not truncated, so nobody sends half a sentence they did not write
+            if (message.Length > Shared.Constants.InputRules.ChatMaxMessageLength
+                || targetName.Length > Shared.Constants.InputRules.CharacterNameMaxLength)
+            {
+                SendSystem(sender, $"Messages are limited to {Shared.Constants.InputRules.ChatMaxMessageLength} characters.");
+                return;
+            }
+
+            // Flood control: drop messages beyond the burst/sustained rate, telling the player once per burst
+            if (!sender.ChatBucket.TryTake())
+            {
+                if (!sender.ChatLimitNotified)
+                {
+                    sender.ChatLimitNotified = true;
+                    SendSystem(sender, "You are sending messages too fast.");
+                }
+                return;
+            }
+            sender.ChatLimitNotified = false;
             
             message = ProfanityRegex.Replace(message, "***");
 
@@ -55,6 +74,15 @@ namespace Server.Handlers
                     SendWhisper(sender, targetName, message);
                     break;
             }
+        }
+
+        private static void SendSystem(Server.World.Entities.Player player, string text)
+        {
+            using Packet notice = new Packet(OpCode.ChatMessageBroadcast);
+            notice.Write((byte)ChatChannel.System);
+            notice.Write("System");
+            notice.Write(text);
+            player.Connection.Send(notice);
         }
 
         private static void LogMessage(ChatChannel channel, string senderName, string? targetName, string message)

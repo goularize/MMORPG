@@ -1,0 +1,22 @@
+{
+  "StartMapId": 1,
+  "StartX": 0,
+  "StartY": 0,
+  "StartZ": 0,
+  "Health": 100,
+  "Mana": 50,
+  "Strength": 10,
+  "Intelligence": 10,
+  "Constitution": 10,
+  "Knowledge": 10,
+  "Gold": 100,
+  "StarterItems": [
+    { "TemplateId": 1001, "Quantity": 1 },
+    { "TemplateId": 1301, "Quantity": 1 },
+    { "TemplateId": 1401, "Quantity": 1 },
+    { "TemplateId": 2001, "Quantity": 5 },
+    { "TemplateId": 2002, "Quantity": 3 },
+    { "TemplateId": 3004, "Quantity": 3 },
+    { "TemplateId": 3005, "Quantity": 3 }
+  ]
+}
