@@ -15,3 +15,7 @@
 *.unity       linguist-generated
 *.prefab      linguist-generated
 *.asset       linguist-generated
+
+# Shell scripts must stay LF (Linux/macOS); batch files must stay CRLF (cmd.exe)
+*.sh          text eol=lf
+*.bat         text eol=crlf

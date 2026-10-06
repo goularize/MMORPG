@@ -1,7 +1,7 @@
 # MMORPG
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
-[![Unity 2022.3+](https://img.shields.io/badge/Unity-2022.3%2B-black.svg)](https://unity.com/)
+[![Unity 6](https://img.shields.io/badge/Unity-6000.6-black.svg)](https://unity.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -71,7 +71,7 @@ The MMORPG Blueprint is an end-to-end reference implementation covering the full
 ### Prerequisites
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Docker & Docker Compose](https://www.docker.com/) (for PostgreSQL database)
-- [Unity Hub & Unity 2022.3 LTS or newer](https://unity.com/)
+- [Unity Hub & Unity 6 (6000.6.3f1, the version pinned in `Client/ProjectSettings/ProjectVersion.txt`)](https://unity.com/)
 
 ### 1. Running the Database
 ```bash
@@ -97,6 +97,8 @@ Run the setup script once to link the shared backend logic into Unity's Asset hi
   ```cmd
   setup_client.bat
   ```
+
+The script links `Shared/Enums`, `Shared/Math` and `Shared/Network` (`Shared/Models` is server-side data code and is not linked). It is safe to re-run. Verify with `ls Client/Assets/Scripts/Shared` (expect `Enums`, `Math`, `Network`).
 
 Open the `Client/` folder in Unity Hub and press Play!
 

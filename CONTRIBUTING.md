@@ -35,7 +35,7 @@ Before writing code, please familiarize yourself with the non-negotiable archite
 ### Prerequisites
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Docker & Docker Compose](https://www.docker.com/) (for PostgreSQL database)
-- [Unity Hub & Unity Editor](https://unity.com/) (compatible with Unity 2022.3 LTS or Unity 6)
+- [Unity Hub & Unity Editor](https://unity.com/) (Unity 6, version `6000.6.3f1` pinned in `Client/ProjectSettings/ProjectVersion.txt`; older LTS releases such as 2022.3 cannot open the project)
 
 ### First-Time Workspace Setup
 1. **Clone the repository**:
