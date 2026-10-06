@@ -33,6 +33,12 @@ touch nothing but the database and the sender's own connection.
 entry (`EnterWorld`) to the game thread. Other handlers needing a slow I/O step should follow the same
 "load off-thread, apply on the game thread" shape.
 
+**Inventory ownership:** `Player.Inventory`, `EquippedItems` and `LearnedRecipes` are plain collections with no locks
+because only the game thread touches them: every inventory, equipment, crafting, refinement and loot packet is a
+`World` lane packet, and `CharacterSelectRequest` fills a brand-new `Player` off-thread *before* posting it to the game
+thread (nothing else can see it yet). `PacketRoutingTests` pins the lane list, so moving one of these handlers to the
+`Session` lane would fail a test instead of silently racing.
+
 ## Guarantees and safeguards (`GameCommandQueue`)
 
 - **Ordering:** one FIFO queue, so a client's packets are handled in arrival order, and its disconnect
