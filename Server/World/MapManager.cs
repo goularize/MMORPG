@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Collections.Generic;
+using System.Linq;
 using Server.World.Entities;
 
 namespace Server.World
@@ -25,19 +26,45 @@ namespace Server.World
         public List<PolygonData> Colliders { get; set; } = new();
     }
 
+    /// <summary>Thrown when map data is missing, malformed or referenced by data but absent; lists every problem.</summary>
+    public class MapLoadException : Exception
+    {
+        public IReadOnlyList<string> Errors { get; }
+
+        public MapLoadException(IReadOnlyList<string> errors)
+            : base($"Map data is invalid ({errors.Count} error(s)):{Environment.NewLine}  - {string.Join(Environment.NewLine + "  - ", errors)}")
+        {
+            Errors = errors;
+        }
+    }
+
     public class MapManager
     {
         public ConcurrentDictionary<int, MapInstance> ActiveMaps { get; } = new();
 
-        public MapManager()
+        /// <param name="mapsDirectory">Folder with the map JSON files; defaults to the "Data/Maps" folder next to the executable.</param>
+        /// <exception cref="MapLoadException">The maps are missing or invalid, or data references a map that does not exist.</exception>
+        public MapManager(string? mapsDirectory = null)
         {
-            LoadMapsFromDisk();
-            
-            // Fallbacks in case no JSON files exist yet
-            if (!ActiveMaps.ContainsKey(1)) ActiveMaps.TryAdd(1, new MapInstance(1));
-            if (!ActiveMaps.ContainsKey(2)) ActiveMaps.TryAdd(2, new MapInstance(2));
+            LoadMapsFromDisk(mapsDirectory ?? Path.Combine(AppContext.BaseDirectory, "Data", "Maps"));
+
+            var missing = FindMissingMapReferences(Data.DataManager.Spawners, Data.DataManager.CharacterCreation.StartMapId);
+            if (missing.Count > 0) throw new MapLoadException(missing);
 
             SpawnInitialSpawners();
+        }
+
+        /// <summary>Spawners and the character start point must name a loaded map; a typo should stop startup, not skip silently.</summary>
+        public List<string> FindMissingMapReferences(IEnumerable<Data.Models.SpawnerTemplate> spawners, int startMapId)
+        {
+            var errors = new List<string>();
+            if (!ActiveMaps.ContainsKey(startMapId))
+                errors.Add($"CharacterCreation.json: StartMapId {startMapId} does not match any map file.");
+
+            foreach (var group in spawners.Where(sp => !ActiveMaps.ContainsKey(sp.MapId)).GroupBy(sp => sp.MapId))
+                errors.Add($"Spawners.json: {group.Count()} spawner(s) reference map {group.Key}, which does not match any map file.");
+
+            return errors;
         }
 
         public void SpawnInitialSpawners()
@@ -117,63 +144,76 @@ namespace Server.World
             return spawned;
         }
 
-        private void LoadMapsFromDisk()
+        private void LoadMapsFromDisk(string mapsDir)
         {
-            // The JSON files are in Server/Data/Maps
-            string mapsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Data", "Maps");
-            if (!Directory.Exists(mapsDir))
-            {
-                mapsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "Maps");
-            }
+            var errors = new List<string>();
+            var seenIds = new HashSet<int>();
 
             if (!Directory.Exists(mapsDir))
             {
-                Console.WriteLine($"[MapManager] Maps directory not found at {mapsDir}. Using default maps.");
-                return;
+                throw new MapLoadException(new[] { $"Maps directory not found at {mapsDir}." });
             }
 
-            // Read our new JSON files
-            var files = Directory.GetFiles(mapsDir, "*.json");
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var files = Directory.GetFiles(mapsDir, "*.json").OrderBy(f => f, StringComparer.Ordinal).ToArray();
+            if (files.Length == 0) errors.Add($"No map files (*.json) found in {mapsDir}.");
 
             foreach (var file in files)
             {
+                string fileName = Path.GetFileName(file);
+
+                // Map "01_StartingVillage" to MapId 1
+                if (!int.TryParse(fileName.Split('_')[0], out int mapId) || mapId < 1)
+                {
+                    errors.Add($"{fileName}: the file name must start with the map id (e.g. \"01_StartingVillage.json\").");
+                    continue;
+                }
+
+                // A duplicate is reported, but its content is still checked so all problems show up in one run
+                bool duplicate = !seenIds.Add(mapId);
+                if (duplicate) errors.Add($"{fileName}: map id {mapId} is already used by another file.");
+
+                MapExportData? mapData;
                 try
                 {
-                    // Map "01_StartingVillage" to MapId 1
-                    string fileName = Path.GetFileName(file);
-                    string idPart = fileName.Split('_')[0]; // Gets "01"
-                    if (int.TryParse(idPart, out int mapId))
-                    {
-                        string json = File.ReadAllText(file);
-                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                        var mapData = JsonSerializer.Deserialize<MapExportData>(json, options);
-
-                        if (mapData != null)
-                        {
-                            var mapInstance = new MapInstance(mapId);
-                            
-                            // Load Colliders from JSON into the Server's Physics Engine
-                            foreach (var poly in mapData.Colliders)
-                            {
-                                var vertices = new List<Shared.Math.Vector3>();
-                                foreach (var pt in poly.Points)
-                                {
-                                    // 2D tile maps map exactly to 3D world space (Z=0)
-                                    vertices.Add(new Shared.Math.Vector3(pt.x, pt.y, 0));
-                                }
-                                mapInstance.Colliders.Add(new Physics.PolygonCollider(vertices));
-                            }
-
-                            ActiveMaps.TryAdd(mapId, mapInstance);
-                            Console.WriteLine($"[MapManager] Loaded Map {mapId} ({mapData.MapName}) with {mapInstance.Colliders.Count} polygon colliders.");
-                        }
-                    }
+                    mapData = JsonSerializer.Deserialize<MapExportData>(File.ReadAllText(file), options);
                 }
-                catch (Exception ex)
+                catch (JsonException ex)
                 {
-                    Console.WriteLine($"[Error] Failed to load map config {file}: {ex.Message}");
+                    errors.Add($"{fileName}: malformed JSON ({ex.Message}).");
+                    continue;
                 }
+
+                if (mapData == null)
+                {
+                    errors.Add($"{fileName}: file is empty or 'null'.");
+                    continue;
+                }
+
+                var mapInstance = new MapInstance(mapId);
+                bool valid = true;
+                for (int i = 0; i < mapData.Colliders.Count; i++)
+                {
+                    var points = mapData.Colliders[i].Points;
+                    if (points.Count < 3)
+                    {
+                        errors.Add($"{fileName}: collider #{i} has {points.Count} point(s); a polygon needs at least 3.");
+                        valid = false;
+                        continue;
+                    }
+
+                    // 2D tile maps map exactly to 3D world space (Z=0)
+                    var vertices = points.Select(pt => new Shared.Math.Vector3(pt.x, pt.y, 0)).ToList();
+                    mapInstance.Colliders.Add(new Physics.PolygonCollider(vertices));
+                }
+
+                if (!valid || duplicate) continue;
+
+                ActiveMaps.TryAdd(mapId, mapInstance);
+                Console.WriteLine($"[MapManager] Loaded Map {mapId} ({mapData.MapName}) with {mapInstance.Colliders.Count} polygon colliders.");
             }
+
+            if (errors.Count > 0) throw new MapLoadException(errors);
         }
 
         public MapInstance? GetMap(int mapId)

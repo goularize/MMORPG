@@ -33,3 +33,14 @@ files valid.
 starter kit placed in backpack slots 0, 1, 2... in file order). `CharacterHandler` stores the character and its kit
 in a **single** `SaveChanges`, so a failure can never leave a kit-less character; if a starter item cannot be built
 the creation is refused and nothing is saved.
+
+## Maps (`MapManager`)
+
+Map files live in `Server/Data/Maps/<id>_<Name>.json` and are read from `Data/Maps` next to the executable (they are
+copied to the build and publish output, so `dotnet publish` and Docker work from any working directory). Loading is
+fail-fast, like the tables above: a missing folder, no map files, a file name without a map id, a duplicate id,
+malformed JSON or a collider with fewer than 3 points throws a `MapLoadException` listing every problem. The server
+no longer invents empty, collider-free maps.
+
+Data that names a map is checked against the loaded maps at startup: the `StartMapId` in `CharacterCreation.json` and
+every spawner's `MapId`. Spawners are routed by their own `MapId` (they are not tied to map 1).

@@ -265,6 +265,7 @@ namespace Server.Tests
         {
             int accountId = AddAccount("mapper", "pw12345");
             AddCharacter(9408, accountId, mapId: 2);
+            GameLogic.MapMgr.ActiveMaps.TryAdd(2, new MapInstance(2)); // the shipped data only has map 1
             var client = new TestClient(9319) { AccountId = accountId };
 
             Handle(client, Select(9408));

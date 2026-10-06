@@ -329,6 +329,7 @@ namespace Server.Tests
                 db.SaveChanges();
             }
             GameLogic.MapMgr.AddPlayer(new Player(9501, "Online1", new TestClient(1)) { Gold = 111, MapId = 1 });
+            GameLogic.MapMgr.ActiveMaps.TryAdd(2, new MapInstance(2)); // the shipped data only has map 1
             GameLogic.MapMgr.AddPlayer(new Player(9502, "Online2", new TestClient(2)) { Gold = 222, MapId = 2 });
 
             GameLogic.MapMgr.SaveAllPlayers();
