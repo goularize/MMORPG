@@ -47,9 +47,9 @@ namespace Client.World
         }
 
         // --- Replicated health (server-authoritative, fed by EntityVitals / EntityDeath) ---
-        public int Health { get; private set; } = 1;
-        public int MaxHealth { get; private set; } = 1;
-        public bool IsDead { get; private set; }
+        [field: SerializeField] public int Health { get; private set; } = 1;
+        [field: SerializeField] public int MaxHealth { get; private set; } = 1;
+        [field: SerializeField] public bool IsDead { get; private set; }
         public float HealthPercent => MaxHealth > 0 ? Mathf.Clamp01((float)Health / MaxHealth) : 0f;
 
         /// <summary>Raised whenever health or max health changes (e.g. to drive an overhead health bar).</summary>
