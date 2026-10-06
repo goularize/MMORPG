@@ -29,6 +29,12 @@ namespace Server
         public static int MaxPendingCommandsPerClient { get; private set; } = 128;
         public static double CommandBudgetMs { get; private set; } = 10.0;
 
+        // Network I/O limits
+        public static int MaxInboundPacketBytes { get; private set; } = 4096;
+        public static double PacketCompletionTimeoutSeconds { get; private set; } = 10.0;
+        public static double PreAuthIdleTimeoutSeconds { get; private set; } = 30.0;
+        public static double SendTimeoutSeconds { get; private set; } = 5.0;
+
         public static string GameVersion { get; private set; } = Shared.Constants.GameRules.GameVersion;
 
         // RPG Progression
@@ -71,6 +77,11 @@ namespace Server
 
             MaxPendingCommandsPerClient = ReadInt("MAX_PENDING_COMMANDS_PER_CLIENT", 128, min: 1);
             CommandBudgetMs = ReadDouble("COMMAND_BUDGET_MS", 10.0, min: 0.001);
+
+            MaxInboundPacketBytes = ReadInt("MAX_INBOUND_PACKET_BYTES", 4096, min: Shared.Network.Packet.HeaderSize, max: ushort.MaxValue);
+            PacketCompletionTimeoutSeconds = ReadDouble("PACKET_COMPLETION_TIMEOUT_SECONDS", 10.0, min: 0);
+            PreAuthIdleTimeoutSeconds = ReadDouble("PRE_AUTH_IDLE_TIMEOUT_SECONDS", 30.0, min: 0);
+            SendTimeoutSeconds = ReadDouble("SEND_TIMEOUT_SECONDS", 5.0, min: 0.1);
 
             ExpBase = ReadInt("EXP_BASE", 100, min: 1);
             ExpGrowthRate = ReadDouble("EXP_GROWTH_RATE", 1.5, min: 0);

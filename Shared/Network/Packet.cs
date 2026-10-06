@@ -15,6 +15,9 @@ namespace Shared.Network
         private BinaryWriter? _writer;
         private BinaryReader? _reader;
         
+        /// <summary>Bytes of framing every packet starts with: 2-byte length + 2-byte OpCode.</summary>
+        public const int HeaderSize = 4;
+
         public OpCode PacketId { get; private set; }
 
         /// <summary>

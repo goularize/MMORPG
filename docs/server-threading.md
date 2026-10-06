@@ -94,3 +94,15 @@ saves lingering players like any other online player.
 or `q` on an interactive console). Shutdown order is: stop the game loop, stop the listener and disconnect clients,
 save every online player, then flush the persistence queue (see `docs/persistence.md`). The listen port comes from
 `SERVER_PORT`.
+
+## Network I/O hardening (`ClientConnection`)
+
+- **Serialized sends:** `Send` is called from both the game loop and network threads; writes are taken under a
+  per-connection lock so frames never interleave. A stalled peer cannot block the lock holder forever: writes time
+  out after `SEND_TIMEOUT_SECONDS` (default 5) and the client is disconnected.
+- **Frame validation:** an inbound length below the 4-byte header or above `MAX_INBOUND_PACKET_BYTES` (default 4096)
+  disconnects the client instead of buffering data waiting for the frame to complete.
+- **Read timeouts:** a half-received packet must complete within `PACKET_COMPLETION_TIMEOUT_SECONDS` (default 10)
+  and a connection that has not signed in must send something within `PRE_AUTH_IDLE_TIMEOUT_SECONDS` (default 30);
+  `0` disables either. Signed-in idle clients are not timed out (there is no heartbeat packet yet).
+- **Oversized outbound packets:** `Packet.ToArray` throws if a payload exceeds the 2-byte length header (65535).
