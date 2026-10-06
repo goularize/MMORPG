@@ -1,0 +1,17 @@
+# Unity serializes YAML with LF endings; keep them identical on every OS so
+# Windows (core.autocrlf=true) checkouts do not produce CRLF churn or merge noise.
+*.meta        text eol=lf
+*.unity       text eol=lf merge=unityyamlmerge
+*.prefab      text eol=lf merge=unityyamlmerge
+*.asset       text eol=lf merge=unityyamlmerge
+*.mat         text eol=lf merge=unityyamlmerge
+*.anim        text eol=lf merge=unityyamlmerge
+*.controller  text eol=lf merge=unityyamlmerge
+*.overrideController text eol=lf merge=unityyamlmerge
+*.physicMaterial text eol=lf merge=unityyamlmerge
+*.physicsMaterial2D text eol=lf merge=unityyamlmerge
+
+# Unity-generated YAML is noisy in diffs
+*.unity       linguist-generated
+*.prefab      linguist-generated
+*.asset       linguist-generated

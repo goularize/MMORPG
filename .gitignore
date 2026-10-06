@@ -79,7 +79,6 @@ StyleCopReport.xml
 *_p.c
 *_h.h
 *.ilk
-*.meta
 *.obj
 *.iobj
 *.pch
@@ -486,6 +485,10 @@ $RECYCLE.BIN/
 # Local OS-level directory junction / symlink for Shared library
 Client/Assets/Scripts/Shared
 Client/Assets/Scripts/Shared.meta
+
+# Unity writes .meta files next to the real Shared/ sources (and bin/obj) through the junction.
+# They are machine-local; Unity regenerates them. Client/ .meta files MUST stay tracked (GUID references).
+Shared/**/*.meta
 
 # CodeGraph local index
 .codegraph/
