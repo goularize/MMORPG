@@ -47,7 +47,7 @@ namespace Shared.Network
         SetBindPointRequest = 23,
         SetBindPointResponse = 24,
 
-        // Death SetBindPointResponse = 24 Respawn
+        // Death & Respawn
         PlayerRespawnRequest = 25,
         PlayerRespawnResponse = 26,
 
@@ -60,6 +60,10 @@ namespace Shared.Network
         AllocateStatPointRequest = 30,
         AllocateStatPointResponse = 31,
         PlayerProgressionSync = 32,
+
+        // Entity state replication, AoI-scoped (Server -> Client)
+        EntityVitals = 33,   // entityId, health, maxHealth
+        EntityDeath = 34,    // entityId
 
         // Items & Inventory (Client -> Server)
         MoveInventoryItemRequest = 70,

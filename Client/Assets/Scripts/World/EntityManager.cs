@@ -46,6 +46,38 @@ namespace Client.World
             animator.SetFloat(SpeedHash, speed);
         }
 
+        // --- Replicated health (server-authoritative, fed by EntityVitals / EntityDeath) ---
+        public int Health { get; private set; } = 1;
+        public int MaxHealth { get; private set; } = 1;
+        public bool IsDead { get; private set; }
+        public float HealthPercent => MaxHealth > 0 ? Mathf.Clamp01((float)Health / MaxHealth) : 0f;
+
+        /// <summary>Raised whenever health or max health changes (e.g. to drive an overhead health bar).</summary>
+        public event System.Action<EntityManager> VitalsChanged;
+        /// <summary>Raised once when the entity dies.</summary>
+        public event System.Action<EntityManager> Died;
+
+        public void SetVitals(int health, int maxHealth)
+        {
+            Health = health;
+            MaxHealth = maxHealth;
+
+            // A health value above zero means the entity is alive again (respawn / revive)
+            if (health > 0) IsDead = false;
+
+            VitalsChanged?.Invoke(this);
+        }
+
+        public void OnDeath()
+        {
+            if (IsDead) return;
+
+            IsDead = true;
+            Health = 0;
+            VitalsChanged?.Invoke(this);
+            Died?.Invoke(this);
+        }
+
         public void SetName(string characterName)
         {
             if (nameText != null)

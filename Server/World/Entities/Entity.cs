@@ -44,6 +44,10 @@ namespace Server.World.Entities
         public float MovementSpeed { get; set; } = Shared.Constants.GameRules.BasePlayerMoveSpeed;
         public float AttackSpeedBonus { get; set; } = 0.0f;
 
+        // Last health state broadcast to AoI observers (-1 = not recorded yet). Managed by MapInstance.
+        public int ReplicatedHealth { get; set; } = -1;
+        public int ReplicatedMaxHealth { get; set; } = -1;
+
         protected DateTime _lastRegenTime = DateTime.UtcNow;
         protected bool _vitalsChanged = false;
 

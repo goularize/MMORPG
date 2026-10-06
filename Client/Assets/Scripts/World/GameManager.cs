@@ -148,6 +148,25 @@ namespace Client.World
             }
         }
 
+        /// <summary>
+        /// Returns the EntityManager of a known entity (remote or the local player), or null.
+        /// Unlike GetEntity it never falls back to the local player for unknown ids.
+        /// </summary>
+        public EntityManager GetEntityManager(int entityId)
+        {
+            if (SpawnedEntities.TryGetValue(entityId, out GameObject obj))
+            {
+                return obj != null ? obj.GetComponent<EntityManager>() : null;
+            }
+
+            if (_localPlayer != null && entityId == CharacterHandler.LocalPlayerId)
+            {
+                return _localPlayer.GetComponent<EntityManager>();
+            }
+
+            return null;
+        }
+
         public GameObject GetEntity(int entityId)
         {
             if (SpawnedEntities.TryGetValue(entityId, out GameObject obj))

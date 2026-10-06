@@ -94,6 +94,23 @@ namespace Client.Network.Handlers
             Client.World.GameManager.Instance?.DespawnRemoteEntity(entityId);
         }
 
+        // AoI-scoped health of any entity (including ourselves); health <= 0 means dead
+        public static void HandleEntityVitals(Packet packet)
+        {
+            int entityId = packet.ReadInt();
+            int health = packet.ReadInt();
+            int maxHealth = packet.ReadInt();
+
+            Client.World.GameManager.Instance?.GetEntityManager(entityId)?.SetVitals(health, maxHealth);
+        }
+
+        public static void HandleEntityDeath(Packet packet)
+        {
+            int entityId = packet.ReadInt();
+
+            Client.World.GameManager.Instance?.GetEntityManager(entityId)?.OnDeath();
+        }
+
         public static void HandleEntityCombatEvent(Packet packet)
         {
             int attackerId = packet.ReadInt();

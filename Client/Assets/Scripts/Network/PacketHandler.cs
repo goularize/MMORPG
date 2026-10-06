@@ -29,6 +29,8 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.EntitySpawn, Handlers.WorldHandler.HandleEntitySpawn);
             _packetHandlers.Add((int)OpCode.EntityDespawn, Handlers.WorldHandler.HandleEntityDespawn);
             _packetHandlers.Add((int)OpCode.EntityCombatEvent, Handlers.WorldHandler.HandleEntityCombatEvent);
+            _packetHandlers.Add((int)OpCode.EntityVitals, Handlers.WorldHandler.HandleEntityVitals);
+            _packetHandlers.Add((int)OpCode.EntityDeath, Handlers.WorldHandler.HandleEntityDeath);
 
             _packetHandlers.Add((int)OpCode.PlayerExpUpdate, Handlers.ProgressionHandler.HandleExpUpdate);
             _packetHandlers.Add((int)OpCode.PlayerLevelUp, Handlers.ProgressionHandler.HandleLevelUp);

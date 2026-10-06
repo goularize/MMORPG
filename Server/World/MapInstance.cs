@@ -168,6 +168,11 @@ namespace Server.World
                 }
             }
 
+            // Replicate health/death changes to AoI observers
+            foreach (var player in Players.Values) SyncEntityVitals(player);
+            foreach (var npc in NPCs.Values) SyncEntityVitals(npc);
+            foreach (var res in Resources.Values) SyncEntityVitals(res);
+
             // Broadcast state updates to players based on their Area of Interest
             ProcessAreaOfInterest();
         }
@@ -180,6 +185,70 @@ namespace Server.World
                 {
                     player.Connection.Send(packet);
                 }
+            }
+        }
+
+        private static Shared.Network.Packet BuildEntityVitals(Entity entity)
+        {
+            var packet = new Shared.Network.Packet(Shared.Network.OpCode.EntityVitals);
+            packet.Write(entity.Id);
+            packet.Write(entity.Health);
+            packet.Write(entity.MaxHealth);
+            return packet;
+        }
+
+        private static Shared.Network.Packet BuildEntityDeath(Entity entity)
+        {
+            var packet = new Shared.Network.Packet(Shared.Network.OpCode.EntityDeath);
+            packet.Write(entity.Id);
+            return packet;
+        }
+
+        /// <summary>
+        /// Tells a single observer the current health (and death) state of an entity that just entered its AoI.
+        /// </summary>
+        private static void SendEntityState(Player observer, Entity entity)
+        {
+            using var vitals = BuildEntityVitals(entity);
+            observer.Connection.Send(vitals);
+
+            if (entity.Health <= 0)
+            {
+                using var death = BuildEntityDeath(entity);
+                observer.Connection.Send(death);
+            }
+        }
+
+        /// <summary>
+        /// Broadcasts EntityVitals to the entity's AoI whenever its health or max health changed since the
+        /// last broadcast (combat, regen, respawn, level-up, gear), plus EntityDeath on the alive-to-dead edge.
+        /// Runs once per tick, so every code path that changes health is covered without per-site hooks.
+        /// </summary>
+        private void SyncEntityVitals(Entity entity)
+        {
+            if (entity.ReplicatedHealth < 0)
+            {
+                // First sight: observers get the state through SendEntityState on spawn.
+                entity.ReplicatedHealth = entity.Health;
+                entity.ReplicatedMaxHealth = entity.MaxHealth;
+                return;
+            }
+
+            if (entity.Health == entity.ReplicatedHealth && entity.MaxHealth == entity.ReplicatedMaxHealth) return;
+
+            bool died = entity.Health <= 0 && entity.ReplicatedHealth > 0;
+            entity.ReplicatedHealth = entity.Health;
+            entity.ReplicatedMaxHealth = entity.MaxHealth;
+
+            using (var vitals = BuildEntityVitals(entity))
+            {
+                Broadcast(vitals, entity.Position);
+            }
+
+            if (died)
+            {
+                using var death = BuildEntityDeath(entity);
+                Broadcast(death, entity.Position);
             }
         }
 
@@ -258,6 +327,9 @@ namespace Server.World
                         spawnPacket.Write(entity.Name);
                         spawnPacket.Write(entity.Position);
                         player.Connection.Send(spawnPacket);
+
+                        // Late joiners must learn the entity's current health/death state
+                        SendEntityState(player, entity);
                     }
                     else
                     {
