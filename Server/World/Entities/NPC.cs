@@ -249,6 +249,9 @@ namespace Server.World.Entities
 
         public void PerformAttack(MapInstance? map, Player target)
         {
+            MarkInCombat();
+            target.MarkInCombat();
+
             bool isDodge = _rng.NextDouble() < target.DodgeChance;
             int finalDamage = 0;
             bool isCrit = false;
@@ -432,6 +435,9 @@ namespace Server.World.Entities
             if (BehaviorType == MobBehaviorType.Friendly) return;
             if (CurrentState == AIState.Dead) return;
 
+            MarkInCombat();
+            attacker.MarkInCombat();
+
             if (attacker is Player player)
             {
                 // Retaliate if not already fighting or dead
@@ -464,6 +470,7 @@ namespace Server.World.Entities
                     {
                         other.Target = attacker;
                         other.CurrentState = AIState.Chase;
+                        other.MarkInCombat();
                         Console.WriteLine($"[Pack Alert] {Name} ({Id}) called for help! {other.Name} ({other.Id}) joined the fight against {attacker.Name}!");
                     }
                 }

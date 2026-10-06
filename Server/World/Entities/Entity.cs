@@ -34,9 +34,12 @@ namespace Server.World.Entities
         public int Defense { get; set; }
         public int MagicDefense { get; set; }
 
-        // Regen Tracking
         // Combat & Cooldowns
         public DateTime LastAttackTime { get; set; } = DateTime.MinValue;
+
+        // Last time this entity dealt or took damage (dodges included). Passive regen is blocked
+        // until ServerConfig.RegenCooldownSeconds have elapsed since then.
+        public DateTime LastCombatTime { get; set; } = DateTime.MinValue;
         public float BaseAttackSpeed { get; set; } = Shared.Constants.GameRules.BasePlayerAttackInterval;
         public float CritChance { get; set; } = 0.05f;
         public float CritMultiplier { get; set; } = 2.0f;
@@ -67,10 +70,18 @@ namespace Server.World.Entities
         }
 
         // Methods
+        public void MarkInCombat()
+        {
+            LastCombatTime = DateTime.UtcNow;
+        }
+
+        public bool IsRegenBlockedByCombat =>
+            (DateTime.UtcNow - LastCombatTime).TotalSeconds < ServerConfig.RegenCooldownSeconds;
+
         public virtual void Update()
         {
             // Base update logic (passive health/mana regen)
-            if (Health > 0 && (Health < MaxHealth || Mana < MaxMana)) // Only regen if alive and not capped
+            if (Health > 0 && (Health < MaxHealth || Mana < MaxMana) && !IsRegenBlockedByCombat) // Only regen if alive, not capped and out of combat
             {
                 if ((DateTime.UtcNow - _lastRegenTime).TotalSeconds >= ServerConfig.RegenTickIntervalSeconds)
                 {

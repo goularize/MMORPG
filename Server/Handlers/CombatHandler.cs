@@ -74,6 +74,10 @@ namespace Server.Handlers
             // Mark attack timestamp
             player.LastAttackTime = DateTime.UtcNow;
 
+            // Both sides are in combat (resource nodes have no passive regen to block)
+            player.MarkInCombat();
+            if (target is not Resource) target.MarkInCombat();
+
             // Execution: Combat Math
             int finalDamage = 0;
             bool isDodge = false;

@@ -7,6 +7,7 @@ namespace Server
         public static int BaseHealthRes { get; private set; } = 5;
         public static int BaseManaRes { get; private set; } = 3;
         public static double RegenTickIntervalSeconds { get; private set; } = 1.0;
+        public static double RegenCooldownSeconds { get; private set; } = 5.0;
 
         public static string GameVersion { get; private set; } = Shared.Constants.GameRules.GameVersion;
 
@@ -45,6 +46,13 @@ namespace Server
                 RegenTickIntervalSeconds = tickInterval;
             }
 
+            // Reset first so a missing/invalid value falls back to the default on re-initialization.
+            RegenCooldownSeconds = 5.0;
+            if (double.TryParse(Environment.GetEnvironmentVariable("REGEN_COOLDOWN_SECONDS"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double regenCooldown) && regenCooldown >= 0)
+            {
+                RegenCooldownSeconds = regenCooldown;
+            }
+
             if (int.TryParse(Environment.GetEnvironmentVariable("EXP_BASE"), out int expBase))
             {
                 ExpBase = expBase;
@@ -75,7 +83,7 @@ namespace Server
                 LootDecaySeconds = decaySec;
             }
             
-            Console.WriteLine($"[Config] Running Version: {GameVersion} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s | EXP Base: {ExpBase}, Growth: {ExpGrowthRate} | Slots: {DefaultBackpackSlots} | Loot: {LootOwnershipSeconds}s owner / {LootDecaySeconds}s decay");
+            Console.WriteLine($"[Config] Running Version: {GameVersion} | Regen: {BaseHealthRes} HP / {BaseManaRes} MP every {RegenTickIntervalSeconds}s (blocked {RegenCooldownSeconds}s after combat) | EXP Base: {ExpBase}, Growth: {ExpGrowthRate} | Slots: {DefaultBackpackSlots} | Loot: {LootOwnershipSeconds}s owner / {LootDecaySeconds}s decay");
         }
 
         public static long GetExpForNextLevel(int currentLevel)

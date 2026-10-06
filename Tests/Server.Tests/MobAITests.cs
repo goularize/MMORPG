@@ -315,5 +315,92 @@ namespace Server.Tests
             Assert.Equal(mob.SpawnPosition.X, mob.Position.X);
             Assert.Equal(mob.SpawnPosition.Y, mob.Position.Y);
         }
+
+        [Fact]
+        public void Mob_DoesNotRegenWhileBeingAttacked_ButRegensAfterCooldown()
+        {
+            var map = SetupFreshMap();
+
+            var playerClient = new MockClientConnection { AccountId = 1, PlayerId = 111 };
+            var player = new Player(111, "Fighter", playerClient)
+            {
+                Position = new Vector3(1, 0, 0),
+                Health = 100,
+                MaxHealth = 100,
+                Attack = 5,
+                CritChance = 0f,
+                DodgeChance = 0f
+            };
+            map.AddPlayer(player);
+
+            var mob = new NPC(211, "Boar")
+            {
+                BehaviorType = MobBehaviorType.Passive,
+                Position = new Vector3(0, 0, 0),
+                SpawnPosition = new Vector3(0, 0, 0),
+                Health = 500,
+                MaxHealth = 500,
+                Defense = 0,
+                DodgeChance = 0f,
+                CritChance = 0f
+            };
+            map.AddNPC(mob);
+            player.KnownEntities.Add(mob.Id);
+
+            using var writePacket = new Packet(OpCode.EntityAttackRequest);
+            writePacket.Write(mob.Id);
+            using var attackPacket = new Packet(writePacket.ToArray());
+            CombatHandler.HandleAttackRequest(playerClient, attackPacket);
+
+            Assert.True(mob.Health < 500);
+            Assert.True(player.IsRegenBlockedByCombat);
+            Assert.True(mob.IsRegenBlockedByCombat);
+
+            // Zero regen interval so every tick is eligible; only the combat cooldown can block it.
+            Environment.SetEnvironmentVariable("REGEN_TICK_INTERVAL_SECONDS", "0");
+            ServerConfig.Initialize();
+            try
+            {
+                int healthAfterHit = mob.Health;
+                mob.UpdateAI(map, 0.1f);
+                Assert.Equal(healthAfterHit, mob.Health);
+
+                // Once the cooldown has passed, passive regen resumes.
+                mob.LastCombatTime = DateTime.UtcNow.AddSeconds(-(ServerConfig.RegenCooldownSeconds + 1));
+                mob.UpdateAI(map, 0.1f);
+                Assert.True(mob.Health > healthAfterHit);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("REGEN_TICK_INTERVAL_SECONDS", "1");
+                ServerConfig.Initialize();
+            }
+        }
+
+        [Fact]
+        public void MobAttack_MarksBothMobAndPlayerInCombat()
+        {
+            var map = SetupFreshMap();
+            var playerClient = new MockClientConnection { AccountId = 1, PlayerId = 112 };
+            var player = new Player(112, "Victim", playerClient)
+            {
+                Position = new Vector3(1, 0, 0),
+                Health = 100,
+                MaxHealth = 100,
+                DodgeChance = 0f
+            };
+            map.AddPlayer(player);
+
+            var mob = new NPC(212, "Wolf") { Attack = 5, CritChance = 0f };
+            map.AddNPC(mob);
+
+            Assert.False(mob.IsRegenBlockedByCombat);
+            Assert.False(player.IsRegenBlockedByCombat);
+
+            mob.PerformAttack(map, player);
+
+            Assert.True(mob.IsRegenBlockedByCombat);
+            Assert.True(player.IsRegenBlockedByCombat);
+        }
     }
 }

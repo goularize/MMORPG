@@ -181,5 +181,79 @@ namespace Server.Tests
             // Assert
             Assert.Equal(0, entity.Health); // Should still be dead
         }
+
+        [Fact]
+        public void Update_RightAfterCombat_DoesNotRegen()
+        {
+            var entity = new TestEntity { MaxHealth = 100, Health = 50, MaxMana = 100, Mana = 50 };
+            entity.SetLastRegenTime(DateTime.UtcNow.AddSeconds(-10));
+            entity.MarkInCombat();
+
+            entity.Update();
+
+            Assert.Equal(50, entity.Health);
+            Assert.Equal(50, entity.Mana);
+            Assert.False(entity.VitalsChanged);
+        }
+
+        [Fact]
+        public void Update_BeforeCooldownElapsed_DoesNotRegen()
+        {
+            var entity = new TestEntity { MaxHealth = 100, Health = 50 };
+            entity.SetLastRegenTime(DateTime.UtcNow.AddSeconds(-10));
+            entity.LastCombatTime = DateTime.UtcNow.AddSeconds(-(ServerConfig.RegenCooldownSeconds - 2));
+
+            entity.Update();
+
+            Assert.Equal(50, entity.Health);
+        }
+
+        [Fact]
+        public void Update_AfterCooldownElapsed_ResumesRegen()
+        {
+            var entity = new TestEntity { MaxHealth = 100, Health = 50 };
+            entity.SetLastRegenTime(DateTime.UtcNow.AddSeconds(-10));
+            entity.LastCombatTime = DateTime.UtcNow.AddSeconds(-(ServerConfig.RegenCooldownSeconds + 1));
+
+            entity.Update();
+
+            Assert.Equal(55, entity.Health);
+        }
+
+        [Fact]
+        public void Update_UninvolvedEntity_IsNotBlockedByAnotherEntitysCombat()
+        {
+            var fighter = new TestEntity { MaxHealth = 100, Health = 50 };
+            var bystander = new TestEntity { MaxHealth = 100, Health = 50 };
+            fighter.SetLastRegenTime(DateTime.UtcNow.AddSeconds(-10));
+            bystander.SetLastRegenTime(DateTime.UtcNow.AddSeconds(-10));
+            fighter.MarkInCombat();
+
+            fighter.Update();
+            bystander.Update();
+
+            Assert.Equal(50, fighter.Health);
+            Assert.Equal(55, bystander.Health);
+        }
+
+        [Fact]
+        public void Initialize_RegenCooldown_ParsedInvariantAndDefaultsWhenMissing()
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable("REGEN_COOLDOWN_SECONDS", "2.5");
+                ServerConfig.Initialize();
+                Assert.Equal(2.5, ServerConfig.RegenCooldownSeconds);
+
+                Environment.SetEnvironmentVariable("REGEN_COOLDOWN_SECONDS", null);
+                ServerConfig.Initialize();
+                Assert.Equal(5.0, ServerConfig.RegenCooldownSeconds);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("REGEN_COOLDOWN_SECONDS", null);
+                ServerConfig.Initialize();
+            }
+        }
     }
 }
