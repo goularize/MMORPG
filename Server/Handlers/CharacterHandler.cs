@@ -149,6 +149,13 @@ namespace Server.Handlers
             using var db = AppDbContext.Factory();
             var character = db.Characters.FirstOrDefault(c => c.Id == characterId && c.AccountId == client.AccountId);
 
+            // A character that is in the world (or entering it) cannot be deleted from under its own session
+            if (character != null && client.PlayerId == characterId)
+            {
+                Console.WriteLine($"[Client {client.Id}] Refused to delete character {characterId}: it is in the world.");
+                character = null;
+            }
+
             if (character != null)
             {
                 db.Characters.Remove(character);
@@ -166,6 +173,15 @@ namespace Server.Handlers
             if (client.AccountId == null) return;
 
             int characterId = packet.ReadInt();
+
+            // One character per connection: a second select would orphan the first character in the world
+            if (client.PlayerId.HasValue)
+            {
+                Console.WriteLine($"[Client {client.Id}] Refused to select character {characterId}: character {client.PlayerId} is already selected.");
+                SendSelectFailure(client);
+                return;
+            }
+
             using var db = AppDbContext.Factory();
             var characterData = db.Characters.FirstOrDefault(c => c.Id == characterId && c.AccountId == client.AccountId);
 
@@ -193,6 +209,7 @@ namespace Server.Handlers
                     Knowledge = characterData.Knowledge,
                     Gold = characterData.Gold,
                     InventorySlots = characterData.InventorySlots > 0 ? characterData.InventorySlots : ServerConfig.DefaultBackpackSlots,
+                    MapId = characterData.MapId,
                     Position = new Shared.Math.Vector3(characterData.X, characterData.Y, characterData.Z),
                     BindMapId = characterData.BindMapId,
                     BindPosition = new Shared.Math.Vector3(characterData.BindX, characterData.BindY, characterData.BindZ)
@@ -225,34 +242,47 @@ namespace Server.Handlers
 
                 // The world entry and its replies must run on the game thread. Posting here keeps it ordered
                 // before anything this client sends next, and before its disconnect.
-                int mapId = characterData.MapId;
-                float x = characterData.X, y = characterData.Y, z = characterData.Z;
-                GameLogic.Commands.Post(() => EnterWorld(client, player, mapId, x, y, z));
+                // The character is claimed for this connection right away (not only once it is in the world), so a
+                // second select or a delete arriving before the world entry runs is refused too.
+                client.PlayerId = player.Id;
+                GameLogic.Commands.Post(() => EnterWorld(client, player));
                 return;
             }
 
+            SendSelectFailure(client);
+        }
+
+        private static void SendSelectFailure(IClientConnection client)
+        {
             using Packet failure = new Packet(OpCode.CharacterSelectResponse);
             failure.Write(false);
             client.Send(failure);
         }
 
         /// <summary>Runs on the game thread: puts a loaded character into the world and syncs its state to the client.</summary>
-        private static void EnterWorld(IClientConnection client, Player player, int mapId, float x, float y, float z)
+        private static void EnterWorld(IClientConnection client, Player player)
         {
             // The client may have dropped while its character was loading
             if (!client.IsConnected) return;
 
-            GameLogic.MapMgr.AddPlayer(player);
-            client.PlayerId = player.Id; // Bind the world entity to the active network session
+            if (!GameLogic.MapMgr.AddPlayer(player))
+            {
+                // Missing map, or the character is somehow already online: do not report success for a player that
+                // is not in the world, and let the client pick again.
+                client.PlayerId = null;
+                SendSelectFailure(client);
+                return;
+            }
+
             Console.WriteLine($"[Client {client.Id}] Selected character '{player.Name}' and entered the world.");
 
             using Packet response = new Packet(OpCode.CharacterSelectResponse);
             response.Write(true);
             // Send starting coordinates so client can load scene
-            response.Write(mapId);
-            response.Write(x);
-            response.Write(y);
-            response.Write(z);
+            response.Write(player.MapId);
+            response.Write(player.Position.X);
+            response.Write(player.Position.Y);
+            response.Write(player.Position.Z);
             client.Send(response);
 
             var activePlayer = GameLogic.MapMgr.GetPlayer(player.Id);

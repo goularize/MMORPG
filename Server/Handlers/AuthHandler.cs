@@ -9,6 +9,21 @@ namespace Server.Handlers
 {
     public static class AuthHandler
     {
+        /// <summary>
+        /// Binds the database account to the network session. An account has one session at a time: a previous
+        /// connection of the same account is disconnected (this also frees accounts held by a dead connection).
+        /// </summary>
+        private static void BindSession(IClientConnection client, int accountId)
+        {
+            if (client.AccountId.HasValue && client.AccountId.Value != accountId)
+            {
+                SessionRegistry.Release(client.AccountId.Value, client);
+            }
+
+            client.AccountId = accountId;
+            SessionRegistry.Bind(accountId, client);
+        }
+
         public static void HandleSignUpRequest(IClientConnection client, Packet packet)
         {
             string clientVersion = packet.ReadString();
@@ -18,6 +33,15 @@ namespace Server.Handlers
                 errResponse.Write(false);
                 errResponse.Write($"Version mismatch! Server is running {ServerConfig.GameVersion}.");
                 client.Send(errResponse);
+                return;
+            }
+
+            if (client.PlayerId.HasValue)
+            {
+                using Packet inWorld = new Packet(OpCode.SignUpResponse);
+                inWorld.Write(false);
+                inWorld.Write("You are already in the world.");
+                client.Send(inWorld);
                 return;
             }
 
@@ -35,7 +59,7 @@ namespace Server.Handlers
             }
             else
             {
-                using var db = new AppDbContext();
+                using var db = AppDbContext.Factory();
                 
                 // Check if user exists
                 bool exists = db.Accounts.Any(a => a.Username.ToLower() == username.ToLower());
@@ -60,7 +84,7 @@ namespace Server.Handlers
                     
                     isSuccess = true;
                     message = "Account created successfully!";
-                    client.AccountId = newAccount.Id; // Bind the database account to the network session
+                    BindSession(client, newAccount.Id);
                     Console.WriteLine($"[Client {client.Id}] Account created for '{username}'.");
                 }
             }
@@ -83,6 +107,15 @@ namespace Server.Handlers
                 return;
             }
 
+            if (client.PlayerId.HasValue)
+            {
+                using Packet inWorld = new Packet(OpCode.SignInResponse);
+                inWorld.Write(false);
+                inWorld.Write("You are already in the world.");
+                client.Send(inWorld);
+                return;
+            }
+
             string username = packet.ReadString();
             string password = packet.ReadString();
 
@@ -91,7 +124,7 @@ namespace Server.Handlers
             bool isSuccess = false;
             string message = "Invalid credentials.";
 
-            using var db = new AppDbContext();
+            using var db = AppDbContext.Factory();
             
             // Find the user by username
             var account = db.Accounts.FirstOrDefault(a => a.Username.ToLower() == username.ToLower());
@@ -103,7 +136,7 @@ namespace Server.Handlers
                 {
                     isSuccess = true;
                     message = $"Welcome to the game, {username}!";
-                    client.AccountId = account.Id; // Bind the database account to the network session
+                    BindSession(client, account.Id);
                     Console.WriteLine($"[Client {client.Id}] Sign In Successful for Account ID {account.Id}.");
                 }
             }

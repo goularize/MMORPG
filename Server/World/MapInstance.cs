@@ -50,13 +50,18 @@ namespace Server.World
             return null;
         }
 
-        public void AddPlayer(Player player)
+        /// <returns>False when a player with this ID is already on the map (it is left untouched).</returns>
+        public bool AddPlayer(Player player)
         {
-            if (Players.TryAdd(player.Id, player))
+            if (!Players.TryAdd(player.Id, player))
             {
-                player.MapId = MapId;
-                Console.WriteLine($"Player {player.Name} (ID: {player.Id}) joined Map {MapId}.");
+                Console.WriteLine($"[Error] Player {player.Name} (ID: {player.Id}) is already on Map {MapId}; not added again.");
+                return false;
             }
+
+            player.MapId = MapId;
+            Console.WriteLine($"Player {player.Name} (ID: {player.Id}) joined Map {MapId}.");
+            return true;
         }
 
         public void AddNPC(NPC npc)

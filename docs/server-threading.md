@@ -45,6 +45,20 @@ entry (`EnterWorld`) to the game thread. Other handlers needing a slow I/O step 
 - **Stale work:** queued world entry is skipped if the connection closed while the character was loading
   (`IClientConnection.IsConnected`).
 
+## Sessions
+
+- **One session per account** (`SessionRegistry`): signing in (or up) binds the connection to the account and
+  disconnects the account's previous connection. This also frees accounts stuck behind a half-open connection the
+  server has not noticed is dead.
+- **One character per connection:** `CharacterSelectRequest` claims the character for the connection immediately
+  (`PlayerId` is set before the world entry runs on the game thread), so a second select, a sign-in, or a delete of
+  that character is refused even while the entry is still queued. If entering the world fails (missing map,
+  character already online) the claim is released and the client gets a failure response.
+- **Disconnects remove only their own player** (`MapManager.RemovePlayerOwnedBy`), so a late disconnect of an old
+  connection can never remove the player of a newer session of the same character.
+- `ClientConnection.AccountId`/`PlayerId` are single atomic ints (0 = none): they are written by one thread and read
+  by others, and a `Nullable<int>` can tear.
+
 ## The game loop (`GameLogic`)
 
 - **Fixed timestep:** `FixedTimestepClock` turns real elapsed time into whole 1/30 s steps, so every `Update()` is

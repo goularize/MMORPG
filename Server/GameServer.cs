@@ -68,16 +68,18 @@ namespace Server
             if (_clients.TryRemove(clientId, out var clientConnection))
             {
                 Console.WriteLine($"Client {clientId} removed from active connections list.");
-                
+
+                if (clientConnection.AccountId.HasValue)
+                {
+                    Server.Network.SessionRegistry.Release(clientConnection.AccountId.Value, clientConnection);
+                }
+
                 // Leave the world on the game thread, after any commands this client already queued. PlayerId is
                 // read there because a queued world-entry may only set it just before this runs.
                 Server.World.GameLogic.Commands.Post(() =>
                 {
                     Server.World.GameLogic.Commands.ForgetClient(clientId);
-                    if (clientConnection.PlayerId.HasValue)
-                    {
-                        Server.World.GameLogic.MapMgr.RemovePlayer(clientConnection.PlayerId.Value);
-                    }
+                    Server.World.GameLogic.MapMgr.RemovePlayerOwnedBy(clientConnection);
                 });
             }
         }

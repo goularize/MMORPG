@@ -194,17 +194,32 @@ namespace Server.World
             return null;
         }
 
-        public void AddPlayer(Player player)
+        /// <returns>True when the player is now on a map; false if the map does not exist or the player is already online.</returns>
+        public bool AddPlayer(Player player)
         {
             var mapId = player.MapId > 0 ? player.MapId : 1;
-            if (ActiveMaps.TryGetValue(mapId, out var map))
-            {
-                map.AddPlayer(player);
-            }
-            else
+            if (!ActiveMaps.TryGetValue(mapId, out var map))
             {
                 Console.WriteLine($"[Error] Cannot add player to non-existent Map {mapId}");
+                return false;
             }
+
+            return map.AddPlayer(player);
+        }
+
+        /// <summary>
+        /// Removes the client's player, but only if that exact connection owns the player in the world. A stale
+        /// connection must never remove the player a newer session of the same character has since put there.
+        /// </summary>
+        public bool RemovePlayerOwnedBy(Server.Network.IClientConnection client)
+        {
+            if (!client.PlayerId.HasValue) return false;
+
+            var player = GetPlayer(client.PlayerId.Value);
+            if (player == null || !ReferenceEquals(player.Connection, client)) return false;
+
+            RemovePlayer(player.Id);
+            return true;
         }
 
         public void RemovePlayer(int playerId, bool savePosition = true)

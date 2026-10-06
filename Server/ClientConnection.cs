@@ -10,8 +10,23 @@ namespace Server
     public class ClientConnection : IClientConnection
     {
         public int Id { get; }
-        public int? AccountId { get; set; } // Set when the player successfully signs in
-        public int? PlayerId { get; set; }  // Set when the player selects a character and enters the world
+
+        // Written by one thread and read by others (read loop vs game thread). A Nullable<int> is two fields and
+        // can tear, so each value is stored as a single int where 0 means "none" (IDs start at 1).
+        private int _accountId;
+        private int _playerId;
+
+        public int? AccountId // Set when the player successfully signs in
+        {
+            get { int v = Volatile.Read(ref _accountId); return v == 0 ? null : v; }
+            set => Volatile.Write(ref _accountId, value ?? 0);
+        }
+
+        public int? PlayerId // Set when the player selects a character (cleared if entering the world fails)
+        {
+            get { int v = Volatile.Read(ref _playerId); return v == 0 ? null : v; }
+            set => Volatile.Write(ref _playerId, value ?? 0);
+        }
         
         private readonly TcpClient _tcpClient;
         private readonly NetworkStream _stream;
