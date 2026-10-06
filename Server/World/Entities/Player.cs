@@ -35,12 +35,43 @@ namespace Server.World.Entities
         public int BindMapId { get; set; }
         public Shared.Math.Vector3 BindPosition { get; set; }
 
+        /// <summary>
+        /// Set while the character stays in the world after its connection dropped in combat (combat-log
+        /// protection); the map removes it when this passes. Null for a normally connected player.
+        /// </summary>
+        public System.DateTime? LingerUntilUtc { get; set; }
+        public bool IsLingering => LingerUntilUtc.HasValue;
+
         public Player(int id, string name, Server.Network.IClientConnection connection)
         {
             Id = id;
             Name = name;
             Connection = connection;
         }
+
+        /// <summary>
+        /// The connection dropped while the character was in combat: keep it in the world, unable to act, for
+        /// ServerConfig.CombatLogoutLingerSeconds so pulling the plug is not an escape from the fight.
+        /// </summary>
+        public void BeginLinger()
+        {
+            Connection = Server.Network.DetachedConnection.Instance;
+            LingerUntilUtc = DateTime.UtcNow.AddSeconds(ServerConfig.CombatLogoutLingerSeconds);
+
+            // If the server dies while the character lingers, at least the state at disconnect is on disk
+            QueueSave(urgent: true);
+        }
+
+        /// <summary>A lingering character is picked up by a new session instead of being loaded a second time.</summary>
+        public void Reattach(Server.Network.IClientConnection connection)
+        {
+            Connection = connection;
+            LingerUntilUtc = null;
+            AoiResetRequested = true; // the new client knows nothing yet: re-send what is around
+        }
+
+        /// <summary>True once a lingering character should leave the world (time is up, or it died).</summary>
+        public bool IsLingerOver(DateTime utcNow) => LingerUntilUtc.HasValue && (utcNow >= LingerUntilUtc.Value || Health <= 0);
 
         // Periodic safety-net save, staggered per player so autosaves never arrive as one burst
         private DateTime _nextAutosaveUtc;

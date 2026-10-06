@@ -78,6 +78,16 @@ entry (`EnterWorld`) to the game thread. Other handlers needing a slow I/O step 
 3. Tests call handlers directly. When a flow goes through the queue (e.g. character select), call
    `GameLogic.Commands.DrainAll()` (test helper) to run what was posted.
 
+## Combat logging
+
+When a connection drops, `MapManager.RemovePlayerOwnedBy` (on the game thread) checks the player: alive and combat-tagged
+(`Entity.IsCombatTagged`: fought a creature within `COMBAT_TAG_SECONDS`, default 10; harvesting does not count) means
+the character is **not** removed. It keeps a `DetachedConnection` (sends are discarded), stays in the map, can be
+attacked, and is saved at once. `MapInstance.Update` removes it (with the normal final save) when
+`COMBAT_LOGOUT_LINGER_SECONDS` (default 15, `0` disables) passes or it dies. Selecting the same character again while it
+lingers resumes the live player (`Player.Reattach`) instead of loading a second copy from the database. Server shutdown
+saves lingering players like any other online player.
+
 ## Process lifecycle
 
 `Program.Main` has no stdin dependency: it waits on the `ShutdownCoordinator` token (SIGTERM, SIGINT/Ctrl+C, SIGHUP,

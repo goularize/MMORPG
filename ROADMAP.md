@@ -90,7 +90,7 @@
 - [x] **Resilient Fixed-Timestep Game Loop**: Exception-guarded ticks, catch-up with a step cap, and lag reporting (`FixedTimestepClock`, see `docs/server-threading.md`).
 - [ ] **Zero-Allocation Packet Pooling**: Implement `ArrayPool<byte>` socket buffer pooling to eliminate GC pressure during heavy network traffic.
 - [ ] **State Delta Compression**: Pack entity position updates and omit unchanged fields to minimize bandwidth.
-- [ ] **Graceful Disconnect & Combat Logging Protection**: Delay character removal upon abrupt disconnects if the player is currently tagged in combat.
+- [x] **Graceful Disconnect & Combat Logging Protection**: A disconnect while tagged in combat leaves the character in the world, defenseless, for a linger period; a reconnect resumes it (`Player.BeginLinger`, see `docs/server-threading.md`).
 - [x] **Database Write-Behind Caching**: Snapshot-based, per-character ordered, coalesced and retried persistence queue with autosave and flush on shutdown (`PersistenceService`, see `docs/persistence.md`).
 
 > *Plus emerging features, architectural refinements, and quality-of-life improvements identified during active development sprints.*

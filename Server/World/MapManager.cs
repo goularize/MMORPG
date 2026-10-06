@@ -208,7 +208,8 @@ namespace Server.World
         }
 
         /// <summary>
-        /// Removes the client's player, but only if that exact connection owns the player in the world. A stale
+        /// Takes the client's player off its connection: removes it from the world, or, when the client dropped
+        /// mid-combat, leaves it lingering (see <see cref="Player.BeginLinger"/>). Only if that exact connection owns the player in the world. A stale
         /// connection must never remove the player a newer session of the same character has since put there.
         /// </summary>
         public bool RemovePlayerOwnedBy(Server.Network.IClientConnection client)
@@ -217,6 +218,14 @@ namespace Server.World
 
             var player = GetPlayer(client.PlayerId.Value);
             if (player == null || !ReferenceEquals(player.Connection, client)) return false;
+
+            // Dropping out of a fight is not an escape: the character stays (defenseless) until the linger ends
+            if (player.Health > 0 && ServerConfig.CombatLogoutLingerSeconds > 0 && player.IsCombatTagged)
+            {
+                player.BeginLinger();
+                Console.WriteLine($"[CombatLog] {player.Name} disconnected in combat; staying in the world for {ServerConfig.CombatLogoutLingerSeconds:0.#}s.");
+                return true;
+            }
 
             RemovePlayer(player.Id);
             return true;

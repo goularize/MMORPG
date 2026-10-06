@@ -75,8 +75,15 @@ namespace Server.Handlers
             player.LastAttackTime = DateTime.UtcNow;
 
             // Both sides are in combat (resource nodes have no passive regen to block)
-            player.MarkInCombat();
-            if (target is not Resource) target.MarkInCombat();
+            if (target is Resource)
+            {
+                player.MarkRegenBlocked(); // harvesting is not combat: it must not make a disconnect a combat log
+            }
+            else
+            {
+                player.MarkInCombat();
+                target.MarkInCombat();
+            }
 
             // Execution: Combat Math
             int finalDamage = 0;

@@ -130,6 +130,14 @@ namespace Server.World
             // Process Player logic
             foreach (var player in Players.Values)
             {
+                // A character left behind by a combat log goes once its time is up or it has died
+                if (player.IsLingerOver(DateTime.UtcNow))
+                {
+                    RemovePlayer(player.Id);
+                    Console.WriteLine($"[CombatLog] {player.Name} lingered out ({(player.Health <= 0 ? "died" : "time up")}).");
+                    continue;
+                }
+
                 player.Update();
             }
 

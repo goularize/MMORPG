@@ -10,7 +10,7 @@ namespace Server.Tests
         {
             "SERVER_PORT", "DEFAULT_CHARACTER_SLOT", "REGEN_TICK_INTERVAL_SECONDS", "REGEN_COOLDOWN_SECONDS",
             "COMMAND_BUDGET_MS", "EXP_GROWTH_RATE", "LOOT_OWNERSHIP_SECONDS", "LOOT_DECAY_SECONDS",
-            "BASE_HEALTH_RES", "MAX_PENDING_COMMANDS_PER_CLIENT"
+            "BASE_HEALTH_RES", "MAX_PENDING_COMMANDS_PER_CLIENT", "COMBAT_TAG_SECONDS", "COMBAT_LOGOUT_LINGER_SECONDS"
         };
 
         private readonly CultureInfo _originalCulture = CultureInfo.CurrentCulture;
@@ -55,6 +55,24 @@ namespace Server.Tests
             Assert.Equal(0.25f, ServerConfig.LootDecaySeconds);
             Assert.Equal(7.5, ServerConfig.CommandBudgetMs);
             Assert.Equal(1.75, ServerConfig.ExpGrowthRate);
+        }
+
+        [Fact]
+        public void CombatLogSettings_DefaultTo10And15_AndCanBeOverriddenOrDisabled()
+        {
+            Assert.Equal(10.0, ServerConfig.CombatTagSeconds);
+            Assert.Equal(15.0, ServerConfig.CombatLogoutLingerSeconds);
+
+            Environment.SetEnvironmentVariable("COMBAT_TAG_SECONDS", "4.5");
+            Environment.SetEnvironmentVariable("COMBAT_LOGOUT_LINGER_SECONDS", "0");
+            ServerConfig.Initialize();
+
+            Assert.Equal(4.5, ServerConfig.CombatTagSeconds);
+            Assert.Equal(0.0, ServerConfig.CombatLogoutLingerSeconds);
+
+            Environment.SetEnvironmentVariable("COMBAT_TAG_SECONDS", "-3"); // invalid: falls back
+            ServerConfig.Initialize();
+            Assert.Equal(10.0, ServerConfig.CombatTagSeconds);
         }
 
         [Fact]

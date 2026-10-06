@@ -274,6 +274,17 @@ namespace Server.Handlers
 
             if (!GameLogic.MapMgr.AddPlayer(player))
             {
+                // The character is still in the world because its previous connection dropped mid-combat: this
+                // session takes it over, state and all, rather than loading a second copy.
+                var lingering = GameLogic.MapMgr.GetPlayer(player.Id);
+                if (lingering != null && lingering.IsLingering && lingering.AccountId == client.AccountId)
+                {
+                    lingering.Reattach(client);
+                    Console.WriteLine($"[CombatLog] Client {client.Id} resumed lingering character '{lingering.Name}'.");
+                    SendWorldState(client, lingering);
+                    return;
+                }
+
                 // Missing map, or the character is somehow already online: do not report success for a player that
                 // is not in the world, and let the client pick again.
                 client.PlayerId = null;
@@ -282,7 +293,11 @@ namespace Server.Handlers
             }
 
             Console.WriteLine($"[Client {client.Id}] Selected character '{player.Name}' and entered the world.");
+            SendWorldState(client, player);
+        }
 
+        private static void SendWorldState(IClientConnection client, Player player)
+        {
             using Packet response = new Packet(OpCode.CharacterSelectResponse);
             response.Write(true);
             // Send starting coordinates so client can load scene

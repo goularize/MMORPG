@@ -40,6 +40,10 @@ namespace Server.World.Entities
         // Last time this entity dealt or took damage (dodges included). Passive regen is blocked
         // until ServerConfig.RegenCooldownSeconds have elapsed since then.
         public DateTime LastCombatTime { get; set; } = DateTime.MinValue;
+
+        // Last time this entity took part in real combat. Unlike LastCombatTime it is not touched by harvesting
+        // resource nodes, so it is what decides whether a disconnect counts as combat logging.
+        public DateTime LastCombatTagTime { get; set; } = DateTime.MinValue;
         public float BaseAttackSpeed { get; set; } = Shared.Constants.GameRules.BasePlayerAttackInterval;
         public float CritChance { get; set; } = 0.05f;
         public float CritMultiplier { get; set; } = 2.0f;
@@ -73,7 +77,18 @@ namespace Server.World.Entities
         public void MarkInCombat()
         {
             LastCombatTime = DateTime.UtcNow;
+            LastCombatTagTime = LastCombatTime;
         }
+
+        /// <summary>Blocks passive regen like combat does, without tagging the entity for combat-logging purposes.</summary>
+        public void MarkRegenBlocked()
+        {
+            LastCombatTime = DateTime.UtcNow;
+        }
+
+        /// <summary>True while this entity fought (dealt or took damage from a creature) within ServerConfig.CombatTagSeconds.</summary>
+        public bool IsCombatTagged =>
+            ServerConfig.CombatTagSeconds > 0 && (DateTime.UtcNow - LastCombatTagTime).TotalSeconds < ServerConfig.CombatTagSeconds;
 
         public bool IsRegenBlockedByCombat =>
             (DateTime.UtcNow - LastCombatTime).TotalSeconds < ServerConfig.RegenCooldownSeconds;

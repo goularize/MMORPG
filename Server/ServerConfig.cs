@@ -21,6 +21,10 @@ namespace Server
         public static int PersistenceMaxAttempts { get; private set; } = 8;
         public static int ChatLogQueueSize { get; private set; } = 10000;
 
+        // Combat logging: a disconnect while tagged leaves the character in the world for the linger period
+        public static double CombatTagSeconds { get; private set; } = 10.0;
+        public static double CombatLogoutLingerSeconds { get; private set; } = 15.0;
+
         // Network -> game thread command queue
         public static int MaxPendingCommandsPerClient { get; private set; } = 128;
         public static double CommandBudgetMs { get; private set; } = 10.0;
@@ -61,6 +65,9 @@ namespace Server
             PersistenceWorkers = ReadInt("PERSISTENCE_WORKERS", 4, min: 1, max: 32);
             PersistenceMaxAttempts = ReadInt("PERSISTENCE_MAX_ATTEMPTS", 8, min: 1);
             ChatLogQueueSize = ReadInt("CHAT_LOG_QUEUE_SIZE", 10000, min: 100);
+
+            CombatTagSeconds = ReadDouble("COMBAT_TAG_SECONDS", 10.0, min: 0);
+            CombatLogoutLingerSeconds = ReadDouble("COMBAT_LOGOUT_LINGER_SECONDS", 15.0, min: 0);
 
             MaxPendingCommandsPerClient = ReadInt("MAX_PENDING_COMMANDS_PER_CLIENT", 128, min: 1);
             CommandBudgetMs = ReadDouble("COMMAND_BUDGET_MS", 10.0, min: 0.001);
