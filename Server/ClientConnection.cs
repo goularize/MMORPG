@@ -1,5 +1,6 @@
 using System;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Server.Network;
 using Shared.Network;
@@ -16,6 +17,7 @@ namespace Server
         private readonly NetworkStream _stream;
         private readonly byte[] _receiveBuffer;
         private readonly Action<int> _onDisconnect;
+        private int _closed;
 
         // Packet framing variables
         private byte[]? _packetBytes;
@@ -28,6 +30,8 @@ namespace Server
             _receiveBuffer = new byte[4096]; // 4KB buffer for incoming data
             _onDisconnect = onDisconnect;
         }
+
+        public bool IsConnected => Volatile.Read(ref _closed) == 0;
 
         public void StartHandling()
         {
@@ -99,8 +103,9 @@ namespace Server
                     byte[] completePacket = new byte[expectedLength];
                     Array.Copy(_packetBytes, 0, completePacket, 0, expectedLength);
 
-                    // Route it to the PacketHandler (passing 'this' so the handler can reply)
-                    PacketHandler.HandlePacket(this, completePacket);
+                    // Session packets run right here; world packets are queued for the game thread
+                    PacketHandler.Receive(this, completePacket);
+                    if (!IsConnected) return; // e.g. dropped for flooding the command queue
 
                     // Remove the processed packet from our buffer
                     int remainingBytes = _packetBytes.Length - expectedLength;
@@ -146,6 +151,8 @@ namespace Server
 
         public void Disconnect()
         {
+            if (Interlocked.Exchange(ref _closed, 1) != 0) return;
+
             _stream.Close();
             _tcpClient.Close();
             _onDisconnect?.Invoke(Id);

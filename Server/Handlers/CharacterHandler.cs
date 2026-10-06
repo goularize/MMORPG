@@ -166,8 +166,6 @@ namespace Server.Handlers
             if (client.AccountId == null) return;
 
             int characterId = packet.ReadInt();
-            bool isSuccess = false;
-
             using var db = AppDbContext.Factory();
             var characterData = db.Characters.FirstOrDefault(c => c.Id == characterId && c.AccountId == client.AccountId);
 
@@ -180,8 +178,6 @@ namespace Server.Handlers
 
             if (characterData != null)
             {
-                isSuccess = true;
-
                 // Create the live runtime Player entity based on the database data!
                 var player = new Player(characterData.Id, characterData.Name, client)
                 {
@@ -227,71 +223,81 @@ namespace Server.Handlers
                 if (player.Health > player.MaxHealth) player.Health = player.MaxHealth;
                 if (player.Mana > player.MaxMana) player.Mana = player.MaxMana;
 
-                // Add to the World
-                GameLogic.MapMgr.AddPlayer(player);
-                client.PlayerId = player.Id; // Bind the world entity to the active network session
-                Console.WriteLine($"[Client {client.Id}] Selected character '{player.Name}' and entered the world.");
+                // The world entry and its replies must run on the game thread. Posting here keeps it ordered
+                // before anything this client sends next, and before its disconnect.
+                int mapId = characterData.MapId;
+                float x = characterData.X, y = characterData.Y, z = characterData.Z;
+                GameLogic.Commands.Post(() => EnterWorld(client, player, mapId, x, y, z));
+                return;
             }
+
+            using Packet failure = new Packet(OpCode.CharacterSelectResponse);
+            failure.Write(false);
+            client.Send(failure);
+        }
+
+        /// <summary>Runs on the game thread: puts a loaded character into the world and syncs its state to the client.</summary>
+        private static void EnterWorld(IClientConnection client, Player player, int mapId, float x, float y, float z)
+        {
+            // The client may have dropped while its character was loading
+            if (!client.IsConnected) return;
+
+            GameLogic.MapMgr.AddPlayer(player);
+            client.PlayerId = player.Id; // Bind the world entity to the active network session
+            Console.WriteLine($"[Client {client.Id}] Selected character '{player.Name}' and entered the world.");
 
             using Packet response = new Packet(OpCode.CharacterSelectResponse);
-            response.Write(isSuccess);
-            
-            if (isSuccess)
-            {
-                // Send starting coordinates so client can load scene
-                response.Write(characterData!.MapId);
-                response.Write(characterData.X);
-                response.Write(characterData.Y);
-                response.Write(characterData.Z);
-            }
-
+            response.Write(true);
+            // Send starting coordinates so client can load scene
+            response.Write(mapId);
+            response.Write(x);
+            response.Write(y);
+            response.Write(z);
             client.Send(response);
-            
-            if (isSuccess)
+
+            var activePlayer = GameLogic.MapMgr.GetPlayer(player.Id);
+            if (activePlayer != null)
             {
-                var activePlayer = GameLogic.MapMgr.GetPlayer(characterId);
-                if (activePlayer != null)
-                {
-                    using Packet statsPacket = new Packet(OpCode.StatsUpdate);
-                    statsPacket.Write(activePlayer.MaxHealth);
-                    statsPacket.Write(activePlayer.MaxMana);
-                    statsPacket.Write(activePlayer.Attack);
-                    statsPacket.Write(activePlayer.MagicAttack);
-                    statsPacket.Write(activePlayer.Defense);
-                    statsPacket.Write(activePlayer.MagicDefense);
-                    client.Send(statsPacket);
+                using Packet statsPacket = new Packet(OpCode.StatsUpdate);
+                statsPacket.Write(activePlayer.MaxHealth);
+                statsPacket.Write(activePlayer.MaxMana);
+                statsPacket.Write(activePlayer.Attack);
+                statsPacket.Write(activePlayer.MagicAttack);
+                statsPacket.Write(activePlayer.Defense);
+                statsPacket.Write(activePlayer.MagicDefense);
+                client.Send(statsPacket);
 
-                    using Packet vitalsPacket = new Packet(OpCode.VitalsUpdate);
-                    vitalsPacket.Write(activePlayer.Id);
-                    vitalsPacket.Write(activePlayer.Health);
-                    vitalsPacket.Write(activePlayer.Mana);
-                    client.Send(vitalsPacket);
+                using Packet vitalsPacket = new Packet(OpCode.VitalsUpdate);
+                vitalsPacket.Write(activePlayer.Id);
+                vitalsPacket.Write(activePlayer.Health);
+                vitalsPacket.Write(activePlayer.Mana);
+                client.Send(vitalsPacket);
 
-                    // Sync Progression & Base Attributes
-                    long expToNextLevel = ServerConfig.GetExpForNextLevel(activePlayer.Level);
-                    using Packet progPacket = new Packet(OpCode.PlayerProgressionSync);
-                    progPacket.Write(activePlayer.Level);
-                    progPacket.Write(activePlayer.Exp);
-                    progPacket.Write(expToNextLevel);
-                    progPacket.Write(activePlayer.StatPoints);
-                    progPacket.Write(activePlayer.Strength);
-                    progPacket.Write(activePlayer.Intelligence);
-                    progPacket.Write(activePlayer.Constitution);
-                    progPacket.Write(activePlayer.Knowledge);
-                    client.Send(progPacket);
+                // Sync Progression & Base Attributes
+                long expToNextLevel = ServerConfig.GetExpForNextLevel(activePlayer.Level);
+                using Packet progPacket = new Packet(OpCode.PlayerProgressionSync);
+                progPacket.Write(activePlayer.Level);
+                progPacket.Write(activePlayer.Exp);
+                progPacket.Write(expToNextLevel);
+                progPacket.Write(activePlayer.StatPoints);
+                progPacket.Write(activePlayer.Strength);
+                progPacket.Write(activePlayer.Intelligence);
+                progPacket.Write(activePlayer.Constitution);
+                progPacket.Write(activePlayer.Knowledge);
+                client.Send(progPacket);
 
-                    // Sync Exp Bar specifically
-                    using Packet expPacket = new Packet(OpCode.PlayerExpUpdate);
-                    expPacket.Write(activePlayer.Id);
-                    expPacket.Write(activePlayer.Exp);
-                    expPacket.Write(expToNextLevel);
-                    client.Send(expPacket);
+                // Sync Exp Bar specifically
+                using Packet expPacket = new Packet(OpCode.PlayerExpUpdate);
+                expPacket.Write(activePlayer.Id);
+                expPacket.Write(activePlayer.Exp);
+                expPacket.Write(expToNextLevel);
+                client.Send(expPacket);
 
-                    // Sync Inventory & Equipment
-                    InventoryHandler.SendInventorySync(activePlayer);
-                    EquipmentHandler.SendEquippedItemsSync(activePlayer);
-                }
+                // Sync Inventory & Equipment
+                InventoryHandler.SendInventorySync(activePlayer);
+                EquipmentHandler.SendEquippedItemsSync(activePlayer);
             }
+
         }
     }
 }

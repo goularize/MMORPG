@@ -69,10 +69,16 @@ namespace Server
             {
                 Console.WriteLine($"Client {clientId} removed from active connections list.");
                 
-                if (clientConnection.PlayerId.HasValue)
+                // Leave the world on the game thread, after any commands this client already queued. PlayerId is
+                // read there because a queued world-entry may only set it just before this runs.
+                Server.World.GameLogic.Commands.Post(() =>
                 {
-                    Server.World.GameLogic.MapMgr.RemovePlayer(clientConnection.PlayerId.Value);
-                }
+                    Server.World.GameLogic.Commands.ForgetClient(clientId);
+                    if (clientConnection.PlayerId.HasValue)
+                    {
+                        Server.World.GameLogic.MapMgr.RemovePlayer(clientConnection.PlayerId.Value);
+                    }
+                });
             }
         }
 

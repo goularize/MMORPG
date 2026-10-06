@@ -86,6 +86,7 @@
 
 ### Milestone 4: Server Polish & Architecture Hardening (`v0.5.0-alpha`)
 *Optimizing server performance, garbage collection, and state synchronization.*
+- [x] **Single-Threaded World Mutation (Command Queue)**: Network threads only frame and enqueue; the 30 TPS game loop drains a per-client-capped, time-budgeted `GameCommandQueue` (see `docs/server-threading.md`).
 - [ ] **Zero-Allocation Packet Pooling**: Implement `ArrayPool<byte>` socket buffer pooling to eliminate GC pressure during heavy network traffic.
 - [ ] **State Delta Compression**: Pack entity position updates and omit unchanged fields to minimize bandwidth.
 - [ ] **Graceful Disconnect & Combat Logging Protection**: Delay character removal upon abrupt disconnects if the player is currently tagged in combat.

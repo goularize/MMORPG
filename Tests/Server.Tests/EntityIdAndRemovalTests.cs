@@ -162,6 +162,7 @@ namespace Server.Tests
             write.Write(characterId);
             using var read = new Packet(write.ToArray());
             CharacterHandler.HandleSelectRequest(client, read);
+            GameLogic.Commands.DrainAll(); // world entry runs on the game thread
 
             try
             {

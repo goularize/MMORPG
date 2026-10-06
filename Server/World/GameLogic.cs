@@ -18,6 +18,9 @@ namespace Server.World
         // The manager that holds all active Map Instances
         public static MapManager MapMgr { get; } = new MapManager();
 
+        // Hand-off from the network threads: everything that changes world state runs from here, on this thread
+        public static GameCommandQueue Commands { get; } = new GameCommandQueue();
+
         public void Start()
         {
             _isRunning = true;
@@ -74,7 +77,10 @@ namespace Server.World
         /// </summary>
         private void Update()
         {
-            // Process all active Maps in the world
+            // 1. Apply everything the network threads queued since the last tick
+            Commands.Drain();
+
+            // 2. Simulate all active Maps in the world
             MapMgr.Update();
         }
     }

@@ -24,6 +24,8 @@ namespace Server.Tests
             SentPackets.Add(copy);
         }
 
+        public bool IsConnected => true;
+
         public void Disconnect() { }
     }
 

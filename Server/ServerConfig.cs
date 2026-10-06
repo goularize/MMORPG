@@ -9,6 +9,10 @@ namespace Server
         public static double RegenTickIntervalSeconds { get; private set; } = 1.0;
         public static double RegenCooldownSeconds { get; private set; } = 5.0;
 
+        // Network -> game thread command queue
+        public static int MaxPendingCommandsPerClient { get; private set; } = 128;
+        public static double CommandBudgetMs { get; private set; } = 10.0;
+
         public static string GameVersion { get; private set; } = Shared.Constants.GameRules.GameVersion;
 
         // RPG Progression
@@ -51,6 +55,18 @@ namespace Server
             if (double.TryParse(Environment.GetEnvironmentVariable("REGEN_COOLDOWN_SECONDS"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double regenCooldown) && regenCooldown >= 0)
             {
                 RegenCooldownSeconds = regenCooldown;
+            }
+
+            MaxPendingCommandsPerClient = 128;
+            if (int.TryParse(Environment.GetEnvironmentVariable("MAX_PENDING_COMMANDS_PER_CLIENT"), out int maxPending) && maxPending > 0)
+            {
+                MaxPendingCommandsPerClient = maxPending;
+            }
+
+            CommandBudgetMs = 10.0;
+            if (double.TryParse(Environment.GetEnvironmentVariable("COMMAND_BUDGET_MS"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double budgetMs) && budgetMs > 0)
+            {
+                CommandBudgetMs = budgetMs;
             }
 
             if (int.TryParse(Environment.GetEnvironmentVariable("EXP_BASE"), out int expBase))
