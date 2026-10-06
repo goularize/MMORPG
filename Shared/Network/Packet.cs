@@ -68,7 +68,9 @@ namespace Shared.Network
         /// </summary>
         public byte[] ToArray()
         {
-            // The total length of the packet is the current stream length
+            // The total length of the packet is the current stream length (framed in a 2-byte header)
+            if (_memoryStream.Length > ushort.MaxValue)
+                throw new InvalidOperationException($"Packet {PacketId} is {_memoryStream.Length} bytes; the 2-byte length header allows at most {ushort.MaxValue}.");
             ushort length = (ushort)_memoryStream.Length;
             
             // Go back to the beginning of the stream (position 0)
