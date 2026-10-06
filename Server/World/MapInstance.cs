@@ -94,32 +94,44 @@ namespace Server.World
             }
         }
 
-        public void RemovePlayer(int playerId)
+        /// <param name="savePosition">
+        /// False when the caller persists the player's position itself (respawn writes the bind point);
+        /// otherwise a late async save could overwrite it with the position the player died at.
+        /// </param>
+        public void RemovePlayer(int playerId, bool savePosition = true)
         {
             if (Players.TryRemove(playerId, out Player? player))
             {
-                // Save character's final position to the DB asynchronously
-                System.Threading.Tasks.Task.Run(() =>
-                {
-                    try
-                    {
-                        using var db = Server.Database.AppDbContext.Factory();
-                        var dbChar = db.Characters.Find(player.Id);
-                        if (dbChar != null)
-                        {
-                            dbChar.X = player.Position.X;
-                            dbChar.Y = player.Position.Y;
-                            dbChar.Z = player.Position.Z;
-                            db.SaveChanges();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[Error] Failed to save player {player.Name} position on disconnect: {ex.Message}");
-                    }
-                });
+                // Ask the game loop to forget what this client was sent. Observers that still list the player
+                // are handled by the regular AoI pass (despawn, or just a position update after a same-map respawn).
+                player.AoiResetRequested = true;
 
-                Console.WriteLine($"Player {player.Name} left Map {MapId} (Position saved).");
+                if (savePosition)
+                {
+                    // Snapshot now: the Player object can be moved again before the async save runs
+                    var finalPosition = player.Position;
+                    System.Threading.Tasks.Task.Run(() =>
+                    {
+                        try
+                        {
+                            using var db = Server.Database.AppDbContext.Factory();
+                            var dbChar = db.Characters.Find(player.Id);
+                            if (dbChar != null)
+                            {
+                                dbChar.X = finalPosition.X;
+                                dbChar.Y = finalPosition.Y;
+                                dbChar.Z = finalPosition.Z;
+                                db.SaveChanges();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[Error] Failed to save player {player.Name} position on disconnect: {ex.Message}");
+                        }
+                    });
+                }
+
+                Console.WriteLine($"Player {player.Name} left Map {MapId}{(savePosition ? " (Position saved)" : string.Empty)}.");
             }
         }
 
@@ -258,6 +270,12 @@ namespace Server.World
             // In a production MMO, this would use Spatial Partitioning (Grid/QuadTree).
             foreach (var player in Players.Values)
             {
+                if (player.AoiResetRequested)
+                {
+                    player.AoiResetRequested = false;
+                    player.KnownEntities.Clear();
+                }
+
                 List<Entity> nearbyEntities = new List<Entity>();
 
                 // Check distance to all other players

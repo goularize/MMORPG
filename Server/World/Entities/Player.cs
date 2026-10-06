@@ -9,6 +9,10 @@ namespace Server.World.Entities
         // AoI Tracking
         public HashSet<int> KnownEntities { get; } = new();
 
+        // Set when the player leaves a map; the game loop clears KnownEntities so every nearby entity is
+        // spawned again on the client after a respawn or re-entry (the set is only touched on the game thread).
+        public volatile bool AoiResetRequested;
+
         // Account Relationship
         public int AccountId { get; set; }
         public Server.Network.IClientConnection Connection { get; set; } // The active network session

@@ -18,8 +18,10 @@ namespace Server.Handlers
             // Only allow respawn if actually dead
             if (player == null || player.Health > 0) return;
 
-            // 1. Remove from current map (this will also send despawn packets to everyone around)
-            GameLogic.MapMgr.RemovePlayer(player.Id);
+            // 1. Remove from current map. Observers get their despawn from the regular AoI pass, and the player's
+            // own AoI state is reset so nearby entities are re-sent. The position is persisted below (the bind
+            // point), so skip the disconnect-style save that could overwrite it with the death position.
+            GameLogic.MapMgr.RemovePlayer(player.Id, savePosition: false);
 
             // 2. Restore state & teleport to bind point
             player.Health = player.MaxHealth;

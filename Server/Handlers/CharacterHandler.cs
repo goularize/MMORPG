@@ -171,6 +171,13 @@ namespace Server.Handlers
             using var db = AppDbContext.Factory();
             var characterData = db.Characters.FirstOrDefault(c => c.Id == characterId && c.AccountId == client.AccountId);
 
+            if (characterData != null && !Shared.Constants.EntityIds.IsValidPlayerId(characterData.Id))
+            {
+                // The character ID would collide with other entity kinds; refuse to make it a live entity.
+                Console.WriteLine($"[Error] Character {characterData.Id} is outside the valid player entity ID range.");
+                characterData = null;
+            }
+
             if (characterData != null)
             {
                 isSuccess = true;

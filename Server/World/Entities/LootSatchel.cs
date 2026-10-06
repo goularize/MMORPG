@@ -9,8 +9,6 @@ namespace Server.World.Entities
     {
         public override Shared.Enums.EntityType Type => Shared.Enums.EntityType.LootSatchel;
 
-        private static int _nextSatchelEntityId = 500000;
-
         public int OwnerPlayerId { get; set; }
         public DateTime CreatedTime { get; set; }
         public float OwnershipDurationSeconds { get; set; }
@@ -42,7 +40,7 @@ namespace Server.World.Entities
 
         public LootSatchel(Vector3 position, int ownerPlayerId, long gold = 0, IEnumerable<CharacterItem>? items = null)
         {
-            Id = System.Threading.Interlocked.Increment(ref _nextSatchelEntityId);
+            Id = Server.World.EntityIdAllocator.Next(Shared.Constants.EntityIdKind.Satchel);
             Name = "LootSatchel";
             Position = position;
             OwnerPlayerId = ownerPlayerId;

@@ -28,7 +28,6 @@ namespace Server.World
     public class MapManager
     {
         public ConcurrentDictionary<int, MapInstance> ActiveMaps { get; } = new();
-        private static int _nextNpcEntityId = 100000;
 
         public MapManager()
         {
@@ -68,7 +67,7 @@ namespace Server.World
                 int count = Math.Max(1, spawner.Amount);
                 for (int i = 0; i < count; i++)
                 {
-                    int entityId = System.Threading.Interlocked.Increment(ref _nextNpcEntityId);
+                    int entityId = EntityIdAllocator.Next(Shared.Constants.EntityIdKind.Npc);
                     var npc = new NPC(entityId, template.Name)
                     {
                         TemplateId = template.TemplateId,
@@ -208,13 +207,13 @@ namespace Server.World
             }
         }
 
-        public void RemovePlayer(int playerId)
+        public void RemovePlayer(int playerId, bool savePosition = true)
         {
             foreach (var map in ActiveMaps.Values)
             {
                 if (map.Players.ContainsKey(playerId))
                 {
-                    map.RemovePlayer(playerId);
+                    map.RemovePlayer(playerId, savePosition);
                     break;
                 }
             }
