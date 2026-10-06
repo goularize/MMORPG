@@ -1,0 +1,5 @@
+# Every change needs the maintainer's eyes; narrow this down as maintainers join.
+*                       @goularize
+/.github/               @goularize
+/Shared/Network/        @goularize
+/Server/Handlers/       @goularize
