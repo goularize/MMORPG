@@ -77,3 +77,10 @@ entry (`EnterWorld`) to the game thread. Other handlers needing a slow I/O step 
    (see `docs/persistence.md`).
 3. Tests call handlers directly. When a flow goes through the queue (e.g. character select), call
    `GameLogic.Commands.DrainAll()` (test helper) to run what was posted.
+
+## Process lifecycle
+
+`Program.Main` has no stdin dependency: it waits on the `ShutdownCoordinator` token (SIGTERM, SIGINT/Ctrl+C, SIGHUP,
+or `q` on an interactive console). Shutdown order is: stop the game loop, stop the listener and disconnect clients,
+save every online player, then flush the persistence queue (see `docs/persistence.md`). The listen port comes from
+`SERVER_PORT`.

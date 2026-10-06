@@ -25,7 +25,9 @@ game thread: player.QueueSave() / InventoryHandler.SaveDbItem() / QueueRecipe() 
   `PERSISTENCE_MAX_ATTEMPTS` the batch is dropped and logged (e.g. the character row no longer exists).
 - **Read-your-writes:** character select waits (up to 3 s) for that character's pending writes before loading it,
   so a quick relog never reads state older than its last save.
-- **Shutdown:** `Program` queues a save of every online player and calls `PersistenceService.Stop(10 s)`, which flushes
+- **Shutdown:** `ShutdownCoordinator` turns SIGTERM (Docker/systemd), SIGINT/Ctrl+C, SIGHUP and `q` (only when a console is
+  attached; redirected stdin is fine) into one cancellation token that `Program.Main` waits on; a second Ctrl+C
+  force-quits. Then `Program` queues a save of every online player and calls `PersistenceService.Stop(10 s)`, which flushes
   everything and drains the chat lane. Writes queued after `Stop` are applied synchronously, so nothing is lost.
 - **Chat logs** use a separate bounded lane (`CHAT_LOG_QUEUE_SIZE`) that drops the oldest lines under pressure and
   never blocks the game.

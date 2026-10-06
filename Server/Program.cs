@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Server.Network;
 using Server.World;
@@ -10,7 +11,11 @@ namespace Server
     {
         static void Main(string[] args)
         {
-            Console.Title = "MMORPG Server";
+            // No console when running under systemd/Docker, so setting the title must not be fatal
+            try { Console.Title = "MMORPG Server"; } catch (IOException) { }
+
+            using var shutdown = new ShutdownCoordinator();
+            shutdown.InstallSignalHandlers();
 
             // Load environment variables from .env file
             DotNetEnv.Env.Load();
@@ -35,16 +40,11 @@ namespace Server
             GameLogic logic = new GameLogic();
             logic.Start();
 
-            // Prevent the console app from closing instantly
-            Console.WriteLine("Press 'q' to shut down the server.");
-            while (true)
-            {
-                var key = Console.ReadKey(intercept: true);
-                if (key.KeyChar == 'q')
-                {
-                    break;
-                }
-            }
+            // Block until SIGTERM / Ctrl+C / 'q' (the latter only with an interactive console)
+            Console.WriteLine(shutdown.StartConsoleListener()
+                ? "Press 'q' or Ctrl+C to shut down the server."
+                : "Send SIGTERM or Ctrl+C to shut down the server.");
+            shutdown.Token.WaitHandle.WaitOne();
 
             // Graceful shutdown
             logic.Stop();
