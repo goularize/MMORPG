@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Server.Database;
@@ -141,6 +142,72 @@ namespace Server.Tests
 
             using var check = AppDbContext.Factory();
             Assert.Equal("Thrall", check.Characters.Single().Name);
+        }
+
+        private static void WriteCreationData(string dir, string creationJson)
+        {
+            File.WriteAllText(Path.Combine(dir, "CharacterCreation.json"), creationJson);
+        }
+
+        [Fact]
+        public void CharacterCreate_AppliesDataDrivenStartingKit_InOneSave()
+        {
+            UseFreshDb();
+            string dir = Path.Combine(Path.GetTempPath(), "mmorpg-cc-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                foreach (var f in Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Data"), "*.json"))
+                    File.Copy(f, Path.Combine(dir, Path.GetFileName(f)));
+                WriteCreationData(dir, """{"StartMapId":1,"StartX":3,"Health":77,"Strength":12,"Gold":321,"StarterItems":[{"TemplateId":2001,"Quantity":4},{"TemplateId":1001}]}""");
+                Server.Data.DataManager.Initialize(dir);
+
+                using (var db = AppDbContext.Factory())
+                {
+                    db.Accounts.Add(new Account { Id = 1, Username = "test", PasswordHash = "hash", CharacterSlots = 5 });
+                    db.SaveChanges();
+                }
+                Assert.Equal("ok", CreateCharacter("Thrall", 1));
+
+                using var check = AppDbContext.Factory();
+                var c = check.Characters.Include(x => x.InventoryItems).Single();
+                Assert.Equal((77, 12, 321L, 3f), (c.Health, c.Strength, c.Gold, c.X));
+                Assert.Equal(3f, c.BindX);
+                Assert.Equal(new[] { (0, 2001, 4), (1, 1001, 1) },
+                    c.InventoryItems.OrderBy(i => i.SlotIndex).Select(i => (i.SlotIndex, i.TemplateId, i.Quantity)).ToArray());
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+                Server.Data.DataManager.Initialize();
+            }
+        }
+
+        [Fact]
+        public void CharacterCreate_WhenAStarterItemCannotBeBuilt_CreatesNothing()
+        {
+            UseFreshDb();
+            Server.Data.DataManager.Initialize();
+            var removed = Server.Data.DataManager.Items[1001];
+            Server.Data.DataManager.Items.Remove(1001); // simulate the item vanishing after validation
+            try
+            {
+                using (var db = AppDbContext.Factory())
+                {
+                    db.Accounts.Add(new Account { Id = 1, Username = "test", PasswordHash = "hash", CharacterSlots = 5 });
+                    db.SaveChanges();
+                }
+
+                Assert.NotEqual("ok", CreateCharacter("Thrall", 1));
+
+                using var check = AppDbContext.Factory();
+                Assert.Empty(check.Characters);
+                Assert.Empty(check.CharacterItems);
+            }
+            finally
+            {
+                Server.Data.DataManager.Items[1001] = removed;
+            }
         }
     }
 }

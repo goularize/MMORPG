@@ -25,13 +25,16 @@ namespace Server.Tests
         private const string ValidRecipes = """[{"RecipeId":1,"ResultItemTemplateId":1,"Ingredients":[{"ItemTemplateId":2,"Quantity":3}]}]""";
         private const string ValidSpawners = """[{"TemplateId":10,"MapId":1,"Amount":2,"Radius":5}]""";
 
-        private void Write(string items = ValidItems, string npcs = ValidNpcs, string loot = ValidLoot, string recipes = ValidRecipes, string spawners = ValidSpawners)
+        private const string ValidCreation = """{"StartMapId":1,"Gold":50,"StarterItems":[{"TemplateId":1,"Quantity":1},{"TemplateId":2,"Quantity":5}]}""";
+
+        private void Write(string items = ValidItems, string npcs = ValidNpcs, string loot = ValidLoot, string recipes = ValidRecipes, string spawners = ValidSpawners, string creation = ValidCreation)
         {
             File.WriteAllText(Path.Combine(_dir, "Items.json"), items);
             File.WriteAllText(Path.Combine(_dir, "Npcs.json"), npcs);
             File.WriteAllText(Path.Combine(_dir, "LootTables.json"), loot);
             File.WriteAllText(Path.Combine(_dir, "Recipes.json"), recipes);
             File.WriteAllText(Path.Combine(_dir, "Spawners.json"), spawners);
+            File.WriteAllText(Path.Combine(_dir, "CharacterCreation.json"), creation);
         }
 
         private string[] ErrorsOf(Action load) => Assert.Throws<DataLoadException>(load).Errors.ToArray();
@@ -140,6 +143,29 @@ namespace Server.Tests
             DataManager.Initialize(_dir);
 
             Assert.Single(DataManager.Spawners);
+        }
+
+        [Fact]
+        public void CharacterCreation_StarterItemProblems_AreReported()
+        {
+            Write(creation: """{"StarterItems":[{"TemplateId":999},{"TemplateId":2,"Quantity":21},{"TemplateId":1,"Quantity":0}]}""");
+
+            var errors = ErrorsOf(() => DataManager.Initialize(_dir));
+
+            Assert.Contains(errors, e => e.Contains("unknown item 999"));
+            Assert.Contains(errors, e => e.Contains("starter item 2 quantity"));
+            Assert.Contains(errors, e => e.Contains("starter item 1 quantity"));
+        }
+
+        [Fact]
+        public void CharacterCreation_LoadsValues()
+        {
+            Write();
+
+            DataManager.Initialize(_dir);
+
+            Assert.Equal(50, DataManager.CharacterCreation.Gold);
+            Assert.Equal(2, DataManager.CharacterCreation.StarterItems.Count);
         }
     }
 }

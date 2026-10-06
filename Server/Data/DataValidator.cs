@@ -20,7 +20,8 @@ namespace Server.Data
             IReadOnlyList<RecipeTemplate> recipes,
             IReadOnlyList<LootTableTemplate> lootTables,
             IReadOnlyList<NpcTemplate> npcs,
-            IReadOnlyList<SpawnerTemplate> spawners)
+            IReadOnlyList<SpawnerTemplate> spawners,
+            CharacterCreationTemplate characterCreation)
         {
             var errors = new List<string>();
             var warnings = new List<string>();
@@ -94,7 +95,31 @@ namespace Server.Data
                 if (spawner.Radius < 0f) errors.Add($"{at}: Radius cannot be negative.");
             }
 
+            ValidateCharacterCreation(errors, characterCreation, items);
+
             return new Result(errors, warnings);
+        }
+
+        private static void ValidateCharacterCreation(List<string> errors, CharacterCreationTemplate c, IReadOnlyList<ItemTemplate> items)
+        {
+            const string at = "CharacterCreation.json";
+            if (c.Health < 1) errors.Add($"{at}: Health must be at least 1.");
+            if (c.Mana < 0) errors.Add($"{at}: Mana cannot be negative.");
+            if (c.Strength < 0 || c.Intelligence < 0 || c.Constitution < 0 || c.Knowledge < 0) errors.Add($"{at}: base stats cannot be negative.");
+            if (c.Gold < 0) errors.Add($"{at}: Gold cannot be negative.");
+            if (c.StartMapId < 1) errors.Add($"{at}: StartMapId must be positive.");
+
+            if (c.StarterItems.Count > ServerConfig.DefaultBackpackSlots)
+                errors.Add($"{at}: {c.StarterItems.Count} starter items do not fit in the {ServerConfig.DefaultBackpackSlots}-slot backpack.");
+
+            var itemsById = items.GroupBy(i => i.TemplateId).ToDictionary(g => g.Key, g => g.First());
+            foreach (var starter in c.StarterItems)
+            {
+                if (!itemsById.TryGetValue(starter.TemplateId, out var template))
+                    errors.Add($"{at}: starter item references unknown item {starter.TemplateId}.");
+                else if (starter.Quantity < 1 || starter.Quantity > Math.Max(1, template.MaxStack))
+                    errors.Add($"{at}: starter item {starter.TemplateId} quantity must be between 1 and its MaxStack ({template.MaxStack}).");
+            }
         }
 
         private static void ReportDuplicates(List<string> errors, string file, string idName, IEnumerable<int> ids)

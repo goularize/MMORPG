@@ -26,6 +26,7 @@ namespace Server.Data
         public static Dictionary<int, ItemTemplate> Items { get; private set; } = new();
         public static Dictionary<int, RecipeTemplate> Recipes { get; private set; } = new();
         public static Dictionary<int, LootTableTemplate> LootTables { get; private set; } = new();
+        public static CharacterCreationTemplate CharacterCreation { get; private set; } = new();
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -48,12 +49,13 @@ namespace Server.Data
             var lootTables = Read<LootTableTemplate>(dataDirectory, "LootTables.json", errors);
             var npcs = Read<NpcTemplate>(dataDirectory, "Npcs.json", errors);
             var spawners = Read<SpawnerTemplate>(dataDirectory, "Spawners.json", errors);
+            var characterCreation = ReadOne<CharacterCreationTemplate>(dataDirectory, "CharacterCreation.json", errors);
 
             // Cross-references only make sense once every file parsed
             var warnings = new List<string>();
             if (errors.Count == 0)
             {
-                var result = DataValidator.Validate(items, recipes, lootTables, npcs, spawners);
+                var result = DataValidator.Validate(items, recipes, lootTables, npcs, spawners, characterCreation);
                 errors.AddRange(result.Errors);
                 warnings.AddRange(result.Warnings);
             }
@@ -70,8 +72,31 @@ namespace Server.Data
             LootTables = lootTables.ToDictionary(l => l.NpcTemplateId);
             Npcs = npcs.ToDictionary(n => n.TemplateId);
             Spawners = spawners;
+            CharacterCreation = characterCreation;
 
             Console.WriteLine($"[DataManager] Loaded {Items.Count} items, {Recipes.Count} recipes, {LootTables.Count} loot tables, {Npcs.Count} NPC templates, {Spawners.Count} spawners.");
+        }
+
+        private static T ReadOne<T>(string directory, string fileName, List<string> errors) where T : new()
+        {
+            string path = Path.Combine(directory, fileName);
+            if (!File.Exists(path))
+            {
+                errors.Add($"{fileName}: file not found at {path}.");
+                return new T();
+            }
+
+            try
+            {
+                var value = JsonSerializer.Deserialize<T>(File.ReadAllText(path), JsonOptions);
+                if (value != null) return value;
+                errors.Add($"{fileName}: file is empty or 'null'.");
+            }
+            catch (JsonException ex)
+            {
+                errors.Add($"{fileName}: malformed JSON ({ex.Message}).");
+            }
+            return new T();
         }
 
         private static List<T> Read<T>(string directory, string fileName, List<string> errors)
