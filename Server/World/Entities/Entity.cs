@@ -48,6 +48,10 @@ namespace Server.World.Entities
         public float CritChance { get; set; } = 0.05f;
         public float CritMultiplier { get; set; } = 2.0f;
         public float DodgeChance { get; set; } = 0.05f;
+
+        // Extra HP/MP restored per regen tick on top of ServerConfig.BaseHealthRes/BaseManaRes (from equipped gear)
+        public int HealthRegenBonus { get; set; }
+        public int ManaRegenBonus { get; set; }
         public float MovementSpeed { get; set; } = Shared.Constants.GameRules.BasePlayerMoveSpeed;
         public float AttackSpeedBonus { get; set; } = 0.0f;
 
@@ -104,14 +108,14 @@ namespace Server.World.Entities
 
                     if (Health < MaxHealth)
                     {
-                        Health += ServerConfig.BaseHealthRes;
+                        Health += ServerConfig.BaseHealthRes + HealthRegenBonus;
                         if (Health > MaxHealth) Health = MaxHealth;
                         _vitalsChanged = true;
                     }
 
                     if (Mana < MaxMana)
                     {
-                        Mana += ServerConfig.BaseManaRes;
+                        Mana += ServerConfig.BaseManaRes + ManaRegenBonus;
                         if (Mana > MaxMana) Mana = MaxMana;
                         _vitalsChanged = true;
                     }
