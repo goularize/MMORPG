@@ -1,11 +1,24 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using Server.Data.Models;
 
 namespace Server.Data
 {
+    /// <summary>Thrown when static data is missing, malformed or inconsistent; carries every problem found.</summary>
+    public class DataLoadException : Exception
+    {
+        public IReadOnlyList<string> Errors { get; }
+
+        public DataLoadException(IReadOnlyList<string> errors)
+            : base($"Static data is invalid ({errors.Count} error(s)):{Environment.NewLine}  - {string.Join(Environment.NewLine + "  - ", errors)}")
+        {
+            Errors = errors;
+        }
+    }
+
     public static class DataManager
     {
         public static Dictionary<int, NpcTemplate> Npcs { get; private set; } = new();
@@ -14,116 +27,81 @@ namespace Server.Data
         public static Dictionary<int, RecipeTemplate> Recipes { get; private set; } = new();
         public static Dictionary<int, LootTableTemplate> LootTables { get; private set; } = new();
 
-        public static void Initialize()
+        private static readonly JsonSerializerOptions JsonOptions = new()
         {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+        };
+
+        /// <summary>
+        /// Loads and validates every data table, then replaces the live tables. Fails fast: if any file is missing,
+        /// malformed or inconsistent, a <see cref="DataLoadException"/> lists every problem and the live tables are
+        /// left untouched, so the server never runs on empty or half-loaded data.
+        /// </summary>
+        public static void Initialize(string? dataDirectory = null)
+        {
+            dataDirectory ??= Path.Combine(AppContext.BaseDirectory, "Data");
+            var errors = new List<string>();
+
+            var items = Read<ItemTemplate>(dataDirectory, "Items.json", errors);
+            var recipes = Read<RecipeTemplate>(dataDirectory, "Recipes.json", errors);
+            var lootTables = Read<LootTableTemplate>(dataDirectory, "LootTables.json", errors);
+            var npcs = Read<NpcTemplate>(dataDirectory, "Npcs.json", errors);
+            var spawners = Read<SpawnerTemplate>(dataDirectory, "Spawners.json", errors);
+
+            // Cross-references only make sense once every file parsed
+            var warnings = new List<string>();
+            if (errors.Count == 0)
+            {
+                var result = DataValidator.Validate(items, recipes, lootTables, npcs, spawners);
+                errors.AddRange(result.Errors);
+                warnings.AddRange(result.Warnings);
+            }
+
+            foreach (var warning in warnings) Console.WriteLine($"[DataManager] Warning: {warning}");
+
+            if (errors.Count > 0)
+            {
+                throw new DataLoadException(errors);
+            }
+
+            Items = items.ToDictionary(i => i.TemplateId);
+            Recipes = recipes.ToDictionary(r => r.RecipeId);
+            LootTables = lootTables.ToDictionary(l => l.NpcTemplateId);
+            Npcs = npcs.ToDictionary(n => n.TemplateId);
+            Spawners = spawners;
+
+            Console.WriteLine($"[DataManager] Loaded {Items.Count} items, {Recipes.Count} recipes, {LootTables.Count} loot tables, {Npcs.Count} NPC templates, {Spawners.Count} spawners.");
+        }
+
+        private static List<T> Read<T>(string directory, string fileName, List<string> errors)
+        {
+            string path = Path.Combine(directory, fileName);
+            if (!File.Exists(path))
+            {
+                errors.Add($"{fileName}: file not found at {path}.");
+                return new List<T>();
+            }
+
             try
             {
-                var jsonOptions = new JsonSerializerOptions
+                var list = JsonSerializer.Deserialize<List<T>>(File.ReadAllText(path), JsonOptions);
+                if (list == null)
                 {
-                    PropertyNameCaseInsensitive = true,
-                    Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
-                };
-
-                // Load Items
-                string itemsPath = Path.Combine(AppContext.BaseDirectory, "Data", "Items.json");
-                if (File.Exists(itemsPath))
-                {
-                    string itemsJson = File.ReadAllText(itemsPath);
-                    var itemList = JsonSerializer.Deserialize<List<ItemTemplate>>(itemsJson, jsonOptions);
-                    if (itemList != null)
-                    {
-                        foreach (var item in itemList)
-                        {
-                            Items.TryAdd(item.TemplateId, item);
-                        }
-                    }
-                    Console.WriteLine($"[DataManager] Loaded {Items.Count} Item templates.");
+                    errors.Add($"{fileName}: file is empty or 'null'.");
+                    return new List<T>();
                 }
-                else
+                if (list.Any(entry => entry == null))
                 {
-                    Console.WriteLine("[DataManager] Warning: Items.json not found.");
+                    errors.Add($"{fileName}: contains a null entry.");
+                    return new List<T>();
                 }
-
-                // Load Recipes
-                string recipesPath = Path.Combine(AppContext.BaseDirectory, "Data", "Recipes.json");
-                if (File.Exists(recipesPath))
-                {
-                    string recipesJson = File.ReadAllText(recipesPath);
-                    var recipeList = JsonSerializer.Deserialize<List<RecipeTemplate>>(recipesJson, jsonOptions);
-                    if (recipeList != null)
-                    {
-                        foreach (var recipe in recipeList)
-                        {
-                            Recipes.TryAdd(recipe.RecipeId, recipe);
-                        }
-                    }
-                    Console.WriteLine($"[DataManager] Loaded {Recipes.Count} Recipes.");
-                }
-                else
-                {
-                    Console.WriteLine("[DataManager] Warning: Recipes.json not found.");
-                }
-
-                // Load Loot Tables
-                string lootTablesPath = Path.Combine(AppContext.BaseDirectory, "Data", "LootTables.json");
-                if (File.Exists(lootTablesPath))
-                {
-                    string lootTablesJson = File.ReadAllText(lootTablesPath);
-                    var lootTableList = JsonSerializer.Deserialize<List<LootTableTemplate>>(lootTablesJson, jsonOptions);
-                    if (lootTableList != null)
-                    {
-                        foreach (var lt in lootTableList)
-                        {
-                            LootTables.TryAdd(lt.NpcTemplateId, lt);
-                        }
-                    }
-                    Console.WriteLine($"[DataManager] Loaded {LootTables.Count} Loot tables.");
-                }
-                else
-                {
-                    Console.WriteLine("[DataManager] Warning: LootTables.json not found.");
-                }
-
-                // Load NPCs
-                string npcsPath = Path.Combine(AppContext.BaseDirectory, "Data", "Npcs.json");
-                if (File.Exists(npcsPath))
-                {
-                    string npcsJson = File.ReadAllText(npcsPath);
-                    var npcList = JsonSerializer.Deserialize<List<NpcTemplate>>(npcsJson, jsonOptions);
-                    if (npcList != null)
-                    {
-                        foreach (var npc in npcList)
-                        {
-                            Npcs.TryAdd(npc.TemplateId, npc);
-                        }
-                    }
-                    Console.WriteLine($"[DataManager] Loaded {Npcs.Count} NPC templates.");
-                }
-                else
-                {
-                    Console.WriteLine("[DataManager] Warning: Npcs.json not found.");
-                }
-
-                // Load Spawners
-                string spawnersPath = Path.Combine(AppContext.BaseDirectory, "Data", "Spawners.json");
-                if (File.Exists(spawnersPath))
-                {
-                    string spawnersJson = File.ReadAllText(spawnersPath);
-                    var spawnerList = JsonSerializer.Deserialize<List<SpawnerTemplate>>(spawnersJson, jsonOptions);
-                    if (spawnerList != null)
-                    {
-                        Spawners.AddRange(spawnerList);
-                    }
-                    Console.WriteLine($"[DataManager] Loaded {Spawners.Count} Spawners.");
-                }
-                else
-                {
-                    Console.WriteLine("[DataManager] Warning: Spawners.json not found.");
-                }
+                return list;
             }
-            catch (Exception ex)
+            catch (JsonException ex)
             {
-                Console.WriteLine($"[DataManager] Critical Error loading static data: {ex.Message}");
+                errors.Add($"{fileName}: malformed JSON ({ex.Message}).");
+                return new List<T>();
             }
         }
     }

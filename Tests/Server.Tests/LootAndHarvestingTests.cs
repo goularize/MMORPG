@@ -50,7 +50,7 @@ namespace Server.Tests
             Assert.True(DataManager.LootTables.ContainsKey(202));  // Angry Goblin
             Assert.True(DataManager.LootTables.ContainsKey(204));  // Wolf Alpha
             Assert.True(DataManager.LootTables.ContainsKey(208));  // Zombie
-            Assert.True(DataManager.LootTables.ContainsKey(2001)); // Slime
+            Assert.True(DataManager.LootTables.ContainsKey(101)); // Slime
 
             var goblinTable = DataManager.LootTables[202];
             Assert.InRange(goblinTable.MinGold, 1, 10);
