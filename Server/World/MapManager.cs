@@ -222,15 +222,24 @@ namespace Server.World
             return true;
         }
 
-        public void RemovePlayer(int playerId, bool savePosition = true)
+        public void RemovePlayer(int playerId, bool saveState = true)
         {
             foreach (var map in ActiveMaps.Values)
             {
                 if (map.Players.ContainsKey(playerId))
                 {
-                    map.RemovePlayer(playerId, savePosition);
+                    map.RemovePlayer(playerId, saveState);
                     break;
                 }
+            }
+        }
+
+        /// <summary>Queues a durable save of every online player (used when the server shuts down).</summary>
+        public void SaveAllPlayers()
+        {
+            foreach (var map in ActiveMaps.Values)
+            {
+                foreach (var player in map.Players.Values) player.QueueSave(urgent: true);
             }
         }
 

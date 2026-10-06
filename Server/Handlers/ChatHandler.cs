@@ -65,26 +65,14 @@ namespace Server.Handlers
 
             if (bool.TryParse(envValue, out bool shouldLog) && shouldLog)
             {
-                // Offload DB write to a background task so we don't stall the main GameLogic/Network thread
-                System.Threading.Tasks.Task.Run(() =>
+                // Separate, bounded write-behind lane: chat logging can never block or grow without limit
+                Server.Persistence.PersistenceService.Instance.QueueChatLog(new Server.Database.Models.ChatLog
                 {
-                    try
-                    {
-                        using var db = AppDbContext.Factory();
-                        db.ChatLogs.Add(new Server.Database.Models.ChatLog
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Channel = channel,
-                            SenderName = senderName,
-                            TargetName = targetName,
-                            Message = message
-                        });
-                        db.SaveChanges();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[Error] Failed to log chat to database: {ex.Message}");
-                    }
+                    Timestamp = DateTime.UtcNow,
+                    Channel = channel,
+                    SenderName = senderName,
+                    TargetName = targetName,
+                    Message = message
                 });
             }
         }

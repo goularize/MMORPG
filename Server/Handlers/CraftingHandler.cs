@@ -8,6 +8,7 @@ using Server.World;
 using Server.World.Entities;
 using Shared.Enums;
 using Shared.Network;
+using Server.Persistence;
 
 namespace Server.Handlers
 {
@@ -45,7 +46,7 @@ namespace Server.Handlers
             if (recipeItem.Quantity <= 0)
             {
                 player.Inventory.Remove(recipeItem);
-                InventoryHandler.DeleteDbItem(recipeItem.Id);
+                InventoryHandler.DeleteDbItem(recipeItem);
                 InventoryHandler.SendInventorySlotUpdate(player, null, bagIndex, slotIndex);
             }
             else
@@ -57,25 +58,9 @@ namespace Server.Handlers
             // Register learned recipe
             player.LearnedRecipes.Add(recipeId);
 
-            int playerId = player.Id;
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                try
-                {
-                    using var db = AppDbContext.Factory();
-                    db.CharacterLearnedRecipes.Add(new CharacterLearnedRecipe
-                    {
-                        CharacterId = playerId,
-                        RecipeId = recipeId,
-                        LearnedAt = DateTime.UtcNow
-                    });
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Crafting] Error persisting learned recipe: {ex.Message}");
-                }
-            });
+            // Learned recipes are durable: queue the row together with the consumed recipe item
+            PersistenceService.Instance.QueueRecipe(player.Id, recipeId, urgent: true);
+            player.QueueSave(urgent: true);
 
             Console.WriteLine($"[Crafting] {player.Name} successfully learned recipe: {itemTemplate.Name}.");
         }
@@ -148,7 +133,7 @@ namespace Server.Handlers
             InventoryHandler.SaveDbItem(craftedItem);
             InventoryHandler.SendInventorySlotUpdate(player, craftedItem, 0, freeSlot.Value);
 
-            player.SaveProgressionToDatabase();
+            player.QueueSave(urgent: true); // crafting creates and destroys value
 
             string resultName = DataManager.Items.TryGetValue(recipe.ResultItemTemplateId, out var resTemplate) ? resTemplate.Name : "Item";
             SendCraftResponse(player, true, recipe.ResultItemTemplateId, $"Successfully crafted {resultName}!");
@@ -165,7 +150,7 @@ namespace Server.Handlers
                 {
                     remaining -= item.Quantity;
                     player.Inventory.Remove(item);
-                    InventoryHandler.DeleteDbItem(item.Id);
+                    InventoryHandler.DeleteDbItem(item);
                     InventoryHandler.SendInventorySlotUpdate(player, null, item.BagIndex, item.SlotIndex);
                 }
                 else

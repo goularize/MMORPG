@@ -14,6 +14,13 @@ namespace Server
         public static double RegenTickIntervalSeconds { get; private set; } = 1.0;
         public static double RegenCooldownSeconds { get; private set; } = 5.0;
 
+        // Write-behind persistence
+        public static double WriteBehindFlushSeconds { get; private set; } = 2.0;
+        public static double AutosaveSeconds { get; private set; } = 60.0;
+        public static int PersistenceWorkers { get; private set; } = 4;
+        public static int PersistenceMaxAttempts { get; private set; } = 8;
+        public static int ChatLogQueueSize { get; private set; } = 10000;
+
         // Network -> game thread command queue
         public static int MaxPendingCommandsPerClient { get; private set; } = 128;
         public static double CommandBudgetMs { get; private set; } = 10.0;
@@ -48,6 +55,12 @@ namespace Server
             BaseManaRes = ReadInt("BASE_MANA_RES", 3, min: 0);
             RegenTickIntervalSeconds = ReadDouble("REGEN_TICK_INTERVAL_SECONDS", 1.0, min: 0);
             RegenCooldownSeconds = ReadDouble("REGEN_COOLDOWN_SECONDS", 5.0, min: 0);
+
+            WriteBehindFlushSeconds = ReadDouble("WRITE_BEHIND_FLUSH_SECONDS", 2.0, min: 0);
+            AutosaveSeconds = ReadDouble("AUTOSAVE_SECONDS", 60.0, min: 1);
+            PersistenceWorkers = ReadInt("PERSISTENCE_WORKERS", 4, min: 1, max: 32);
+            PersistenceMaxAttempts = ReadInt("PERSISTENCE_MAX_ATTEMPTS", 8, min: 1);
+            ChatLogQueueSize = ReadInt("CHAT_LOG_QUEUE_SIZE", 10000, min: 100);
 
             MaxPendingCommandsPerClient = ReadInt("MAX_PENDING_COMMANDS_PER_CLIENT", 128, min: 1);
             CommandBudgetMs = ReadDouble("COMMAND_BUDGET_MS", 10.0, min: 0.001);

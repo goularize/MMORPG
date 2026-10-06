@@ -7,6 +7,7 @@ using Server.Network;
 using Server.World;
 using Server.World.Entities;
 using Shared.Network;
+using Server.Persistence;
 
 namespace Server.Handlers
 {
@@ -154,6 +155,9 @@ namespace Server.Handlers
                 }
             }
 
+            // Satchels only live in memory, so whatever left one must be durable before it can be lost
+            PersistenceService.Instance.Expedite(player.Id);
+
             if (satchel.IsEmpty)
             {
                 map.DespawnLootSatchel(satchel.Id);
@@ -203,7 +207,7 @@ namespace Server.Handlers
                 {
                     player.Gold += satchel.Gold;
                     satchel.Gold = 0;
-                    player.SaveProgressionToDatabase();
+                    player.QueueSave(urgent: true);
                     InventoryHandler.SendInventorySync(player);
                 }
 
@@ -247,6 +251,9 @@ namespace Server.Handlers
                     }
                 }
             }
+
+            // Satchels only live in memory, so whatever left one must be durable before it can be lost
+            PersistenceService.Instance.Expedite(player.Id);
 
             if (satchel.IsEmpty)
             {

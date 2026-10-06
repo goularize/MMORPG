@@ -66,7 +66,7 @@ namespace Server.Handlers
                 Console.WriteLine($"[Progression] {player.Name} allocated {points} points into {statType} (Now: {newStatValue}, Remaining: {player.StatPoints}).");
 
                 // Asynchronously persist to database
-                player.SaveProgressionToDatabase();
+                player.QueueSave();
             }
 
             // 1. Send AllocateStatPointResponse to client

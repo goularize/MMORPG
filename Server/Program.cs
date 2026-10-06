@@ -49,6 +49,14 @@ namespace Server
             // Graceful shutdown
             logic.Stop();
             server.Stop();
+
+            // The loop is stopped, so queued disconnects will never run: save everyone who is still online, then
+            // wait for the write-behind queue to reach the database before the process exits.
+            GameLogic.MapMgr.SaveAllPlayers();
+            if (!Server.Persistence.PersistenceService.Instance.Stop(TimeSpan.FromSeconds(10)))
+            {
+                Console.WriteLine("[Persistence] Some pending saves could not be flushed before shutdown.");
+            }
         }
     }
 }

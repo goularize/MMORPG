@@ -22,17 +22,8 @@ namespace Server.Handlers
             player.BindMapId = player.MapId;
             player.BindPosition = player.Position;
 
-            // Save to DB
-            using var db = AppDbContext.Factory();
-            var characterData = db.Characters.FirstOrDefault(c => c.Id == player.Id);
-            if (characterData != null)
-            {
-                characterData.BindMapId = player.BindMapId;
-                characterData.BindX = player.BindPosition.X;
-                characterData.BindY = player.BindPosition.Y;
-                characterData.BindZ = player.BindPosition.Z;
-                db.SaveChanges();
-            }
+            // Persist through the write-behind queue (the game thread never waits for the database)
+            player.QueueSave(urgent: true);
 
             Console.WriteLine($"[Bind] Player {player.Name} bound their soul to Map {player.BindMapId} at {player.BindPosition}.");
 

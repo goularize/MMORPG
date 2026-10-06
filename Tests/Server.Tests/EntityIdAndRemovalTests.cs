@@ -74,7 +74,7 @@ namespace Server.Tests
             Assert.Equal(1, CountSent(client, OpCode.EntitySpawn));
 
             // Respawn-style round trip: leave the map, come back (e.g. after the client reloaded its scene)
-            map.RemovePlayer(player.Id, savePosition: false);
+            map.RemovePlayer(player.Id, saveState: false);
             map.AddPlayer(player);
             client.SentPackets.Clear();
 
@@ -93,7 +93,7 @@ namespace Server.Tests
             map.AddPlayer(player);
             player.KnownEntities.Add(123);
 
-            map.RemovePlayer(player.Id, savePosition: false);
+            map.RemovePlayer(player.Id, saveState: false);
 
             // Handlers only flag the reset; the game thread owns KnownEntities
             Assert.True(player.AoiResetRequested);
@@ -143,7 +143,7 @@ namespace Server.Tests
             var player = new Player(5004, "Saved5004", client) { Position = new Vector3(50, 0, 0) };
             map.AddPlayer(player);
 
-            map.RemovePlayer(player.Id, savePosition: false);
+            map.RemovePlayer(player.Id, saveState: false);
             Thread.Sleep(300);
 
             using var db = AppDbContext.Factory();
@@ -171,7 +171,7 @@ namespace Server.Tests
             }
             finally
             {
-                GameLogic.MapMgr.RemovePlayer(characterId, savePosition: false);
+                GameLogic.MapMgr.RemovePlayer(characterId, saveState: false);
             }
         }
     }

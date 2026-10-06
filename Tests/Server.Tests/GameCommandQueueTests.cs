@@ -248,7 +248,7 @@ namespace Server.Tests
             AppDbContext.Factory = () => InMemoryDb(Guid.NewGuid().ToString());
 
             PacketHandler.Receive(client, MovePacket(2f));
-            GameLogic.Commands.Post(() => GameLogic.MapMgr.RemovePlayer(9104, savePosition: false));
+            GameLogic.Commands.Post(() => GameLogic.MapMgr.RemovePlayer(9104, saveState: false));
             GameLogic.Commands.DrainAll();
 
             Assert.Equal(2f, player.Position.X);                                  // the packet was applied first
@@ -281,7 +281,7 @@ namespace Server.Tests
             Assert.Equal(9105, staying.PlayerId);
             Assert.Contains(staying.SentPackets, p => p.PacketId == OpCode.CharacterSelectResponse);
             Assert.Null(GameLogic.MapMgr.GetPlayer(9106)); // no ghost player for a dead connection
-            GameLogic.MapMgr.RemovePlayer(9105, savePosition: false);
+            GameLogic.MapMgr.RemovePlayer(9105, saveState: false);
         }
 
         // Real sockets + the real game loop: the whole path network thread -> queue -> game thread

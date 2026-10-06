@@ -7,6 +7,7 @@ using Server.World;
 using Server.World.Entities;
 using Shared.Enums;
 using Shared.Network;
+using Server.Persistence;
 
 namespace Server.Handlers
 {
@@ -178,7 +179,7 @@ namespace Server.Handlers
                     player.Inventory.Remove(item);
                     InventoryHandler.SendInventorySlotUpdate(player, null, slotOrBag, slotIndex);
                 }
-                InventoryHandler.DeleteDbItem(item.Id);
+                InventoryHandler.DeleteDbItem(item);
             }
             else
             {
@@ -194,7 +195,7 @@ namespace Server.Handlers
                 }
             }
 
-            player.SaveProgressionToDatabase();
+            player.QueueSave(urgent: true); // refining destroys materials and gold
             SendResponse(player, status, item.UpgradeLevel, message);
         }
 
@@ -209,7 +210,7 @@ namespace Server.Handlers
                 {
                     remaining -= item.Quantity;
                     player.Inventory.Remove(item);
-                    InventoryHandler.DeleteDbItem(item.Id);
+                    InventoryHandler.DeleteDbItem(item);
                     InventoryHandler.SendInventorySlotUpdate(player, null, item.BagIndex, item.SlotIndex);
                 }
                 else

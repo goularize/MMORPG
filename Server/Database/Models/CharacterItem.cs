@@ -47,5 +47,13 @@ namespace Server.Database.Models
         public int RolledManaRegen { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>Detached copy (no navigation to the character) used for write-behind snapshots.</summary>
+        public CharacterItem MemberwiseCloneForPersistence()
+        {
+            var clone = (CharacterItem)MemberwiseClone();
+            clone.Character = null;
+            return clone;
+        }
     }
 }

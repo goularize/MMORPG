@@ -21,7 +21,7 @@ namespace Server.Handlers
             // 1. Remove from current map. Observers get their despawn from the regular AoI pass, and the player's
             // own AoI state is reset so nearby entities are re-sent. The position is persisted below (the bind
             // point), so skip the disconnect-style save that could overwrite it with the death position.
-            GameLogic.MapMgr.RemovePlayer(player.Id, savePosition: false);
+            GameLogic.MapMgr.RemovePlayer(player.Id, saveState: false);
 
             // 2. Restore state & teleport to bind point
             player.Health = player.MaxHealth;
@@ -29,19 +29,8 @@ namespace Server.Handlers
             player.MapId = player.BindMapId;
             player.Position = player.BindPosition;
 
-            // 3. Save to Database so state persists
-            using var db = AppDbContext.Factory();
-            var charData = db.Characters.FirstOrDefault(c => c.Id == player.Id);
-            if (charData != null)
-            {
-                charData.Health = player.Health;
-                charData.Mana = player.Mana;
-                charData.MapId = player.MapId;
-                charData.X = player.Position.X;
-                charData.Y = player.Position.Y;
-                charData.Z = player.Position.Z;
-                db.SaveChanges();
-            }
+            // 3. Queue the revived state (bind point, full vitals) so it persists
+            player.QueueSave(urgent: true);
 
             // 4. Add back to the World Manager at the new map
             // This will naturally broadcast EntitySpawn to nearby players at the Inn

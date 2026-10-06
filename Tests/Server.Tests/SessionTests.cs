@@ -202,7 +202,7 @@ namespace Server.Tests
             Assert.NotNull(GameLogic.MapMgr.GetPlayer(9401));
             Assert.Null(GameLogic.MapMgr.GetPlayer(9402));
             Assert.False(LastResponseWasSuccess(client, OpCode.CharacterSelectResponse)); // the refusal
-            GameLogic.MapMgr.RemovePlayer(9401, savePosition: false);
+            GameLogic.MapMgr.RemovePlayer(9401, saveState: false);
         }
 
         [Fact]
@@ -220,7 +220,7 @@ namespace Server.Tests
             Assert.NotNull(GameLogic.MapMgr.GetPlayer(9403));
             Assert.Null(GameLogic.MapMgr.GetPlayer(9404));
             Assert.Equal(9403, client.PlayerId);
-            GameLogic.MapMgr.RemovePlayer(9403, savePosition: false);
+            GameLogic.MapMgr.RemovePlayer(9403, saveState: false);
         }
 
         [Fact]
@@ -242,7 +242,7 @@ namespace Server.Tests
             using var db = AppDbContext.Factory();
             Assert.NotNull(db.Characters.Find(9405));
             Assert.Null(db.Characters.Find(9406));
-            GameLogic.MapMgr.RemovePlayer(9405, savePosition: false);
+            GameLogic.MapMgr.RemovePlayer(9405, saveState: false);
         }
 
         [Fact]
@@ -257,7 +257,7 @@ namespace Server.Tests
 
             Assert.False(LastResponseWasSuccess(client, OpCode.CharacterDeleteResponse));
             GameLogic.Commands.DrainAll();
-            GameLogic.MapMgr.RemovePlayer(9407, savePosition: false);
+            GameLogic.MapMgr.RemovePlayer(9407, saveState: false);
         }
 
         [Fact]
@@ -274,7 +274,7 @@ namespace Server.Tests
             var response = client.SentPackets.First(p => p.PacketId == OpCode.CharacterSelectResponse);
             Assert.True(response.ReadBool());
             Assert.Equal(2, response.ReadInt());
-            GameLogic.MapMgr.RemovePlayer(9408, savePosition: false);
+            GameLogic.MapMgr.RemovePlayer(9408, saveState: false);
         }
 
         [Fact]
@@ -316,7 +316,7 @@ namespace Server.Tests
             Assert.True(GameLogic.MapMgr.AddPlayer(first));
             Assert.False(GameLogic.MapMgr.AddPlayer(duplicate));
             Assert.Same(first, GameLogic.MapMgr.GetPlayer(9411));
-            GameLogic.MapMgr.RemovePlayer(9411, savePosition: false);
+            GameLogic.MapMgr.RemovePlayer(9411, saveState: false);
         }
 
         // Real sockets: the second sign-in of an account closes the first connection's socket

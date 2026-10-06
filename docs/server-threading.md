@@ -73,8 +73,7 @@ entry (`EnterWorld`) to the game thread. Other handlers needing a slow I/O step 
 ## Rules for contributors
 
 1. Never mutate world state from a network thread or a `Task.Run` continuation; post/queue it instead.
-2. Do not block the game thread on I/O. Persistence uses fire-and-forget writes (`Task.Run`); the remaining
-   synchronous DB calls in `BindHandler` and `PlayerActionHandler` (respawn) are tracked under write-behind
-   persistence (#100).
+2. Do not block the game thread on I/O. All world-handler persistence goes through the write-behind queue
+   (see `docs/persistence.md`).
 3. Tests call handlers directly. When a flow goes through the queue (e.g. character select), call
    `GameLogic.Commands.DrainAll()` (test helper) to run what was posted.

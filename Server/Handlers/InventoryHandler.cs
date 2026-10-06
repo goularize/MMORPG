@@ -4,6 +4,7 @@ using Server.Data;
 using Server.Database;
 using Server.Database.Models;
 using Server.Network;
+using Server.Persistence;
 using Server.World;
 using Server.World.Entities;
 using Shared.Enums;
@@ -121,7 +122,7 @@ namespace Server.Handlers
                         if (sourceItem.Quantity <= 0)
                         {
                             player.Inventory.Remove(sourceItem);
-                            DeleteDbItem(sourceItem.Id);
+                            DeleteDbItem(sourceItem);
                             SendInventorySlotUpdate(player, null, fromBag, fromSlot);
                         }
                         else
@@ -232,7 +233,7 @@ namespace Server.Handlers
             if (item.Quantity <= 0)
             {
                 player.Inventory.Remove(item);
-                DeleteDbItem(item.Id);
+                DeleteDbItem(item);
                 SendInventorySlotUpdate(player, null, bagIndex, slotIndex);
             }
             else
@@ -265,7 +266,7 @@ namespace Server.Handlers
             if (quantity >= item.Quantity)
             {
                 player.Inventory.Remove(item);
-                DeleteDbItem(item.Id);
+                DeleteDbItem(item);
                 SendInventorySlotUpdate(player, null, bagIndex, slotIndex);
             }
             else
@@ -274,6 +275,8 @@ namespace Server.Handlers
                 SaveDbItem(item);
                 SendInventorySlotUpdate(player, item, bagIndex, slotIndex);
             }
+
+            PersistenceService.Instance.Expedite(player.Id); // destroyed value: make it durable
         }
 
         public static int? FindFirstEmptySlot(Player player, int bagIndex = 0)
@@ -286,50 +289,9 @@ namespace Server.Handlers
             return null;
         }
 
-        public static void SaveDbItem(CharacterItem item)
-        {
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                try
-                {
-                    using var db = AppDbContext.Factory();
-                    var existing = db.CharacterItems.Find(item.Id);
-                    if (existing != null)
-                    {
-                        db.Entry(existing).CurrentValues.SetValues(item);
-                    }
-                    else
-                    {
-                        db.CharacterItems.Add(item);
-                    }
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Inventory] Error saving item {item.Id}: {ex.Message}");
-                }
-            });
-        }
+        /// <summary>Queues a snapshot of the item for the write-behind persistence queue (no DB access here).</summary>
+        public static void SaveDbItem(CharacterItem item) => PersistenceService.Instance.QueueItem(item);
 
-        public static void DeleteDbItem(Guid itemId)
-        {
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                try
-                {
-                    using var db = AppDbContext.Factory();
-                    var item = db.CharacterItems.Find(itemId);
-                    if (item != null)
-                    {
-                        db.CharacterItems.Remove(item);
-                        db.SaveChanges();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Inventory] Error deleting item {itemId}: {ex.Message}");
-                }
-            });
-        }
+        public static void DeleteDbItem(CharacterItem item) => PersistenceService.Instance.QueueItemDelete(item);
     }
 }

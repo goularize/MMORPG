@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Server.World.Entities
@@ -41,9 +42,23 @@ namespace Server.World.Entities
             Connection = connection;
         }
 
+        // Periodic safety-net save, staggered per player so autosaves never arrive as one burst
+        private DateTime _nextAutosaveUtc;
+
         public override void Update()
         {
             base.Update();
+
+            var utcNow = DateTime.UtcNow;
+            if (_nextAutosaveUtc == default)
+            {
+                _nextAutosaveUtc = utcNow.AddSeconds(ServerConfig.AutosaveSeconds * (0.1 + Random.Shared.NextDouble() * 0.9));
+            }
+            else if (utcNow >= _nextAutosaveUtc)
+            {
+                QueueSave();
+                _nextAutosaveUtc = utcNow.AddSeconds(ServerConfig.AutosaveSeconds);
+            }
             
             // Sync vitals to client if they changed (e.g. from regen)
             if (_vitalsChanged)
@@ -124,8 +139,8 @@ namespace Server.World.Entities
                 Connection.Send(vitalsPacket);
             }
 
-            // Asynchronously persist progression to database
-            SaveProgressionToDatabase();
+            // Level-ups are durable events
+            QueueSave(urgent: true);
         }
 
         public override void CalculateDerivedStats()
@@ -190,48 +205,18 @@ namespace Server.World.Entities
             BaseAttackSpeed = System.Math.Max(Shared.Constants.GameRules.MinPlayerAttackInterval, Shared.Constants.GameRules.BasePlayerAttackInterval * (1.0f - AttackSpeedBonus));
         }
 
-        public void SaveProgressionToDatabase()
-        {
-            int playerId = Id;
-            int level = Level;
-            long exp = Exp;
-            int statPoints = StatPoints;
-            int health = Health;
-            int mana = Mana;
-            int strength = Strength;
-            int intelligence = Intelligence;
-            int constitution = Constitution;
-            int knowledge = Knowledge;
-            long gold = Gold;
-            int slots = InventorySlots;
+        /// <summary>
+        /// Takes an immutable snapshot of everything persisted on the character row. Call on the game thread:
+        /// the persistence workers only ever see this copy, never the live player.
+        /// </summary>
+        public Server.Persistence.CharacterState CreatePersistenceState() => new(
+            Id, Level, Exp, StatPoints, Health, Mana, Strength, Intelligence, Constitution, Knowledge,
+            Gold, InventorySlots, MapId, Position.X, Position.Y, Position.Z,
+            BindMapId, BindPosition.X, BindPosition.Y, BindPosition.Z);
 
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                try
-                {
-                    using var db = Server.Database.AppDbContext.Factory();
-                    var dbChar = db.Characters.Find(playerId);
-                    if (dbChar != null)
-                    {
-                        dbChar.Level = level;
-                        dbChar.Exp = exp;
-                        dbChar.StatPoints = statPoints;
-                        dbChar.Health = health;
-                        dbChar.Mana = mana;
-                        dbChar.Strength = strength;
-                        dbChar.Intelligence = intelligence;
-                        dbChar.Constitution = constitution;
-                        dbChar.Knowledge = knowledge;
-                        dbChar.Gold = gold;
-                        dbChar.InventorySlots = slots;
-                        db.SaveChanges();
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    System.Console.WriteLine($"[Error] Failed to persist progression for player ID {playerId}: {ex.Message}");
-                }
-            });
-        }
+        /// <summary>Queues a background save of this character (write-behind, coalesced with earlier unflushed saves).</summary>
+        /// <param name="urgent">Durable event (value created/destroyed/transferred, level-up, disconnect): flush promptly.</param>
+        public void QueueSave(bool urgent = false)
+            => Server.Persistence.PersistenceService.Instance.QueueCharacter(CreatePersistenceState(), urgent);
     }
 }

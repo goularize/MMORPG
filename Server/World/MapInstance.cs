@@ -99,11 +99,11 @@ namespace Server.World
             }
         }
 
-        /// <param name="savePosition">
-        /// False when the caller persists the player's position itself (respawn writes the bind point);
-        /// otherwise a late async save could overwrite it with the position the player died at.
+        /// <param name="saveState">
+        /// False when the caller queues the character's new state itself (respawn queues the bind-point state),
+        /// so the death-time state is not queued on top of it.
         /// </param>
-        public void RemovePlayer(int playerId, bool savePosition = true)
+        public void RemovePlayer(int playerId, bool saveState = true)
         {
             if (Players.TryRemove(playerId, out Player? player))
             {
@@ -111,32 +111,10 @@ namespace Server.World
                 // are handled by the regular AoI pass (despawn, or just a position update after a same-map respawn).
                 player.AoiResetRequested = true;
 
-                if (savePosition)
-                {
-                    // Snapshot now: the Player object can be moved again before the async save runs
-                    var finalPosition = player.Position;
-                    System.Threading.Tasks.Task.Run(() =>
-                    {
-                        try
-                        {
-                            using var db = Server.Database.AppDbContext.Factory();
-                            var dbChar = db.Characters.Find(player.Id);
-                            if (dbChar != null)
-                            {
-                                dbChar.X = finalPosition.X;
-                                dbChar.Y = finalPosition.Y;
-                                dbChar.Z = finalPosition.Z;
-                                db.SaveChanges();
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"[Error] Failed to save player {player.Name} position on disconnect: {ex.Message}");
-                        }
-                    });
-                }
+                // Final state (position, map, vitals, ...) goes to the write-behind queue; it is a durable event
+                if (saveState) player.QueueSave(urgent: true);
 
-                Console.WriteLine($"Player {player.Name} left Map {MapId}{(savePosition ? " (Position saved)" : string.Empty)}.");
+                Console.WriteLine($"Player {player.Name} left Map {MapId}{(saveState ? " (Position saved)" : string.Empty)}.");
             }
         }
 

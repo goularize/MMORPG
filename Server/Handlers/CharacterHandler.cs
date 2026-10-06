@@ -182,6 +182,13 @@ namespace Server.Handlers
                 return;
             }
 
+            // Read-your-writes: a character that was just saved (e.g. a quick re-login) must not be loaded from
+            // the database before its pending write-behind changes have landed.
+            if (!Server.Persistence.PersistenceService.Instance.Flush(characterId, TimeSpan.FromSeconds(3)))
+            {
+                Console.WriteLine($"[Persistence] Timed out waiting for pending saves of character {characterId} before loading it.");
+            }
+
             using var db = AppDbContext.Factory();
             var characterData = db.Characters.FirstOrDefault(c => c.Id == characterId && c.AccountId == client.AccountId);
 
