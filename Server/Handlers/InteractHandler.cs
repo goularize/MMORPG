@@ -8,7 +8,7 @@ namespace Server.Handlers
 {
     public static class InteractHandler
     {
-        private const float INTERACT_RANGE = 3.0f;
+        private const float INTERACT_RANGE = Shared.Constants.GameRules.InteractRange;
 
         public static void HandleInteractRequest(IClientConnection client, Packet packet)
         {

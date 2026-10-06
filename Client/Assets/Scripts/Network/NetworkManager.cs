@@ -12,7 +12,7 @@ namespace Client.Network
         public string serverIP = "127.0.0.1";
         public int serverPort = 7777;
 
-        public const string GameVersion = "0.2.0-alpha";
+        public const string GameVersion = Shared.Constants.GameRules.GameVersion;
 
         private TcpClient _tcpClient;
         private NetworkStream _stream;

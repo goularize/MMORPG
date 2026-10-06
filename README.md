@@ -98,7 +98,7 @@ Run the setup script once to link the shared backend logic into Unity's Asset hi
   setup_client.bat
   ```
 
-The script links `Shared/Enums`, `Shared/Math` and `Shared/Network` (`Shared/Models` is server-side data code and is not linked). It is safe to re-run. Verify with `ls Client/Assets/Scripts/Shared` (expect `Enums`, `Math`, `Network`).
+The script links `Shared/Constants`, `Shared/Enums`, `Shared/Math` and `Shared/Network` (`Shared/Models` is server-side data code and is not linked). It is safe to re-run. Verify with `ls Client/Assets/Scripts/Shared` (expect `Constants`, `Enums`, `Math`, `Network`).
 
 Open the `Client/` folder in Unity Hub and press Play!
 

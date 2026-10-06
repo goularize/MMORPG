@@ -124,7 +124,7 @@ namespace Server.World
         }
 
         // The distance within which a player can "see" other entities
-        private const float AOI_RADIUS = 50.0f;
+        private const float AOI_RADIUS = Shared.Constants.GameRules.AoiRadius;
 
         /// <summary>
         /// Called once per tick by the GameLogic loop.

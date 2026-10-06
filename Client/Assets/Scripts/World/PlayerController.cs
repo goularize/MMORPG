@@ -7,7 +7,7 @@ namespace Client.World
     public class PlayerController : MonoBehaviour
     {
         [Header("Movement")]
-        public float speed = 5f;
+        public float speed = Shared.Constants.GameRules.BasePlayerMoveSpeed;
 
         private float _lastSendTime;
         private const float SendRate = 0.1f; // Send movement 10 times a second
@@ -16,7 +16,7 @@ namespace Client.World
         private Rigidbody2D _rb;
 
         [Header("Combat")]
-        public float attackCooldown = 1.5f;
+        public float attackCooldown = Shared.Constants.GameRules.BasePlayerAttackInterval;
         private float _lastAttackTime;
 
         private void Awake()

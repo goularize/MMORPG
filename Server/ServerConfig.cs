@@ -8,7 +8,7 @@ namespace Server
         public static int BaseManaRes { get; private set; } = 3;
         public static double RegenTickIntervalSeconds { get; private set; } = 1.0;
 
-        public static string GameVersion { get; private set; } = "0.2.0-alpha";
+        public static string GameVersion { get; private set; } = Shared.Constants.GameRules.GameVersion;
 
         // RPG Progression
         public static int ExpBase { get; private set; } = 100;

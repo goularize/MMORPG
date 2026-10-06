@@ -9,7 +9,7 @@ namespace Server.Handlers
     public static class CombatHandler
     {
         // Define max melee range
-        private const float MELEE_RANGE = 2.5f;
+        private const float MELEE_RANGE = Shared.Constants.GameRules.DefaultMeleeRange;
         private static readonly Random _rng = new Random();
 
         public static void HandleAttackRequest(IClientConnection client, Packet packet)

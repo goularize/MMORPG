@@ -181,9 +181,9 @@ namespace Server.World.Entities
             CritChance = System.Math.Clamp(0.05f + (totalInt * 0.0005f) + gearCritChance, 0.05f, 0.75f);
             CritMultiplier = System.Math.Max(1.5f, 2.0f + (totalStr * 0.005f) + gearCritMultiplier);
             DodgeChance = System.Math.Clamp(0.05f + (totalKnow * 0.0002f) + gearDodgeChance, 0.05f, 0.50f);
-            MovementSpeed = System.Math.Max(2.0f, 4.0f + gearMoveSpeed);
+            MovementSpeed = System.Math.Max(Shared.Constants.GameRules.MinPlayerMoveSpeed, Shared.Constants.GameRules.BasePlayerMoveSpeed + gearMoveSpeed);
             AttackSpeedBonus = System.Math.Clamp(gearAttackSpeed, 0f, 1.0f);
-            BaseAttackSpeed = System.Math.Max(0.5f, 1.5f * (1.0f - AttackSpeedBonus));
+            BaseAttackSpeed = System.Math.Max(Shared.Constants.GameRules.MinPlayerAttackInterval, Shared.Constants.GameRules.BasePlayerAttackInterval * (1.0f - AttackSpeedBonus));
         }
 
         public void SaveProgressionToDatabase()

@@ -37,11 +37,11 @@ namespace Server.World.Entities
         // Regen Tracking
         // Combat & Cooldowns
         public DateTime LastAttackTime { get; set; } = DateTime.MinValue;
-        public float BaseAttackSpeed { get; set; } = 1.5f;
+        public float BaseAttackSpeed { get; set; } = Shared.Constants.GameRules.BasePlayerAttackInterval;
         public float CritChance { get; set; } = 0.05f;
         public float CritMultiplier { get; set; } = 2.0f;
         public float DodgeChance { get; set; } = 0.05f;
-        public float MovementSpeed { get; set; } = 4.0f;
+        public float MovementSpeed { get; set; } = Shared.Constants.GameRules.BasePlayerMoveSpeed;
         public float AttackSpeedBonus { get; set; } = 0.0f;
 
         protected DateTime _lastRegenTime = DateTime.UtcNow;

@@ -114,7 +114,7 @@ namespace Server.Handlers
             broadcast.Write(sender.Name);
             broadcast.Write(message);
 
-            float chatRadius = 50.0f; // Could be larger or smaller than AoI
+            float chatRadius = Shared.Constants.GameRules.ChatLocalRadius;
 
             var map = GameLogic.MapMgr.GetMap(sender.MapId);
             if (map != null)

@@ -14,7 +14,7 @@ case "$(uname -s)" in
         ;;
 esac
 
-SHARED_FOLDERS=(Enums Math Network)
+SHARED_FOLDERS=(Enums Math Network Constants)
 TARGET_DIR="Client/Assets/Scripts/Shared"
 
 echo "======================================="

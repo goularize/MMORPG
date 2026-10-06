@@ -12,7 +12,7 @@ echo =======================================
 set "TARGET_DIR=Client\Assets\Scripts\Shared"
 if not exist "%TARGET_DIR%" mkdir "%TARGET_DIR%"
 
-for %%F in (Enums Math Network) do (
+for %%F in (Enums Math Network Constants) do (
     if not exist "Shared\%%F" (
         echo ERROR: Shared\%%F does not exist. Run this script from a full clone.
         exit /b 1

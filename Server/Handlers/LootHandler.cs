@@ -12,7 +12,7 @@ namespace Server.Handlers
 {
     public static class LootHandler
     {
-        public const float INTERACT_RANGE = 3.0f;
+        public const float INTERACT_RANGE = Shared.Constants.GameRules.InteractRange;
 
         public static void HandleOpenLootSatchel(IClientConnection client, Packet packet)
         {
