@@ -58,7 +58,7 @@ namespace Server.World.Entities
                 Map = GameLogic.MapMgr.GetMap(MapId);
             }
 
-            UpdateAI(Map, 1.0f / 30.0f);
+            UpdateAI(Map, 1.0f / Shared.Constants.GameRules.ServerTickRate);
         }
 
         public void UpdateAI(MapInstance? map, float dt)

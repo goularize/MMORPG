@@ -45,6 +45,17 @@ entry (`EnterWorld`) to the game thread. Other handlers needing a slow I/O step 
 - **Stale work:** queued world entry is skipped if the connection closed while the character was loading
   (`IClientConnection.IsConnected`).
 
+## The game loop (`GameLogic`)
+
+- **Fixed timestep:** `FixedTimestepClock` turns real elapsed time into whole 1/30 s steps, so every `Update()` is
+  exactly one fixed step (NPC movement and timers rely on that) and the average rate does not drift.
+- **Catch-up with a cap:** after a stall it runs at most 5 steps back to back and drops the rest, so an overloaded
+  server degrades (slower world) instead of spiralling into ever longer ticks.
+- **Exception guard:** an exception in a tick is logged and the loop keeps going; one failing map does not stop the
+  others (`MapManager.Update`). Repeated errors are rate-limited by `LogThrottle` (once per 5 s per kind).
+- **Lag reporting:** ticks over the 33 ms budget and dropped steps are counted (`SlowTickCount`,
+  `DroppedStepCount`) and logged.
+
 ## Rules for contributors
 
 1. Never mutate world state from a network thread or a `Task.Run` continuation; post/queue it instead.

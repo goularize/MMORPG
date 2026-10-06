@@ -34,7 +34,6 @@ namespace Server.World
         private readonly ConcurrentDictionary<int, int> _pendingPerClient = new();
         private readonly int? _maxPendingPerClient;
         private readonly double? _budgetMs;
-        private long _lastBudgetWarningTicks;
 
         // Explicit values are for tests; by default the live ServerConfig values apply.
         public GameCommandQueue(int? maxPendingPerClient = null, double? budgetMs = null)
@@ -113,7 +112,7 @@ namespace Server.World
             catch (Exception ex)
             {
                 string source = command.Client != null ? $"packet from Client {command.Client.Id}" : "internal command";
-                Console.WriteLine($"[Commands] Error while handling {source}: {ex}");
+                LogThrottle.Warn("commands.error", $"[Commands] Error while handling {source}: {ex}");
             }
             finally
             {
@@ -124,13 +123,10 @@ namespace Server.World
             }
         }
 
-        // Under sustained overload this would fire every tick; log at most once every 5 seconds.
+        // Under sustained overload this would fire every tick; LogThrottle limits it
         private void WarnBudgetExceeded(int executed)
         {
-            long now = Stopwatch.GetTimestamp();
-            if (now - _lastBudgetWarningTicks < 5 * Stopwatch.Frequency) return;
-            _lastBudgetWarningTicks = now;
-            Console.WriteLine($"[Commands] Drain budget ({BudgetMs:F1}ms) exceeded after {executed} commands; {_queue.Count} still queued for the next tick.");
+            LogThrottle.Warn("commands.budget", $"[Commands] Drain budget ({BudgetMs:F1}ms) exceeded after {executed} commands; {_queue.Count} still queued for the next tick.");
         }
     }
 }

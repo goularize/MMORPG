@@ -223,7 +223,15 @@ namespace Server.World
         {
             foreach (var map in ActiveMaps.Values)
             {
-                map.Update();
+                // A failing map must not stop the others from being simulated this tick
+                try
+                {
+                    map.Update();
+                }
+                catch (Exception ex)
+                {
+                    LogThrottle.Warn($"map.update.{map.MapId}", $"[Error] Map {map.MapId} update failed: {ex}");
+                }
             }
         }
     }

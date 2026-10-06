@@ -11,6 +11,10 @@ namespace Shared.Constants
         /// <summary>Protocol/build version exchanged at sign-in. The server may override it via GAME_VERSION.</summary>
         public const string GameVersion = "0.2.0-alpha";
 
+        // --- Simulation ---
+        /// <summary>Fixed simulation rate of the authoritative server loop (ticks per second).</summary>
+        public const int ServerTickRate = 30;
+
         // --- Area of Interest / social ranges (world units) ---
         public const float AoiRadius = 50.0f;
         public const float ChatLocalRadius = 50.0f;

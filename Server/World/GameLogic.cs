@@ -6,20 +6,38 @@ namespace Server.World
 {
     public class GameLogic
     {
-        // Target Ticks Per Second
-        private const int TICKS_PER_SECOND = 30;
-        
-        // How many milliseconds each tick should take to maintain 30 TPS (approx 33.33ms)
-        private const float MS_PER_TICK = 1000f / TICKS_PER_SECOND;
+        private const int TICKS_PER_SECOND = Shared.Constants.GameRules.ServerTickRate;
 
-        private bool _isRunning = false;
+        // Longest tick we consider healthy: the whole step budget (approx 33.33ms at 30 TPS)
+        private const double MS_PER_TICK = 1000.0 / TICKS_PER_SECOND;
+
+        private readonly Action _update;
+        private volatile bool _isRunning = false;
         private Thread? _logicThread;
-        
+        private long _tickErrorCount;
+        private long _slowTickCount;
+        private long _droppedStepCount;
+
+        /// <summary>Ticks whose update threw (the loop survives them).</summary>
+        public long TickErrorCount => Volatile.Read(ref _tickErrorCount);
+
+        /// <summary>Ticks that took longer than the step budget.</summary>
+        public long SlowTickCount => Volatile.Read(ref _slowTickCount);
+
+        /// <summary>Simulation steps skipped because the server fell too far behind to catch up.</summary>
+        public long DroppedStepCount => Volatile.Read(ref _droppedStepCount);
+
         // The manager that holds all active Map Instances
         public static MapManager MapMgr { get; } = new MapManager();
 
         // Hand-off from the network threads: everything that changes world state runs from here, on this thread
         public static GameCommandQueue Commands { get; } = new GameCommandQueue();
+
+        // The update delegate is injectable so the loop's resilience can be tested without a real world
+        public GameLogic(Action? update = null)
+        {
+            _update = update ?? Update;
+        }
 
         public void Start()
         {
@@ -30,7 +48,7 @@ namespace Server.World
                 IsBackground = true
             };
             _logicThread.Start();
-            
+
             Console.WriteLine($"GameLogic started at {TICKS_PER_SECOND} TPS (Target: {MS_PER_TICK:F2}ms per tick).");
         }
 
@@ -38,42 +56,66 @@ namespace Server.World
         {
             _isRunning = false;
             // Wait for the thread to finish its current loop before killing it completely
-            _logicThread?.Join(1000); 
+            _logicThread?.Join(1000);
             Console.WriteLine("GameLogic stopped.");
         }
 
         private void Loop()
         {
-            Stopwatch timer = new Stopwatch();
+            var clock = new FixedTimestepClock(TICKS_PER_SECOND);
+            var wallClock = Stopwatch.StartNew();
+            double previous = 0.0;
 
             while (_isRunning)
             {
-                timer.Restart();
+                double now = wallClock.Elapsed.TotalSeconds;
+                int steps = clock.Advance(now - previous, out int dropped);
+                previous = now;
 
-                // 1. Process all game logic for this tick
-                Update();
-
-                timer.Stop();
-                
-                // 2. Calculate how long the logic took to execute
-                long elapsedMs = timer.ElapsedMilliseconds;
-
-                // 3. Sleep for the remaining time to ensure a steady tick rate
-                if (elapsedMs < MS_PER_TICK)
+                if (dropped > 0)
                 {
-                    int sleepTime = (int)(MS_PER_TICK - elapsedMs);
-                    Thread.Sleep(sleepTime);
+                    Interlocked.Add(ref _droppedStepCount, dropped);
+                    LogThrottle.Warn("gameloop.dropped", $"[GameLoop] Server is overloaded: dropped {dropped} simulation step(s) it could not catch up on ({DroppedStepCount} so far).");
                 }
-                else
+
+                for (int i = 0; i < steps; i++)
                 {
-                    // If elapsedMs > MS_PER_TICK, the server is struggling to keep up!
-                    // In a production environment, you might log a warning here (Server Lag).
+                    RunTick();
                 }
+
+                // Sleep until the next step is due (rounded up so we never wake early and spin)
+                int sleepMs = (int)Math.Ceiling(clock.SecondsUntilNextStep * 1000.0);
+                if (sleepMs > 0) Thread.Sleep(sleepMs);
             }
         }
 
         /// <summary>
-        /// The main update method where all world state calculations happen.
+        /// Runs one simulation step. An exception in the update is logged and swallowed: a bug in one entity must
+        /// not kill the process (this runs on a background thread, where an unhandled exception terminates it).
+        /// </summary>
+        private void RunTick()
+        {
+            long start = Stopwatch.GetTimestamp();
+            try
+            {
+                _update();
+            }
+            catch (Exception ex)
+            {
+                long errors = Interlocked.Increment(ref _tickErrorCount);
+                LogThrottle.Warn("gameloop.error", $"[GameLoop] Unhandled exception in game tick (error #{errors}): {ex}");
+            }
+
+            double elapsedMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+            if (elapsedMs > MS_PER_TICK)
+            {
+                long slow = Interlocked.Increment(ref _slowTickCount);
+                LogThrottle.Warn("gameloop.slow", $"[GameLoop] Slow tick: {elapsedMs:F1}ms (budget {MS_PER_TICK:F1}ms, {slow} slow tick(s) so far).");
+            }
+        }
+
+        /// <summary>
+        /// One fixed simulation step (always 1/<see cref="TICKS_PER_SECOND"/> s, see <see cref="FixedTimestepClock"/>).
         /// </summary>
         private void Update()
         {
