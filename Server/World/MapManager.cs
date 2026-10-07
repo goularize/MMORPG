@@ -102,24 +102,8 @@ namespace Server.World
                 for (int i = 0; i < count; i++)
                 {
                     int entityId = EntityIdAllocator.Next(Shared.Constants.EntityIdKind.Npc);
-                    var npc = new NPC(entityId, template.Name)
-                    {
-                        TemplateId = template.TemplateId,
-                        BehaviorType = template.BehaviorType,
-                        AggroRadius = template.AggroRadius,
-                        WanderRadius = template.WanderRadius,
-                        LeashRadius = template.LeashRadius,
-                        RespawnTimeSeconds = template.RespawnTimeSeconds,
-                        WalkSpeed = template.WalkSpeed,
-                        RunSpeed = template.RunSpeed,
-                        AttackRange = template.AttackRange,
-                        PackAssistRadius = template.PackAssistRadius,
-                        Strength = template.BaseStrength,
-                        Intelligence = template.BaseIntelligence,
-                        Constitution = template.BaseConstitution,
-                        Knowledge = template.BaseKnowledge,
-                        ExpYield = (long)(template.BaseExp * Math.Max(1, template.LevelRange[0]))
-                    };
+                    var npc = new NPC(entityId, template.Name);
+                    npc.ApplyTemplate(template, rng);
 
                     Shared.Math.Vector3 spawnPos;
                     if (string.Equals(spawner.Type, "Area", StringComparison.OrdinalIgnoreCase) && spawner.Radius > 0)
@@ -139,9 +123,6 @@ namespace Server.World
 
                     npc.SpawnPosition = spawnPos;
                     npc.Position = spawnPos;
-                    npc.CalculateDerivedStats();
-                    npc.Health = npc.MaxHealth;
-                    npc.Mana = npc.MaxMana;
 
                     map.AddNPC(npc);
                     spawned++;

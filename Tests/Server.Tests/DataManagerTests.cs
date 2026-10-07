@@ -129,6 +129,14 @@ namespace Server.Tests
         }
 
         [Fact]
+        public void UnknownNpcType_IsAnError()
+        {
+            Write(npcs: """[{"TemplateId":10,"Name":"Slime","Type":"Frendly","Behavior":"Passive"}]""");
+
+            Assert.Contains(ErrorsOf(() => DataManager.Initialize(_dir)), e => e.Contains("Type 'Frendly'"));
+        }
+
+        [Fact]
         public void UnparsableBehavior_IsAnError_InsteadOfFallingBackToPassive()
         {
             Write(npcs: """[{"TemplateId":10,"Name":"Slime","Behavior":"Agressive"}]""");

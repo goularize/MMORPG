@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Server.Data;
+using Server.Data.Models;
 using Server.Database.Models;
 using Shared.Enums;
 using Shared.Math;
@@ -10,7 +11,7 @@ namespace Server.World.Entities
 {
     public class NPC : Entity
     {
-        public override Shared.Enums.EntityType Type => Shared.Enums.EntityType.Enemy;
+        public override Shared.Enums.EntityType Type => BehaviorType == MobBehaviorType.Friendly ? Shared.Enums.EntityType.Npc : Shared.Enums.EntityType.Enemy;
         public override string PrefabName => Server.Data.DataManager.Npcs.TryGetValue(TemplateId, out var template) ? template.PrefabName : "Enemy_Slime";
 
         public int SpawnId { get; set; }
@@ -49,6 +50,42 @@ namespace Server.World.Entities
             Name = name;
             BaseAttackSpeed = 1.5f;
             CalculateDerivedStats();
+        }
+
+        /// <summary>
+        /// Copies a template onto this NPC: behavior and AI radii, then a level rolled inside LevelRange and base stats
+        /// scaled by a per-stat factor rolled inside StatVarianceRange, so two spawns of one template are not identical.
+        /// </summary>
+        public void ApplyTemplate(NpcTemplate template, Random rng)
+        {
+            TemplateId = template.TemplateId;
+            BehaviorType = template.BehaviorType;
+            AggroRadius = template.AggroRadius;
+            WanderRadius = template.WanderRadius;
+            LeashRadius = template.LeashRadius;
+            RespawnTimeSeconds = template.RespawnTimeSeconds;
+            WalkSpeed = template.WalkSpeed;
+            RunSpeed = template.RunSpeed;
+            AttackRange = template.AttackRange;
+            PackAssistRadius = template.PackAssistRadius;
+
+            Level = rng.Next(template.LevelRange[0], template.LevelRange[1] + 1);
+            Strength = Vary(template.BaseStrength, template, rng);
+            Intelligence = Vary(template.BaseIntelligence, template, rng);
+            Constitution = Vary(template.BaseConstitution, template, rng);
+            Knowledge = Vary(template.BaseKnowledge, template, rng);
+            ExpYield = (long)template.BaseExp * Level;
+
+            CalculateDerivedStats();
+            Health = MaxHealth;
+            Mana = MaxMana;
+        }
+
+        private static int Vary(int baseStat, NpcTemplate template, Random rng)
+        {
+            float min = template.StatVarianceRange[0], max = template.StatVarianceRange[1];
+            double factor = min + rng.NextDouble() * (max - min);
+            return Math.Max(0, (int)Math.Round(baseStat * factor));
         }
 
         public override void Update()
