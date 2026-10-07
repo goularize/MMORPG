@@ -21,8 +21,12 @@ namespace Server.Data
             IReadOnlyList<LootTableTemplate> lootTables,
             IReadOnlyList<NpcTemplate> npcs,
             IReadOnlyList<SpawnerTemplate> spawners,
-            CharacterCreationTemplate characterCreation)
+            CharacterCreationTemplate characterCreation,
+            IReadOnlyList<ResourceNodeTemplate>? resourceNodes = null,
+            IReadOnlyList<ResourceSpawnTemplate>? resourceSpawns = null)
         {
+            resourceNodes ??= Array.Empty<ResourceNodeTemplate>();
+            resourceSpawns ??= Array.Empty<ResourceSpawnTemplate>();
             var errors = new List<string>();
             var warnings = new List<string>();
 
@@ -93,6 +97,32 @@ namespace Server.Data
                 if (!npcIds.Contains(spawner.TemplateId)) errors.Add($"{at}: references unknown NPC template {spawner.TemplateId}.");
                 if (spawner.Amount < 1) errors.Add($"{at}: Amount must be at least 1.");
                 if (spawner.Radius < 0f) errors.Add($"{at}: Radius cannot be negative.");
+            }
+
+            ReportDuplicates(errors, "ResourceNodes.json", "TemplateId", resourceNodes.Select(r => r.TemplateId));
+            foreach (var node in resourceNodes)
+            {
+                string at = $"ResourceNodes.json node {node.TemplateId}";
+                if (node.TemplateId <= 0) errors.Add($"{at}: TemplateId must be positive.");
+                if (string.IsNullOrWhiteSpace(node.Name)) errors.Add($"{at}: Name is empty.");
+                if (node.MaxHealth < 1) errors.Add($"{at}: MaxHealth must be at least 1.");
+                if (node.Defense < 0) errors.Add($"{at}: Defense cannot be negative.");
+                if (node.RespawnTimeSeconds < 0f) errors.Add($"{at}: RespawnTimeSeconds cannot be negative.");
+                if (node.Drops.Count == 0) warnings.Add($"{at}: has no drops, harvesting it yields nothing.");
+
+                foreach (var entry in node.Drops)
+                {
+                    if (!itemIds.Contains(entry.ItemTemplateId)) errors.Add($"{at}: drop references unknown item {entry.ItemTemplateId}.");
+                    if (entry.DropChance < 0f || entry.DropChance > 1f) errors.Add($"{at}: item {entry.ItemTemplateId} DropChance must be between 0 and 1.");
+                    if (entry.MinQuantity < 1 || entry.MinQuantity > entry.MaxQuantity) errors.Add($"{at}: item {entry.ItemTemplateId} quantity range must satisfy 1 <= Min <= Max.");
+                }
+            }
+
+            var nodeIds = resourceNodes.Select(r => r.TemplateId).ToHashSet();
+            for (int i = 0; i < resourceSpawns.Count; i++)
+            {
+                if (!nodeIds.Contains(resourceSpawns[i].TemplateId))
+                    errors.Add($"ResourceSpawns.json spawn #{i} (map {resourceSpawns[i].MapId}): references unknown resource node {resourceSpawns[i].TemplateId}.");
             }
 
             ValidateCharacterCreation(errors, characterCreation, items);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Server.Data.Models;
 using Server.Database.Models;
 using Shared.Math;
 
@@ -16,6 +17,18 @@ namespace Server.World.Entities
         
         public bool IsDepleted => Health <= 0;
         private DateTime _depletedTime;
+
+        /// <summary>What this node yields when depleted. Without one (tests, ad-hoc nodes) it drops nothing.</summary>
+        public ResourceNodeTemplate? Template { get; }
+
+        public Resource(int id, ResourceNodeTemplate template, Vector3 position)
+            : this(id, template.Name, position, template.RespawnTimeSeconds)
+        {
+            Template = template;
+            MaxHealth = template.MaxHealth;
+            Health = template.MaxHealth;
+            Defense = template.Defense;
+        }
 
         public Resource(int id, string type, Vector3 position, float respawnTime)
         {
@@ -69,28 +82,21 @@ namespace Server.World.Entities
 
         private void DropHarvestSatchel(MapInstance map, Player harvester)
         {
-            int templateId = 3001; // Default: Iron Ore
-            int minQty = 2;
-            int maxQty = 5;
+            if (Template == null) return;
 
-            if (ResourceType.Contains("Tree", StringComparison.OrdinalIgnoreCase) || 
-                ResourceType.Contains("Wood", StringComparison.OrdinalIgnoreCase))
-            {
-                templateId = 3003; // Oak Wood
-                minQty = 2;
-                maxQty = 4;
-            }
-
-            int yieldCount = _rng.Next(minQty, maxQty + 1);
-            var item = ItemFactory.CreateItem(templateId, 0, yieldCount, null, _rng);
             var droppedItems = new List<CharacterItem>();
-            if (item != null)
+            foreach (var entry in Template.Drops)
             {
-                droppedItems.Add(item);
+                if (_rng.NextDouble() > entry.DropChance) continue;
+
+                int quantity = _rng.Next(entry.MinQuantity, entry.MaxQuantity + 1);
+                var item = ItemFactory.CreateItem(entry.ItemTemplateId, 0, quantity, null, _rng);
+                if (item != null) droppedItems.Add(item);
             }
 
-            var satchel = new LootSatchel(Position, harvester.Id, 0, droppedItems);
-            map.SpawnLootSatchel(satchel);
+            if (droppedItems.Count == 0) return;
+
+            map.SpawnLootSatchel(new LootSatchel(Position, harvester.Id, 0, droppedItems));
         }
 
         private void Respawn()

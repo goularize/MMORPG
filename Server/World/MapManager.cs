@@ -48,14 +48,15 @@ namespace Server.World
         {
             LoadMapsFromDisk(mapsDirectory ?? Path.Combine(AppContext.BaseDirectory, "Data", "Maps"));
 
-            var missing = FindMissingMapReferences(Data.DataManager.Spawners, Data.DataManager.CharacterCreation.StartMapId);
+            var missing = FindMissingMapReferences(Data.DataManager.Spawners, Data.DataManager.CharacterCreation.StartMapId, Data.DataManager.ResourceSpawns);
             if (missing.Count > 0) throw new MapLoadException(missing);
 
             SpawnInitialSpawners();
+            SpawnResourceNodes(Data.DataManager.ResourceSpawns, Data.DataManager.ResourceNodes);
         }
 
         /// <summary>Spawners and the character start point must name a loaded map; a typo should stop startup, not skip silently.</summary>
-        public List<string> FindMissingMapReferences(IEnumerable<Data.Models.SpawnerTemplate> spawners, int startMapId)
+        public List<string> FindMissingMapReferences(IEnumerable<Data.Models.SpawnerTemplate> spawners, int startMapId, IEnumerable<Data.Models.ResourceSpawnTemplate>? resourceSpawns = null)
         {
             var errors = new List<string>();
             if (!ActiveMaps.ContainsKey(startMapId))
@@ -63,6 +64,12 @@ namespace Server.World
 
             foreach (var group in spawners.Where(sp => !ActiveMaps.ContainsKey(sp.MapId)).GroupBy(sp => sp.MapId))
                 errors.Add($"Spawners.json: {group.Count()} spawner(s) reference map {group.Key}, which does not match any map file.");
+
+            if (resourceSpawns != null)
+            {
+                foreach (var group in resourceSpawns.Where(sp => !ActiveMaps.ContainsKey(sp.MapId)).GroupBy(sp => sp.MapId))
+                    errors.Add($"ResourceSpawns.json: {group.Count()} spawn(s) reference map {group.Key}, which does not match any map file.");
+            }
 
             return errors;
         }
@@ -139,6 +146,32 @@ namespace Server.World
                     map.AddNPC(npc);
                     spawned++;
                 }
+            }
+
+            return spawned;
+        }
+
+        /// <summary>Places every resource node on the map named by its MapId. Returns the number of nodes spawned.</summary>
+        public int SpawnResourceNodes(IEnumerable<Data.Models.ResourceSpawnTemplate> spawns, IReadOnlyDictionary<int, Data.Models.ResourceNodeTemplate> nodeTemplates)
+        {
+            int spawned = 0;
+            foreach (var spawn in spawns)
+            {
+                if (!nodeTemplates.TryGetValue(spawn.TemplateId, out var template))
+                {
+                    Console.WriteLine($"[MapManager] Resource spawn skipped: unknown resource node {spawn.TemplateId} (Map {spawn.MapId}).");
+                    continue;
+                }
+
+                if (!ActiveMaps.TryGetValue(spawn.MapId, out var map))
+                {
+                    Console.WriteLine($"[MapManager] Resource spawn skipped: map {spawn.MapId} does not exist (resource node {spawn.TemplateId}).");
+                    continue;
+                }
+
+                int entityId = EntityIdAllocator.Next(Shared.Constants.EntityIdKind.Resource);
+                var node = new Resource(entityId, template, new Shared.Math.Vector3(spawn.X, spawn.Y, spawn.Z)) { MapId = map.MapId };
+                if (map.Resources.TryAdd(node.Id, node)) spawned++;
             }
 
             return spawned;

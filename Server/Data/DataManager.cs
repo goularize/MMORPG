@@ -23,6 +23,8 @@ namespace Server.Data
     {
         public static Dictionary<int, NpcTemplate> Npcs { get; private set; } = new();
         public static List<SpawnerTemplate> Spawners { get; private set; } = new();
+        public static Dictionary<int, ResourceNodeTemplate> ResourceNodes { get; private set; } = new();
+        public static List<ResourceSpawnTemplate> ResourceSpawns { get; private set; } = new();
         public static Dictionary<int, ItemTemplate> Items { get; private set; } = new();
         public static Dictionary<int, RecipeTemplate> Recipes { get; private set; } = new();
         public static Dictionary<int, LootTableTemplate> LootTables { get; private set; } = new();
@@ -49,13 +51,15 @@ namespace Server.Data
             var lootTables = Read<LootTableTemplate>(dataDirectory, "LootTables.json", errors);
             var npcs = Read<NpcTemplate>(dataDirectory, "Npcs.json", errors);
             var spawners = Read<SpawnerTemplate>(dataDirectory, "Spawners.json", errors);
+            var resourceNodes = Read<ResourceNodeTemplate>(dataDirectory, "ResourceNodes.json", errors);
+            var resourceSpawns = Read<ResourceSpawnTemplate>(dataDirectory, "ResourceSpawns.json", errors);
             var characterCreation = ReadOne<CharacterCreationTemplate>(dataDirectory, "CharacterCreation.json", errors);
 
             // Cross-references only make sense once every file parsed
             var warnings = new List<string>();
             if (errors.Count == 0)
             {
-                var result = DataValidator.Validate(items, recipes, lootTables, npcs, spawners, characterCreation);
+                var result = DataValidator.Validate(items, recipes, lootTables, npcs, spawners, characterCreation, resourceNodes, resourceSpawns);
                 errors.AddRange(result.Errors);
                 warnings.AddRange(result.Warnings);
             }
@@ -72,9 +76,11 @@ namespace Server.Data
             LootTables = lootTables.ToDictionary(l => l.NpcTemplateId);
             Npcs = npcs.ToDictionary(n => n.TemplateId);
             Spawners = spawners;
+            ResourceNodes = resourceNodes.ToDictionary(r => r.TemplateId);
+            ResourceSpawns = resourceSpawns;
             CharacterCreation = characterCreation;
 
-            Console.WriteLine($"[DataManager] Loaded {Items.Count} items, {Recipes.Count} recipes, {LootTables.Count} loot tables, {Npcs.Count} NPC templates, {Spawners.Count} spawners.");
+            Console.WriteLine($"[DataManager] Loaded {Items.Count} items, {Recipes.Count} recipes, {LootTables.Count} loot tables, {Npcs.Count} NPC templates, {Spawners.Count} spawners, {ResourceNodes.Count} resource node types, {ResourceSpawns.Count} resource spawns.");
         }
 
         private static T ReadOne<T>(string directory, string fileName, List<string> errors) where T : new()

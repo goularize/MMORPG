@@ -56,7 +56,7 @@
 *Authoritative combat mechanics, character progression, inventory pipelines, and interactive UI.*
 - [x] **Experience Curve & Leveling**: Configurable exponential EXP curves (`EXP_BASE * Level^EXP_GROWTH_RATE`), mob EXP yields, level-up broadcasts, and unspent stat point allocation (`ProgressionHandler`, `ExpBarUI`).
 - [x] **Authoritative 3-Pillar Combat Math**: Weapon reach validation, swing cooldowns, hit/dodge/crit rolls, and armor mitigation calculations.
-- [x] **World Loot Satchels & Harvesting**: Dropped loot bags with 30s killer ownership protection and 120s world decay timers (`LootSatchel.cs`), plus depletable resource nodes with respawn timers.
+- [x] **World Loot Satchels & Harvesting**: Dropped loot bags with 30s killer ownership protection and 120s world decay timers (`LootSatchel.cs`), plus depletable resource nodes with respawn timers, spawned from `ResourceNodes.json` / `ResourceSpawns.json` with data-driven drops.
 - [x] **Backend Inventory & Paperdoll Equipment**: Full server-side inventory slots, stack splitting, equipment stat aggregation, item refinement, and recipe crafting.
 - [ ] **Client Paperdoll & Inventory UI**: Drag-and-drop inventory bag grid, equipment slot panel, and item tooltip displays.
 - [ ] **Client Ground Loot & Harvesting UI**: Interactive loot popup window displaying satchel contents with "Loot" and "Loot All" buttons.

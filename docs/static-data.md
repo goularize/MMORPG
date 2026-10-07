@@ -1,6 +1,6 @@
 # Static Data Loading (`DataManager`)
 
-Items, recipes, loot tables, NPC templates and spawners are JSON files in `Server/Data/`, loaded once at startup by
+Items, recipes, loot tables, NPC templates, spawners and resource nodes are JSON files in `Server/Data/`, loaded once at startup by
 `DataManager.Initialize()`.
 
 ## Fail fast
@@ -19,6 +19,7 @@ Loading is all-or-nothing. If any file is missing, malformed or inconsistent, `I
 | Loot tables | Entries reference existing items; chances in `[0, 1]`; `1 <= Min <= Max` quantities; sane gold range. |
 | Recipes | Result and ingredients reference existing items; quantities `>= 1`; at least one ingredient. |
 | Character creation | `CharacterCreation.json`: vitals, base stats, gold, start map/position and starter items; starter items must exist, fit their `MaxStack` and the backpack. |
+| Resource nodes | `ResourceNodes.json`: positive unique id, name, `MaxHealth >= 1`, drops reference existing items with valid chance and quantity range (no drops is only a warning). `ResourceSpawns.json` entries must reference an existing node. |
 | Spawners | Reference an existing NPC template; `Amount >= 1`; non-negative radius. |
 
 A loot table whose NPC does not exist yet is only a **warning** (planned content, see S4-G5): it is reported at
@@ -44,3 +45,12 @@ no longer invents empty, collider-free maps.
 
 Data that names a map is checked against the loaded maps at startup: the `StartMapId` in `CharacterCreation.json` and
 every spawner's `MapId`. Spawners are routed by their own `MapId` (they are not tied to map 1).
+
+## Resource nodes
+
+Harvestable nodes (trees, ore veins) are data-driven. `ResourceNodes.json` defines the node types (health, defense,
+respawn time and a `Drops` list shaped like a loot table entry) and `ResourceSpawns.json` places them
+(`TemplateId`, `MapId`, `X/Y/Z`). `MapManager` creates one `Resource` per spawn at startup, routed by its `MapId`; a
+spawn naming a missing map stops startup like NPC spawners do. When a node is depleted it drops a loot satchel rolled
+from its template's `Drops`, replacing the old hardcoded Iron Ore / Oak Wood ids. A `Resource` built without a template
+drops nothing. Spawn positions are checked to be walkable by `ShippedResourceNodes_AreSpawnedOnTheirMapsOnWalkableGround`.
