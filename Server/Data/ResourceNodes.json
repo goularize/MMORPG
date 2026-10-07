@@ -1,0 +1,22 @@
+[
+  {
+    "TemplateId": 1,
+    "Name": "Oak Tree",
+    "MaxHealth": 100,
+    "Defense": 10,
+    "RespawnTimeSeconds": 60,
+    "Drops": [
+      { "ItemTemplateId": 3003, "DropChance": 1.0, "MinQuantity": 2, "MaxQuantity": 4 }
+    ]
+  },
+  {
+    "TemplateId": 2,
+    "Name": "Iron Vein",
+    "MaxHealth": 150,
+    "Defense": 15,
+    "RespawnTimeSeconds": 90,
+    "Drops": [
+      { "ItemTemplateId": 3001, "DropChance": 1.0, "MinQuantity": 2, "MaxQuantity": 5 }
+    ]
+  }
+]

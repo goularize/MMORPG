@@ -349,7 +349,7 @@ namespace Server.Tests
             var harvester = new Player(801, "Woodcutter", harvesterClient) { MapId = 1, Position = new Vector3(20, 0, 20) };
             map.Players[801] = harvester;
 
-            var tree = new Resource(99901, "Oak Tree", new Vector3(20, 0, 20), 30.0f);
+            var tree = new Resource(99901, Server.Data.DataManager.ResourceNodes[1], new Vector3(20, 0, 20));
             map.Resources[tree.Id] = tree;
 
             // Chop down tree to 0 HP
@@ -361,6 +361,49 @@ namespace Server.Tests
             var harvestSatchel = map.LootSatchels.Values.FirstOrDefault(s => s.OwnerPlayerId == harvester.Id && s.Position == tree.Position);
             Assert.NotNull(harvestSatchel);
             Assert.Contains(harvestSatchel.Items, i => i.TemplateId == 3003); // Oak Wood
+        }
+
+        [Fact]
+        public void ResourceWithoutTemplate_DropsNothing()
+        {
+            var map = GameLogic.MapMgr.GetMap(1)!;
+            var harvester = new Player(802, "Woodcutter2", new MockClientConnection { AccountId = 1, PlayerId = 802 }) { MapId = 1 };
+            var tree = new Resource(99902, "Oak Tree", new Vector3(20, 0, 20), 30.0f);
+
+            tree.TakeDamage(100, map, harvester);
+
+            Assert.True(tree.IsDepleted);
+            Assert.DoesNotContain(map.LootSatchels.Values, s => s.Position == tree.Position && s.OwnerPlayerId == harvester.Id);
+        }
+
+        [Fact]
+        public void ShippedResourceNodes_AreSpawnedOnTheirMapsOnWalkableGround()
+        {
+            // A real MapManager: the fixture's GameLogic.MapMgr has a bare, collider-free map 1
+            var map = new MapManager().GetMap(1)!;
+            var expected = Server.Data.DataManager.ResourceSpawns.Where(s => s.MapId == 1).ToList();
+
+            Assert.NotEmpty(expected);
+            Assert.Equal(expected.Count, map.Resources.Count);
+            foreach (var spawn in expected)
+            {
+                var pos = new Vector3(spawn.X, spawn.Y, spawn.Z);
+                Assert.True(map.IsWalkable(pos), $"resource spawn at {pos} is inside a collider");
+                Assert.Contains(map.Resources.Values, r => r.Position == pos && r.Template?.TemplateId == spawn.TemplateId);
+            }
+        }
+
+        [Fact]
+        public void SpawnResourceNodes_SkipsUnknownMapsAndTemplates()
+        {
+            var nodes = Server.Data.DataManager.ResourceNodes;
+            var spawns = new[]
+            {
+                new Server.Data.Models.ResourceSpawnTemplate { TemplateId = 1, MapId = 9999 },
+                new Server.Data.Models.ResourceSpawnTemplate { TemplateId = 9999, MapId = 1 }
+            };
+
+            Assert.Equal(0, GameLogic.MapMgr.SpawnResourceNodes(spawns, nodes));
         }
 
         // --- Partial stack merges (S5-G3) ---

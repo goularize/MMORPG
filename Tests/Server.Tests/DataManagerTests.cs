@@ -27,7 +27,7 @@ namespace Server.Tests
 
         private const string ValidCreation = """{"StartMapId":1,"Gold":50,"StarterItems":[{"TemplateId":1,"Quantity":1},{"TemplateId":2,"Quantity":5}]}""";
 
-        private void Write(string items = ValidItems, string npcs = ValidNpcs, string loot = ValidLoot, string recipes = ValidRecipes, string spawners = ValidSpawners, string creation = ValidCreation)
+        private void Write(string items = ValidItems, string npcs = ValidNpcs, string loot = ValidLoot, string recipes = ValidRecipes, string spawners = ValidSpawners, string creation = ValidCreation, string nodes = "[]", string nodeSpawns = "[]")
         {
             File.WriteAllText(Path.Combine(_dir, "Items.json"), items);
             File.WriteAllText(Path.Combine(_dir, "Npcs.json"), npcs);
@@ -35,6 +35,8 @@ namespace Server.Tests
             File.WriteAllText(Path.Combine(_dir, "Recipes.json"), recipes);
             File.WriteAllText(Path.Combine(_dir, "Spawners.json"), spawners);
             File.WriteAllText(Path.Combine(_dir, "CharacterCreation.json"), creation);
+            File.WriteAllText(Path.Combine(_dir, "ResourceNodes.json"), nodes);
+            File.WriteAllText(Path.Combine(_dir, "ResourceSpawns.json"), nodeSpawns);
         }
 
         private string[] ErrorsOf(Action load) => Assert.Throws<DataLoadException>(load).Errors.ToArray();
@@ -50,6 +52,31 @@ namespace Server.Tests
             Assert.Single(DataManager.Npcs);
             Assert.Single(DataManager.Spawners);
             Assert.Equal(20, DataManager.Items[2].MaxStack);
+        }
+
+        [Fact]
+        public void ResourceNodes_LoadAndAreValidated()
+        {
+            Write(nodes: """[{"TemplateId":1,"Name":"Oak","Drops":[{"ItemTemplateId":2,"MinQuantity":1,"MaxQuantity":3}]}]""",
+                  nodeSpawns: """[{"TemplateId":1,"MapId":1,"X":1,"Y":2}]""");
+
+            DataManager.Initialize(_dir);
+
+            Assert.Equal("Oak", DataManager.ResourceNodes[1].Name);
+            Assert.Single(DataManager.ResourceSpawns);
+        }
+
+        [Fact]
+        public void ResourceNodes_BadDropsAndSpawns_AreReported()
+        {
+            Write(nodes: """[{"TemplateId":1,"Name":"Oak","MaxHealth":0,"Drops":[{"ItemTemplateId":99,"MinQuantity":1,"MaxQuantity":1}]}]""",
+                  nodeSpawns: """[{"TemplateId":7,"MapId":1}]""");
+
+            var errors = ErrorsOf(() => DataManager.Initialize(_dir));
+
+            Assert.Contains(errors, e => e.Contains("MaxHealth"));
+            Assert.Contains(errors, e => e.Contains("unknown item 99"));
+            Assert.Contains(errors, e => e.Contains("unknown resource node 7"));
         }
 
         [Fact]

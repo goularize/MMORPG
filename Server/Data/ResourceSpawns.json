@@ -1,0 +1,5 @@
+[
+  { "TemplateId": 1, "MapId": 1, "X": 12.0, "Y": 8.0, "Z": 0 },
+  { "TemplateId": 1, "MapId": 1, "X": 19.0, "Y": 13.0, "Z": 0 },
+  { "TemplateId": 2, "MapId": 1, "X": 14.0, "Y": 14.0, "Z": 0 }
+]
