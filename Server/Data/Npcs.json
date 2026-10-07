@@ -38,6 +38,28 @@
     ]
   },
   {
+    "TemplateId": 201,
+    "Name": "Town Innkeeper",
+    "Type": "Friendly",
+    "PrefabName": "Entity_HumanInnkeeper",
+    "LevelRange": [50, 50],
+    "StatVarianceRange": [1.0, 1.0],
+    "Behavior": "Passive",
+    "AggroRadius": 0.0,
+    "BaseStrength": 50,
+    "BaseIntelligence": 50,
+    "BaseConstitution": 999,
+    "BaseKnowledge": 50,
+    "Interactions": [
+      {
+        "ConditionType": "None",
+        "ConditionValue": 0,
+        "Action": "BindPoint",
+        "ActionValue": 0
+      }
+    ]
+  },
+  {
     "Interactions": [],
     "BaseKnowledge": 1,
     "TemplateId": 101,
