@@ -5,6 +5,7 @@ namespace Shared.Enums
         Player = 0,
         Enemy = 1,
         LootSatchel = 2,
-        Resource = 3
+        Resource = 3,
+        Npc = 4
     }
 }

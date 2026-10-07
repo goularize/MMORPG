@@ -44,3 +44,17 @@ no longer invents empty, collider-free maps.
 
 Data that names a map is checked against the loaded maps at startup: the `StartMapId` in `CharacterCreation.json` and
 every spawner's `MapId`. Spawners are routed by their own `MapId` (they are not tied to map 1).
+
+## NPC templates
+
+`Npcs.json` entries are applied to each spawned NPC by `NPC.ApplyTemplate`:
+
+- **Level**: rolled per spawn, uniformly inside `LevelRange`. It feeds the derived stats and the mitigation formula
+  (`40 * Level`), and the EXP yield is `BaseExp * Level`.
+- **Stat variance**: each base stat is multiplied by its own factor rolled inside `StatVarianceRange`, so spawns of one
+  template differ slightly.
+- **Type**: `Enemy` or `Friendly` (anything else fails startup). A `Friendly` template always gets the `Friendly`
+  behavior, which makes it unattackable, and is sent to clients as `EntityType.Npc` instead of `Enemy`.
+
+Not done yet (tracked on #166): `Interactions` are still not evaluated (needs the vendor system), the Goblin Looter and
+Town Blacksmith have no spawner because their `Entity_Goblin` / `Entity_HumanBlacksmith` client prefabs do not exist.
