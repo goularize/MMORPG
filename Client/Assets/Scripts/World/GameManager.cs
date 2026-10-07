@@ -54,11 +54,11 @@ namespace Client.World
                 Client.UI.LoadingScreenUI.Instance.UpdateProgress(1f, "Synchronizing World State...");
             }
 
-            // Wait a brief moment for initial server packets (like InventorySync, EntitySpawns)
-            // Ideally this would wait for a specific 'WorldReady' packet, but this is a placeholder.
-            yield return new WaitForSeconds(0.5f);
-
             SpawnLocalPlayer();
+
+            // The server's initial state (entity spawns, vitals, positions) was held while the scene loaded; handle it
+            // now that the local player exists. A WorldReady handshake (#177) would make the server wait instead.
+            Network.NetworkManager.Instance?.ReleaseWorldPackets();
 
             if (Client.UI.LoadingScreenUI.Instance != null)
             {
@@ -137,15 +137,13 @@ namespace Client.World
                 var netEntity = obj.GetComponent<NetworkEntity>();
                 if (netEntity != null) netEntity.UpdateTargetPosition(newPos);
             }
-            else
+            else if (entityId == CharacterHandler.LocalPlayerId && _localPlayer != null)
             {
-                // If it's not in SpawnedEntities, it's likely a rubberband packet for our Local Player
-                if (_localPlayer != null)
-                {
-                    _localPlayer.transform.position = newPos;
-                    Debug.Log($"[GameManager] Rubberbanded local player to {newPos}");
-                }
+                // Server correction for our own character (anti-cheat rubberband)
+                _localPlayer.transform.position = newPos;
+                Debug.Log($"[GameManager] Rubberbanded local player to {newPos}");
             }
+            // Any other unknown id belongs to an entity we have not spawned (yet): ignore it, never move the player
         }
 
         /// <summary>
@@ -173,9 +171,9 @@ namespace Client.World
             {
                 return obj;
             }
-            // Fallback: If it's not a remote entity, assume it's the local player.
-            // (Since the server doesn't send EntitySpawn for ourselves, our ID is not in SpawnedEntities)
-            return _localPlayer;
+            // The server doesn't send EntitySpawn for ourselves, so our own id is not in SpawnedEntities.
+            // Any other unknown id is an entity we have not spawned: null, never the local player.
+            return entityId == CharacterHandler.LocalPlayerId ? _localPlayer : null;
         }
     }
 }

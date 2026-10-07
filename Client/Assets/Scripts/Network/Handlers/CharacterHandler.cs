@@ -70,6 +70,9 @@ namespace Client.Network.Handlers
 
                 Debug.Log($"[CharacterHandler] Selection successful. Loading MapId {mapId}. Spawning at {x}, {y}, {z}");
                 
+                // The server starts streaming world state right away; hold it until GameManager has the scene ready
+                NetworkManager.Instance.HoldWorldPackets();
+
                 // Show loading screen
                 Client.UI.LoadingScreenUI.ShowLoading("Loading World...");
 
