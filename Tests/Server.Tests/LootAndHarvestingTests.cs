@@ -123,6 +123,30 @@ namespace Server.Tests
         }
 
         [Fact]
+        public void LootSatchel_CannotBeAttacked()
+        {
+            var map = GameLogic.MapMgr.GetMap(1)!;
+            var client = new MockClientConnection { AccountId = 1, PlayerId = 301 };
+            var player = new Player(301, "Basher", client) { MapId = 1, Position = new Vector3(0, 0, 0), Attack = 30 };
+            map.AddPlayer(player);
+
+            var item = ItemFactory.CreateItem(1001, 0, 1)!;
+            var satchel = new LootSatchel(new Vector3(0, 0, 0), player.Id, 0, new[] { item });
+            map.SpawnLootSatchel(satchel);
+            player.KnownEntities.Add(satchel.Id);
+            int healthBefore = satchel.Health;
+
+            using var write = new Packet(OpCode.EntityAttackRequest);
+            write.Write(satchel.Id);
+            using var read = new Packet(write.ToArray());
+            CombatHandler.HandleAttackRequest(client, read);
+
+            Assert.Equal(healthBefore, satchel.Health);
+            Assert.DoesNotContain(client.SentPackets, p => p.PacketId == OpCode.EntityCombatEvent);
+            Assert.True(map.LootSatchels.ContainsKey(satchel.Id));
+        }
+
+        [Fact]
         public void HandleOpenLootSatchel_SyncsContents_AndEnforcesDistanceAndOwnership()
         {
             var map = GameLogic.MapMgr.GetMap(1)!;

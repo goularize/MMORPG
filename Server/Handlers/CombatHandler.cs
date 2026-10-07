@@ -44,6 +44,13 @@ namespace Server.Handlers
                 return;
             }
 
+            // Loot satchels are opened, never hit: they carry health only because every entity does
+            if (target is LootSatchel)
+            {
+                Console.WriteLine($"[Combat] Player {player.Name} tried to attack a loot satchel ({targetId}).");
+                return;
+            }
+
             // 4. Distance Check
             float distance = Shared.Math.Vector3.Distance(player.Position, target.Position);
             if (distance > MELEE_RANGE)
