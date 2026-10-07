@@ -141,5 +141,34 @@ namespace Server.Tests
 
             Assert.Equal(7777, ServerConfig.ServerPort);
         }
+
+        [Fact]
+        public void FindEnvFile_LooksInWorkingDirectory_ItsServerFolder_AndAboveTheExecutable()
+        {
+            string root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "envtest-" + Guid.NewGuid());
+            string server = System.IO.Path.Combine(root, "Server");
+            string bin = System.IO.Path.Combine(server, "bin", "Debug", "net8.0");
+            string elsewhere = System.IO.Path.Combine(root, "elsewhere");
+            System.IO.Directory.CreateDirectory(bin);
+            System.IO.Directory.CreateDirectory(elsewhere);
+            try
+            {
+                Assert.Null(ServerConfig.FindEnvFile(elsewhere, elsewhere));
+
+                string envFile = System.IO.Path.Combine(server, ".env");
+                System.IO.File.WriteAllText(envFile, "GAME_VERSION=x");
+
+                // run from the repo root (the case that used to ignore Server/.env)
+                Assert.Equal(envFile, ServerConfig.FindEnvFile(root, elsewhere));
+                // run from the Server folder
+                Assert.Equal(envFile, ServerConfig.FindEnvFile(server, elsewhere));
+                // run from anywhere, with the executable under Server/bin/...
+                Assert.Equal(envFile, ServerConfig.FindEnvFile(elsewhere, bin));
+            }
+            finally
+            {
+                System.IO.Directory.Delete(root, true);
+            }
+        }
     }
 }
