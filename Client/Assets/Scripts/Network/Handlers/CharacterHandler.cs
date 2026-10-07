@@ -78,7 +78,8 @@ namespace Client.Network.Handlers
             }
             else
             {
-                Debug.LogError("[CharacterHandler] Failed to select character.");
+                Debug.LogWarning("[CharacterHandler] Failed to select character.");
+                UI.CharacterSelectionUI.Instance?.OnCharacterSelectFailed();
             }
         }
     }
