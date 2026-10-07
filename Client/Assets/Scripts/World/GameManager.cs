@@ -117,6 +117,7 @@ namespace Client.World
             var netEntity = newEntity.GetComponent<NetworkEntity>();
             if (netEntity == null) netEntity = newEntity.AddComponent<NetworkEntity>();
             netEntity.Initialize(entityId, entityName, pos);
+            netEntity.ConfigureCollision(type, MapRules.IsPvp(CharacterHandler.CurrentMapId));
 
             SpawnedEntities.Add(entityId, newEntity);
         }
