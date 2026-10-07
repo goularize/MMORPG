@@ -34,17 +34,17 @@ namespace Server.Data.Models
         public int BaseExp { get; set; } = 25;
         public List<NpcInteraction> Interactions { get; set; } = new List<NpcInteraction>();
 
+        public bool IsFriendly => string.Equals(Type, "Friendly", System.StringComparison.OrdinalIgnoreCase);
+
         public Shared.Enums.MobBehaviorType BehaviorType
         {
             get
             {
+                // A Friendly NPC is never attackable, whatever its AI behavior says.
+                if (IsFriendly) return Shared.Enums.MobBehaviorType.Friendly;
                 if (System.Enum.TryParse<Shared.Enums.MobBehaviorType>(Behavior, true, out var parsed))
                 {
                     return parsed;
-                }
-                if (string.Equals(Type, "Friendly", System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return Shared.Enums.MobBehaviorType.Friendly;
                 }
                 return Shared.Enums.MobBehaviorType.Passive;
             }

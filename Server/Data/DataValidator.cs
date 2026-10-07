@@ -48,6 +48,8 @@ namespace Server.Data
                 string at = $"Npcs.json npc {npc.TemplateId}";
                 if (npc.TemplateId <= 0) errors.Add($"{at}: TemplateId must be positive.");
                 if (string.IsNullOrWhiteSpace(npc.Name)) errors.Add($"{at}: Name is empty.");
+                if (!string.Equals(npc.Type, "Enemy", StringComparison.OrdinalIgnoreCase) && !npc.IsFriendly)
+                    errors.Add($"{at}: Type '{npc.Type}' must be Enemy or Friendly.");
                 if (!Enum.TryParse<MobBehaviorType>(npc.Behavior, true, out _))
                     errors.Add($"{at}: Behavior '{npc.Behavior}' is not one of {string.Join(", ", Enum.GetNames<MobBehaviorType>())}.");
                 if (npc.LevelRange is not { Length: 2 } || npc.LevelRange[0] < 1 || npc.LevelRange[0] > npc.LevelRange[1])
