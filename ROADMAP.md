@@ -41,7 +41,7 @@
 *Multi-zone routing, collision math, map extraction, and world data pipelines.*
 - [x] **Multi-Map Routing**: `MapManager` and `MapInstance` zones routing players and entities via `MapId`.
 - [x] **Hybrid Server Collision System**: Server-authoritative geometry checks (`BoxCollider`, `CircleCollider`, `PolygonCollider`).
-- [x] **Bind Locations & Inns**: Innkeeper interaction, persistent character bind coordinates, and respawn flow (`BindHandler`).
+- [x] **Bind Locations & Inns**: Innkeeper interaction (`BindPoint` NPC interaction, range-validated, answered by `EntityInteractResponse`), persistent character bind coordinates, and respawn flow (`BindHandler`, `InteractHandler`). *(The Innkeeper has no spawner until its client prefab exists, tracked in #166)*
 - [x] **Unity Map Exporter Tool**: Editor tool (`MapExporter.cs`) exporting `CompositeCollider2D` polygons directly to server JSON. *(Verified: Completed)*
 - [x] **Static JSON Data Pipeline**: Centralized `DataManager` loading JSON templates for Items, Recipes, Mobs, Spawners, and Loot Tables. *(Verified: Completed)*
 - [x] **Multi-Map Spawner Routing**: `SpawnerTemplate.MapId` routes each spawner to its map (defaults to Map 1 for legacy data; unknown maps are skipped with a log line). *(Server side completed; the Unity spawner exporter still needs to write `MapId`, tracked in #187)*

@@ -26,7 +26,7 @@ namespace Shared.Tests
             ("SetBindPointRequest", 23), ("SetBindPointResponse", 24), ("PlayerRespawnRequest", 25), ("PlayerRespawnResponse", 26),
             ("EntityCombatEvent", 27), ("PlayerExpUpdate", 28), ("PlayerLevelUp", 29),
             ("AllocateStatPointRequest", 30), ("AllocateStatPointResponse", 31), ("PlayerProgressionSync", 32),
-            ("EntityVitals", 33), ("EntityDeath", 34),
+            ("EntityVitals", 33), ("EntityDeath", 34), ("EntityInteractResponse", 35),
             ("MoveInventoryItemRequest", 70), ("SplitItemStackRequest", 71), ("UseConsumableItemRequest", 72), ("EquipItemRequest", 73),
             ("UnequipItemRequest", 74), ("UpgradeItemRequest", 75), ("LearnRecipeRequest", 76), ("CraftItemRequest", 77), ("DropItemRequest", 78),
             ("InventorySync", 80), ("InventorySlotUpdate", 81), ("EquippedItemsSync", 82), ("UpgradeItemResponse", 83), ("CraftItemResponse", 84),

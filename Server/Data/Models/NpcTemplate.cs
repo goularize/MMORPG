@@ -8,6 +8,10 @@ namespace Server.Data.Models
         public int ConditionValue { get; set; } = 0;
         public string Action { get; set; } = "None";
         public int ActionValue { get; set; } = 0;
+
+        /// <summary>The parsed Action, or null when the name is not an InteractAction (rejected at startup).</summary>
+        public Shared.Enums.InteractAction? ActionType =>
+            System.Enum.TryParse<Shared.Enums.InteractAction>(Action, true, out var parsed) ? parsed : null;
     }
 
     public class NpcTemplate
@@ -33,6 +37,9 @@ namespace Server.Data.Models
         public int BaseKnowledge { get; set; }
         public int BaseExp { get; set; } = 25;
         public List<NpcInteraction> Interactions { get; set; } = new List<NpcInteraction>();
+
+        public bool HasInteraction(Shared.Enums.InteractAction action) =>
+            Interactions.Exists(i => i.ActionType == action);
 
         public bool IsFriendly => string.Equals(Type, "Friendly", System.StringComparison.OrdinalIgnoreCase);
 

@@ -65,6 +65,12 @@ drops nothing. Spawn positions are checked to be walkable by `ShippedResourceNod
   template differ slightly.
 - **Type**: `Enemy` or `Friendly` (anything else fails startup). A `Friendly` template always gets the `Friendly`
   behavior, which makes it unattackable, and is sent to clients as `EntityType.Npc` instead of `Enemy`.
+- **Interactions**: each entry's `Action` must be an `InteractAction` (`None`, `BindPoint`, `OpenShop`; anything else
+  fails startup). `InteractHandler` runs the first non-`None` action of the target and always answers with an
+  `EntityInteractResponse` (`targetId`, `InteractOutcome`, `InteractAction`): `Success`, `NotFound`, `TooFar`,
+  `TargetDead`, `NothingToDo` or `NotAvailable`. `BindPoint` binds the player where they stand and also sends the usual
+  `SetBindPointResponse`. `SetBindPointRequest` on its own is only honored within `InteractRange` of a living NPC whose
+  template offers `BindPoint` (the Town Innkeeper, id 201); otherwise it answers `success = false` with the old bind
+  point. `OpenShop` answers `NotAvailable` until the vendor system lands (#151). `ConditionType` is not evaluated yet.
 
-Not done yet (tracked on #166): `Interactions` are still not evaluated (needs the vendor system), the Goblin Looter and
-Town Blacksmith have no spawner because their `Entity_Goblin` / `Entity_HumanBlacksmith` client prefabs do not exist.
+Not done yet (tracked on #166): the Goblin Looter, Town Blacksmith and Town Innkeeper have no spawner because their `Entity_Goblin` / `Entity_HumanBlacksmith` / `Entity_HumanInnkeeper` client prefabs do not exist.

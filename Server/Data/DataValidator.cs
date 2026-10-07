@@ -58,6 +58,11 @@ namespace Server.Data
                     errors.Add($"{at}: Behavior '{npc.Behavior}' is not one of {string.Join(", ", Enum.GetNames<MobBehaviorType>())}.");
                 if (npc.LevelRange is not { Length: 2 } || npc.LevelRange[0] < 1 || npc.LevelRange[0] > npc.LevelRange[1])
                     errors.Add($"{at}: LevelRange must be [min, max] with 1 <= min <= max.");
+                foreach (var interaction in npc.Interactions)
+                {
+                    if (interaction.ActionType == null)
+                        errors.Add($"{at}: interaction Action '{interaction.Action}' is not one of {string.Join(", ", Enum.GetNames<InteractAction>())}.");
+                }
                 if (npc.StatVarianceRange is not { Length: 2 } || npc.StatVarianceRange[0] > npc.StatVarianceRange[1])
                     errors.Add($"{at}: StatVarianceRange must be [min, max] with min <= max.");
             }

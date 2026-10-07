@@ -64,6 +64,7 @@ namespace Shared.Network
         // Entity state replication, AoI-scoped (Server -> Client)
         EntityVitals = 33,   // entityId, health, maxHealth
         EntityDeath = 34,    // entityId
+        EntityInteractResponse = 35, // targetId, InteractOutcome (byte), InteractAction (byte)
 
         // Items & Inventory (Client -> Server)
         MoveInventoryItemRequest = 70,
