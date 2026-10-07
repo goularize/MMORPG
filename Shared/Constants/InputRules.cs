@@ -16,6 +16,9 @@ namespace Shared.Constants
         /// <summary>BCrypt silently ignores everything past 72 bytes, so longer passwords are rejected instead.</summary>
         public const int PasswordMaxBytes = 72;
 
+        /// <summary>RFC 5321 caps an address at 254 characters; the Accounts.Email column is sized to match.</summary>
+        public const int EmailMaxLength = 254;
+
         public const int CharacterNameMinLength = 3;
         public const int CharacterNameMaxLength = 20;
 
@@ -43,6 +46,34 @@ namespace Shared.Constants
                 return $"Password must be at least {PasswordMinLength} characters.";
             if (Encoding.UTF8.GetByteCount(password) > PasswordMaxBytes)
                 return $"Password is too long (max {PasswordMaxBytes} bytes).";
+            return null;
+        }
+
+        /// <summary>Trims and lower-cases an address so the same mailbox always compares (and is stored) the same way.</summary>
+        public static string NormalizeEmail(string? email) => (email ?? string.Empty).Trim().ToLowerInvariant();
+
+        /// <summary>
+        /// Pragmatic address check, not a full RFC 5322 parser: one '@', a non-empty local part, a dotted domain with
+        /// no empty labels, printable ASCII only and no spaces. Delivery is the only real proof an address works.
+        /// Pass the normalized address.
+        /// </summary>
+        public static string? ValidateEmail(string? email)
+        {
+            const string invalid = "Please enter a valid email address.";
+            if (string.IsNullOrEmpty(email) || email.Length > EmailMaxLength) return invalid;
+
+            foreach (char c in email)
+            {
+                if (c <= ' ' || c >= 127) return invalid;
+            }
+
+            int at = email.IndexOf('@');
+            if (at <= 0 || at != email.LastIndexOf('@') || at == email.Length - 1) return invalid;
+
+            string domain = email.Substring(at + 1);
+            if (domain.Length < 3 || domain.StartsWith('.') || domain.EndsWith('.') || domain.Contains("..") || !domain.Contains('.'))
+                return invalid;
+
             return null;
         }
 

@@ -62,13 +62,16 @@ namespace Server.Handlers
 
             string username = packet.ReadString();
             string password = packet.ReadString();
+            string email = InputRules.NormalizeEmail(packet.ReadString());
 
             Console.WriteLine($"[Client {client.Id}] Requested Sign Up with Username: '{username}'");
-            
+
             bool isSuccess = false;
             string message;
 
-            string? invalid = InputRules.ValidateUsername(username) ?? InputRules.ValidatePassword(password);
+            string? invalid = InputRules.ValidateUsername(username)
+                ?? InputRules.ValidatePassword(password)
+                ?? InputRules.ValidateEmail(email);
             if (_throttle.IsLocked(client.RemoteAddress))
             {
                 message = LockedOutMessage;
@@ -87,6 +90,10 @@ namespace Server.Handlers
                 {
                     message = "Username is already taken.";
                 }
+                else if (db.Accounts.Any(a => a.Email == email))
+                {
+                    message = "Email is already registered.";
+                }
                 else
                 {
                     // Hash the password for security
@@ -96,6 +103,7 @@ namespace Server.Handlers
                     {
                         Username = username,
                         PasswordHash = hash,
+                        Email = email,
                         CharacterSlots = ServerConfig.DefaultCharacterSlots
                     };
                     
@@ -111,8 +119,8 @@ namespace Server.Handlers
                     }
                     catch (DbUpdateException)
                     {
-                        // Lost a race with a concurrent sign-up of the same name (unique index)
-                        message = "Username is already taken.";
+                        // Lost a race with a concurrent sign-up of the same name or email (unique indexes)
+                        message = "Username or email is already taken.";
                     }
                 }
             }
