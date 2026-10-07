@@ -15,17 +15,17 @@ namespace Client.Network.Handlers
                 Debug.Log($"[Auth] SUCCESS: {message}");
                 
                 // Must run on main thread, which we are since this is invoked via Update()!
-                UnityEngine.SceneManagement.SceneManager.LoadScene("CharacterScene");
+                UnityEngine.SceneManagement.SceneManager.LoadScene("CharacterSelectionScene");
             }
             else
             {
                 Debug.LogError($"[Auth] FAILED: {message}");
                 
                 // Re-enable UI buttons if the sign in failed
-                UI.SignInUI signInUI = Object.FindFirstObjectByType<UI.SignInUI>();
-                if (signInUI != null)
+                UI.AuthenticationUI authUI = Object.FindFirstObjectByType<UI.AuthenticationUI>();
+                if (authUI != null)
                 {
-                    signInUI.ReEnableButtons(message);
+                    authUI.ReEnableButtons(message);
                 }
             }
         }

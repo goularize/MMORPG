@@ -72,6 +72,8 @@
 *Enhancing the player experience with smooth rendering, audio, overhead nametags, and visual feedback.*
 - [x] **Connection & Session Dispatcher**: Robust client socket handling in `NetworkManager.cs` and `PacketHandler.cs`.
 - [x] **Lobby & Character Management Screens**: Complete Sign-In, Sign-Up, Character Creation, and Character Selection interfaces.
+- [x] **Authentication Scene**: `AuthenticationScene` / `AuthenticationUI` with separate Sign In and Sign Up panels (email and password confirmation on sign-up), client-side pre-validation with the shared `InputRules`, a pending state with response timeout and Enter-to-submit. Sign-up now requires a unique email (protocol `0.2.1-alpha`).
+- [x] **Character Selection Scene**: `CharacterSelectionScene` with code-wired buttons, a pending state with response timeout, creation-name pre-validation with the shared `InputRules`, an empty-list hint and visible delete/select failures. No delete confirmation or appearance picker yet.
 - [x] **Loading Screen & Scene Transition Masking**: Asynchronous scene loading progress bar overlay with smooth fade-out (`LoadingScreenUI.cs`, `GameManager.cs`). *(Verified: Completed)*
 - [x] **Remote Entity Interpolation**: Smooth position smoothing and direction tracking across network ticks via `Vector3.Lerp` (`NetworkEntity.cs`). *(Verified: Completed)*
 - [x] **Floating Combat Text**: Real-time visual popups for damage numbers, critical hits, and dodge notifications (`FloatingText.cs`, `EntityManager.cs`). *(Verified: Completed)*

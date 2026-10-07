@@ -120,6 +120,7 @@ save every online player, then flush the persistence queue (see `docs/persistenc
   address out for `SIGNIN_LOCKOUT_SECONDS` (60); a locked address is refused *before* any BCrypt work, even with the
   right password, and a successful sign-in clears its failures. It is keyed by address, not username, so an attacker
   cannot lock a victim's account out. Behind a proxy or NAT every client shares one address; revisit when one is added.
+- **Account email** (`AuthHandler`, `InputRules.ValidateEmail`): `SignUpRequest` is `[version][username][password][email]`. The email is trimmed and lower-cased, must look like an address (no full RFC 5322 parsing), is capped at 254 characters and is unique (`Accounts.Email`, nullable so pre-existing accounts keep working). It is stored for account recovery and contact only; nothing is sent to it yet. Password confirmation is a client-side check.
 - **Chat** (`ChatHandler`): messages over `InputRules.ChatMaxMessageLength` (200) are refused with a notice, not
   truncated. Each player has a token bucket (`CHAT_BURST` 5, refilling `CHAT_MESSAGES_PER_SECOND` 1); messages over it
   are dropped and the player is told once per flood.

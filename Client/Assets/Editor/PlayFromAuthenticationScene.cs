@@ -5,12 +5,12 @@ using UnityEngine;
 namespace MMORPG.Editor
 {
     [InitializeOnLoad]
-    public static class PlayFromSignInScene
+    public static class PlayFromAuthenticationScene
     {
-        private const string MenuPath = "Tools/Always Play From SignIn Scene";
-        private const string ScenePath = "Assets/Scenes/SignInScene.unity";
+        private const string MenuPath = "Tools/Always Play From Authentication Scene";
+        private const string ScenePath = "Assets/Scenes/AuthenticationScene.unity";
 
-        static PlayFromSignInScene()
+        static PlayFromAuthenticationScene()
         {
             // Delay call to ensure the menu system is ready before checking the menu item
             EditorApplication.delayCall += () => {
@@ -48,7 +48,7 @@ namespace MMORPG.Editor
             }
             else
             {
-                Debug.LogError($"Could not find SignInScene at path: {ScenePath}. Please check if the path is correct.");
+                Debug.LogError($"Could not find AuthenticationScene at path: {ScenePath}. Please check if the path is correct.");
                 EditorPrefs.SetBool(MenuPath, false);
                 Menu.SetChecked(MenuPath, false);
             }

@@ -47,6 +47,11 @@ namespace Server.Database
                 .HasIndex(a => a.Username)
                 .IsUnique();
 
+            // One account per email; PostgreSQL treats NULLs as distinct, so legacy accounts without one do not collide
+            modelBuilder.Entity<Account>()
+                .HasIndex(a => a.Email)
+                .IsUnique();
+
             // Enforce that Character Names must be unique globally
             modelBuilder.Entity<Character>()
                 .HasIndex(c => c.Name)

@@ -68,6 +68,7 @@ namespace Server.Tests
         private static void UseFreshDb()
         {
             string name = Guid.NewGuid().ToString();
+            AuthHandler.ResetThrottle(); // failures from earlier tests must not lock this address out
             AppDbContext.Factory = () =>
             {
                 var ctx = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(name).Options);
@@ -76,12 +77,13 @@ namespace Server.Tests
             };
         }
 
-        private static (bool ok, string message) SignUp(MockClientConnection client, string user, string pass)
+        private static (bool ok, string message) SignUp(MockClientConnection client, string user, string pass, string? email = null)
         {
             using var w = new Packet(OpCode.SignUpRequest);
             w.Write(ServerConfig.GameVersion);
             w.Write(user);
             w.Write(pass);
+            w.Write(email ?? $"{user.ToLowerInvariant()}@example.com");
             using var r = new Packet(w.ToArray());
             AuthHandler.HandleSignUpRequest(client, r);
             var resp = client.SentPackets.Last();
@@ -110,6 +112,59 @@ namespace Server.Tests
 
             Assert.True(SignUp(new MockClientConnection { AccountId = null }, "Valid_Name", "longenough").ok);
             Assert.False(SignUp(new MockClientConnection { AccountId = null }, "valid_name", "longenough").ok);
+        }
+
+        [Theory]
+        [InlineData("player@example.com", true)]
+        [InlineData("first.last+tag@sub.example.co", true)]
+        [InlineData("", false)]
+        [InlineData("no-at-sign.example.com", false)]
+        [InlineData("@example.com", false)]
+        [InlineData("player@", false)]
+        [InlineData("player@example", false)]
+        [InlineData("player@.example.com", false)]
+        [InlineData("player@example..com", false)]
+        [InlineData("player@example.com.", false)]
+        [InlineData("two@@example.com", false)]
+        [InlineData("has space@example.com", false)]
+        [InlineData("acento@exámple.com", false)]
+        public void Email_Rules(string email, bool valid) =>
+            Assert.Equal(valid, InputRules.ValidateEmail(email) == null);
+
+        [Fact]
+        public void Email_TooLong_IsRejected() =>
+            Assert.NotNull(InputRules.ValidateEmail(new string('a', InputRules.EmailMaxLength) + "@example.com"));
+
+        [Fact]
+        public void Email_Normalize_TrimsAndLowerCases() =>
+            Assert.Equal("player@example.com", InputRules.NormalizeEmail("  Player@Example.COM "));
+
+        [Fact]
+        public void SignUp_WithInvalidEmail_CreatesNoAccount()
+        {
+            UseFreshDb();
+            var client = new MockClientConnection { AccountId = null };
+
+            Assert.False(SignUp(client, "valid_name", "longenough", "not-an-email").ok);
+            Assert.False(SignUp(client, "valid_name", "longenough", "").ok);
+
+            using var db = AppDbContext.Factory();
+            Assert.Empty(db.Accounts);
+        }
+
+        [Fact]
+        public void SignUp_StoresNormalizedEmail_AndRejectsDuplicateEmailIgnoringCase()
+        {
+            UseFreshDb();
+
+            Assert.True(SignUp(new MockClientConnection { AccountId = null }, "first_user", "longenough", "  Shared@Example.com ").ok);
+            var (ok, message) = SignUp(new MockClientConnection { AccountId = null }, "second_user", "longenough", "shared@example.com");
+
+            Assert.False(ok);
+            Assert.Equal("Email is already registered.", message);
+            using var db = AppDbContext.Factory();
+            var account = Assert.Single(db.Accounts);
+            Assert.Equal("shared@example.com", account.Email);
         }
 
         private static string CreateCharacter(string name, int appearance)

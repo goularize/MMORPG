@@ -2,82 +2,136 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Client.Network;
+using Shared.Constants;
 using Shared.Network;
 
 namespace Client.UI
 {
+    /// <summary>
+    /// Character creation panel. Validates the name with the shared <see cref="InputRules"/> before asking the server,
+    /// which still has the final say (for example when the name is already taken).
+    /// </summary>
     public class CharacterCreationUI : MonoBehaviour
     {
-        public static CharacterCreationUI Instance;
+        public static CharacterCreationUI Instance { get; private set; }
 
         [Header("Panels")]
-        public GameObject selectionPanel;
-        public GameObject creationPanel;
+        [SerializeField] private GameObject selectionPanel;
+        [SerializeField] private GameObject creationPanel;
 
         [Header("UI Elements")]
-        public TMP_InputField nameInputField;
-        public Button confirmButton;
-        public Button backButton;
-        public TextMeshProUGUI errorText;
+        [SerializeField] private TMP_InputField nameInputField;
+        [SerializeField] private Button confirmButton;
+        [SerializeField] private Button backButton;
+        [SerializeField] private TextMeshProUGUI errorText;
 
-        // Mock appearance ID (if you have dropdowns later, you bind them to this)
-        private int _selectedAppearanceId = 1; 
+        [Header("Behaviour")]
+        [Tooltip("Seconds to wait for the server's answer before unlocking the form again.")]
+        [SerializeField] private float responseTimeoutSeconds = 10f;
+
+        // No appearance picker yet: every character uses the first appearance
+        private const int DefaultAppearanceId = InputRules.MinAppearanceId;
+
+        private bool _pending;
+        private float _pendingSince;
 
         private void Awake()
         {
-            if (Instance == null) Instance = this;
+            Instance = this;
         }
 
-        private void OnEnable()
+        private void OnDestroy()
         {
-            if (nameInputField != null) nameInputField.text = "";
-            if (errorText != null) errorText.text = "";
-            if (confirmButton != null) confirmButton.interactable = true;
+            if (Instance == this) Instance = null;
         }
 
-        public void OnConfirmClicked()
+        private void Start()
         {
-            Debug.Log("[CreationUI] Confirm Clicked");
-            if (nameInputField == null) return;
+            nameInputField.characterLimit = InputRules.CharacterNameMaxLength;
 
-            string charName = nameInputField.text.Trim();
-            if (string.IsNullOrEmpty(charName))
+            confirmButton.onClick.AddListener(OnConfirmClicked);
+            backButton.onClick.AddListener(OnBackClicked);
+            nameInputField.onSubmit.AddListener(_ => OnConfirmClicked());
+        }
+
+        private void Update()
+        {
+            if (_pending && Time.unscaledTime - _pendingSince > responseTimeoutSeconds)
             {
-                if (errorText != null) errorText.text = "Name cannot be empty.";
+                EndPending("The server did not respond. Please try again.");
+            }
+        }
+
+        /// <summary>Called by CharacterSelectionUI each time the panel is opened (this script's object stays active).</summary>
+        public void ResetForm()
+        {
+            _pending = false;
+            nameInputField.text = "";
+            SetError("");
+            confirmButton.interactable = true;
+            backButton.interactable = true;
+            nameInputField.Select();
+        }
+
+        private void OnConfirmClicked()
+        {
+            if (_pending) return;
+
+            string characterName = nameInputField.text.Trim();
+            string error = InputRules.ValidateCharacterName(characterName);
+            if (error != null)
+            {
+                SetError(error);
                 return;
             }
 
-            if (confirmButton != null) confirmButton.interactable = false;
+            _pending = true;
+            _pendingSince = Time.unscaledTime;
+            SetError("");
+            confirmButton.interactable = false;
+            backButton.interactable = false;
 
             using (Packet packet = new Packet(OpCode.CharacterCreateRequest))
             {
-                packet.Write(charName);
-                packet.Write(_selectedAppearanceId);
+                packet.Write(characterName);
+                packet.Write(DefaultAppearanceId);
                 NetworkManager.Instance.SendPacket(packet);
             }
         }
 
-        public void OnBackClicked()
+        private void OnBackClicked()
         {
-            Debug.Log("[CreationUI] Back Clicked");
+            if (_pending) return;
+
             if (creationPanel != null) creationPanel.SetActive(false);
             if (selectionPanel != null) selectionPanel.SetActive(true);
         }
 
         public void OnCharacterCreateResponse(bool success, string message)
         {
-            confirmButton.interactable = true;
-
             if (success)
             {
-                Debug.Log($"Character Created: {message}");
-                OnBackClicked(); // Go back to selection screen
-                CharacterSelectionUI.Instance.RequestCharacterList(); // Refresh the list
+                EndPending();
+                OnBackClicked();
+                CharacterSelectionUI.Instance?.RequestCharacterList();
             }
             else
             {
-                if (errorText != null) errorText.text = message;
+                EndPending(message);
             }
+        }
+
+        private void EndPending(string errorMessage = null)
+        {
+            _pending = false;
+            confirmButton.interactable = true;
+            backButton.interactable = true;
+            if (errorMessage != null) SetError(errorMessage);
+        }
+
+        private void SetError(string message)
+        {
+            if (errorText != null) errorText.text = message;
         }
     }
 }

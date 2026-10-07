@@ -57,6 +57,31 @@ namespace Server
         public static float LootDecaySeconds { get; private set; } = 120.0f;
 
         /// <summary>
+        /// Locates the <c>.env</c> file regardless of where the server was started from: the working directory, then
+        /// its <c>Server/</c> subfolder (running from the repo root), then every parent of the executable's folder
+        /// (running from <c>bin/Debug/net8.0</c>). Returns null when there is none, so the environment and defaults apply.
+        /// </summary>
+        public static string? FindEnvFile(string workingDirectory, string baseDirectory)
+        {
+            string[] direct =
+            {
+                System.IO.Path.Combine(workingDirectory, ".env"),
+                System.IO.Path.Combine(workingDirectory, "Server", ".env"),
+            };
+            foreach (var candidate in direct)
+            {
+                if (System.IO.File.Exists(candidate)) return candidate;
+            }
+
+            for (var dir = new System.IO.DirectoryInfo(baseDirectory); dir != null; dir = dir.Parent)
+            {
+                string candidate = System.IO.Path.Combine(dir.FullName, ".env");
+                if (System.IO.File.Exists(candidate)) return candidate;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Reads every setting from the environment. Idempotent: a missing or invalid value always falls back to
         /// its default, so calling it again (e.g. in tests) never leaves a stale value behind.
         /// </summary>

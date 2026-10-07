@@ -16,6 +16,10 @@ namespace Server.Database.Models
         [MaxLength(255)] // Store the hashed password, NEVER plaintext
         public string PasswordHash { get; set; } = string.Empty;
 
+        /// <summary>Stored normalized (trimmed, lower-case). Null for accounts created before email was collected.</summary>
+        [MaxLength(254)]
+        public string? Email { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Required]

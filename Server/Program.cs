@@ -18,7 +18,16 @@ namespace Server
             shutdown.InstallSignalHandlers();
 
             // Load environment variables from .env file
-            DotNetEnv.Env.Load();
+            string? envFile = ServerConfig.FindEnvFile(Directory.GetCurrentDirectory(), AppContext.BaseDirectory);
+            if (envFile != null)
+            {
+                DotNetEnv.Env.Load(envFile);
+                Console.WriteLine($"[Config] Loaded {envFile}");
+            }
+            else
+            {
+                Console.WriteLine("[Config] No .env file found; using environment variables and defaults.");
+            }
             ServerConfig.Initialize();
             Data.DataManager.Initialize();
 
