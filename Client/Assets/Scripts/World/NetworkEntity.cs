@@ -6,7 +6,10 @@ namespace Client.World
     {
         public int EntityId { get; private set; }
         public string EntityName { get; private set; }
-        
+
+        /// <summary>What the server says this entity is; set by ConfigureCollision when it is spawned.</summary>
+        public Shared.Enums.EntityType EntityType { get; private set; }
+
         private Vector3 _targetPosition;
         public float moveSpeed = 10f; // Smooth interpolation speed
 
@@ -26,6 +29,8 @@ namespace Client.World
         /// </summary>
         public void ConfigureCollision(Shared.Enums.EntityType type, bool pvpMap)
         {
+            EntityType = type;
+
             bool solid = type switch
             {
                 Shared.Enums.EntityType.Player => pvpMap,
