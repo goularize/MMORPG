@@ -91,28 +91,28 @@ namespace Server.World.Entities
         public QuestState GetQuestState(int questId) => _quests.TryGetValue(questId, out var quest) ? quest.State : QuestState.Available;
 
         /// <summary>
-        /// Writes (or replaces) a quest log entry. Quest changes are durable events, so they are flushed promptly.
-        /// Setting <see cref="QuestState.Available"/> removes the entry.
+        /// Writes (or replaces) a quest log entry. Quest changes are durable events, so they are flushed promptly unless
+        /// the caller batches them with other changes and expedites once. Setting <see cref="QuestState.Available"/> removes the entry.
         /// </summary>
-        public void SetQuest(int questId, QuestState state, IEnumerable<int>? objectives = null)
+        public void SetQuest(int questId, QuestState state, IEnumerable<int>? objectives = null, bool urgent = true)
         {
             if (state == QuestState.Available)
             {
-                RemoveQuest(questId);
+                RemoveQuest(questId, urgent);
                 return;
             }
 
             var counters = (objectives ?? Array.Empty<int>()).ToArray();
             _quests[questId] = new QuestProgress(state, counters);
-            _persistence?.QueueQuest(_characterId, questId, state, SerializeObjectives(counters), urgent: true);
+            _persistence?.QueueQuest(_characterId, questId, state, SerializeObjectives(counters), urgent);
         }
 
         /// <summary>Removes a quest from the log (abandon). Returns true when it was in the log.</summary>
-        public bool RemoveQuest(int questId)
+        public bool RemoveQuest(int questId, bool urgent = true)
         {
             if (!_quests.Remove(questId)) return false;
 
-            _persistence?.QueueQuestDelete(_characterId, questId, urgent: true);
+            _persistence?.QueueQuestDelete(_characterId, questId, urgent);
             return true;
         }
 

@@ -69,6 +69,9 @@ namespace Server.Handlers
             // Sync Inventory & Equipment
             InventoryHandler.SendInventorySync(player);
             EquipmentHandler.SendEquippedItemsSync(player);
+
+            // Sync the quest log
+            QuestHandler.SendQuestLog(player);
         }
     }
 }

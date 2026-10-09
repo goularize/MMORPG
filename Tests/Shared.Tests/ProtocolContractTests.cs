@@ -32,6 +32,8 @@ namespace Shared.Tests
             ("UnequipItemRequest", 74), ("UpgradeItemRequest", 75), ("LearnRecipeRequest", 76), ("CraftItemRequest", 77), ("DropItemRequest", 78),
             ("InventorySync", 80), ("InventorySlotUpdate", 81), ("EquippedItemsSync", 82), ("UpgradeItemResponse", 83), ("CraftItemResponse", 84),
             ("OpenLootSatchelRequest", 85), ("LootItemRequest", 86), ("LootAllRequest", 87), ("LootSatchelSync", 88), ("LootSatchelClose", 89),
+            ("DialogueOpen", 90), ("DialogueChoose", 91), ("DialogueClose", 92),
+            ("QuestAbandonRequest", 93), ("QuestUpdate", 94), ("QuestLogSync", 95),
         };
 
         [Fact]

@@ -10,7 +10,7 @@ namespace Server.Data
     /// Startup validation of the static data tables. It reports every problem it finds (not just the first), so a
     /// designer can fix a data change in one pass instead of one server restart per mistake.
     /// </summary>
-    public static class DataValidator
+    public static partial class DataValidator
     {
         /// <summary>Errors stop the server from starting; warnings are reported and tolerated.</summary>
         public record Result(List<string> Errors, List<string> Warnings);
@@ -23,10 +23,14 @@ namespace Server.Data
             IReadOnlyList<SpawnerTemplate> spawners,
             CharacterCreationTemplate characterCreation,
             IReadOnlyList<ResourceNodeTemplate>? resourceNodes = null,
-            IReadOnlyList<ResourceSpawnTemplate>? resourceSpawns = null)
+            IReadOnlyList<ResourceSpawnTemplate>? resourceSpawns = null,
+            IReadOnlyList<DialogueTemplate>? dialogues = null,
+            IReadOnlyList<QuestTemplate>? quests = null)
         {
             resourceNodes ??= Array.Empty<ResourceNodeTemplate>();
             resourceSpawns ??= Array.Empty<ResourceSpawnTemplate>();
+            dialogues ??= Array.Empty<DialogueTemplate>();
+            quests ??= Array.Empty<QuestTemplate>();
             var errors = new List<string>();
             var warnings = new List<string>();
 
@@ -58,11 +62,6 @@ namespace Server.Data
                     errors.Add($"{at}: Behavior '{npc.Behavior}' is not one of {string.Join(", ", Enum.GetNames<MobBehaviorType>())}.");
                 if (npc.LevelRange is not { Length: 2 } || npc.LevelRange[0] < 1 || npc.LevelRange[0] > npc.LevelRange[1])
                     errors.Add($"{at}: LevelRange must be [min, max] with 1 <= min <= max.");
-                foreach (var interaction in npc.Interactions)
-                {
-                    if (interaction.ActionType == null)
-                        errors.Add($"{at}: interaction Action '{interaction.Action}' is not one of {string.Join(", ", Enum.GetNames<InteractAction>())}.");
-                }
                 if (npc.StatVarianceRange is not { Length: 2 } || npc.StatVarianceRange[0] > npc.StatVarianceRange[1])
                     errors.Add($"{at}: StatVarianceRange must be [min, max] with min <= max.");
             }
@@ -133,6 +132,7 @@ namespace Server.Data
             }
 
             ValidateCharacterCreation(errors, characterCreation, items);
+            ValidateDialoguesAndQuests(errors, warnings, dialogues, quests, npcs, items);
 
             return new Result(errors, warnings);
         }

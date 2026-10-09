@@ -178,6 +178,7 @@ namespace Server.Handlers
                 {
                     player.Inventory.Remove(item);
                     InventoryHandler.SendInventorySlotUpdate(player, null, slotOrBag, slotIndex);
+                    GameEvents.Instance.RaiseItemLost(player, item.TemplateId, item.Quantity);
                 }
                 InventoryHandler.DeleteDbItem(item);
             }
@@ -223,6 +224,8 @@ namespace Server.Handlers
 
                 if (remaining <= 0) break;
             }
+
+            if (remaining < quantity) GameEvents.Instance.RaiseItemLost(player, templateId, quantity - remaining);
         }
 
         private static void SendResponse(Player player, byte status, int newLevel, string message)

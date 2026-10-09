@@ -124,6 +124,7 @@ namespace Server.Handlers
             foreach (var ingredient in recipe.Ingredients)
             {
                 DeductMaterial(player, ingredient.ItemTemplateId, ingredient.Quantity);
+                GameEvents.Instance.RaiseItemLost(player, ingredient.ItemTemplateId, ingredient.Quantity);
             }
 
             craftedItem.BagIndex = 0;
@@ -132,6 +133,7 @@ namespace Server.Handlers
 
             InventoryHandler.SaveDbItem(craftedItem);
             InventoryHandler.SendInventorySlotUpdate(player, craftedItem, 0, freeSlot.Value);
+            GameEvents.Instance.RaiseItemGained(player, craftedItem.TemplateId, craftedItem.Quantity);
 
             player.QueueSave(urgent: true); // crafting creates and destroys value
 

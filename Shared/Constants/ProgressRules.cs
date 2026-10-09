@@ -7,6 +7,9 @@ namespace Shared.Constants
         /// <summary>Longest flag name. Matches the CharacterFlags.Flag column size.</summary>
         public const int FlagMaxLength = 64;
 
+        /// <summary>Most quests a character can have in its log (active or ready to turn in) at once.</summary>
+        public const int MaxActiveQuests = 20;
+
         /// <summary>Returns an error message for an unacceptable flag name, or null when it is valid.</summary>
         public static string? ValidateFlag(string? flag)
         {

@@ -192,6 +192,8 @@ namespace Server.Handlers
         private static bool TryMoveToInventory(Player player, LootSatchel satchel, CharacterItem item)
         {
             int maxStack = DataManager.Items.TryGetValue(item.TemplateId, out var template) ? template.MaxStack : 1;
+            int templateId = item.TemplateId;
+            int startQuantity = item.Quantity;
 
             if (maxStack > 1)
             {
@@ -210,13 +212,19 @@ namespace Server.Handlers
                     if (item.Quantity <= 0)
                     {
                         satchel.Items.Remove(item);
+                        GameEvents.Instance.RaiseItemGained(player, templateId, startQuantity);
                         return true;
                     }
                 }
             }
 
             int? freeSlot = InventoryHandler.FindFirstEmptySlot(player, 0);
-            if (!freeSlot.HasValue) return false;
+            if (!freeSlot.HasValue)
+            {
+                int toppedUp = startQuantity - item.Quantity;
+                if (toppedUp > 0) GameEvents.Instance.RaiseItemGained(player, templateId, toppedUp);
+                return false;
+            }
 
             satchel.Items.Remove(item);
             item.CharacterId = player.Id;
@@ -225,6 +233,7 @@ namespace Server.Handlers
             player.Inventory.Add(item);
             InventoryHandler.SaveDbItem(item);
             InventoryHandler.SendInventorySlotUpdate(player, item, 0, freeSlot.Value);
+            GameEvents.Instance.RaiseItemGained(player, templateId, startQuantity);
             return true;
         }
 

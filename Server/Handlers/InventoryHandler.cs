@@ -229,6 +229,7 @@ namespace Server.Handlers
             if (!effectApplied) return;
 
             // Consume item
+            int consumedTemplateId = item.TemplateId;
             item.Quantity--;
             if (item.Quantity <= 0)
             {
@@ -241,6 +242,8 @@ namespace Server.Handlers
                 SaveDbItem(item);
                 SendInventorySlotUpdate(player, item, bagIndex, slotIndex);
             }
+
+            GameEvents.Instance.RaiseItemLost(player, consumedTemplateId, 1);
 
             // Sync vitals to client
             using Packet vitalsPacket = new Packet(OpCode.VitalsUpdate);
@@ -263,6 +266,7 @@ namespace Server.Handlers
             var item = player.Inventory.FirstOrDefault(i => i.BagIndex == bagIndex && i.SlotIndex == slotIndex);
             if (item == null) return;
 
+            int dropped = Math.Min(quantity, item.Quantity);
             if (quantity >= item.Quantity)
             {
                 player.Inventory.Remove(item);
@@ -276,6 +280,7 @@ namespace Server.Handlers
                 SendInventorySlotUpdate(player, item, bagIndex, slotIndex);
             }
 
+            if (dropped > 0) GameEvents.Instance.RaiseItemLost(player, item.TemplateId, dropped);
             PersistenceService.Instance.Expedite(player.Id); // destroyed value: make it durable
         }
 

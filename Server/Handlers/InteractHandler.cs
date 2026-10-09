@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Server.Data;
+using Server.Dialogue;
 using Shared.Enums;
 using Shared.Network;
 using Server.Network;
@@ -56,30 +57,14 @@ namespace Server.Handlers
                 return;
             }
 
-            // Execution: the first interaction the template offers wins (conditions are not evaluated yet)
-            var interaction = (target as NPC) is { } npc && DataManager.Npcs.TryGetValue(npc.TemplateId, out var template)
-                ? template.Interactions.FirstOrDefault(i => i.ActionType is not (null or InteractAction.None))
-                : null;
-            if (interaction == null)
+            // Execution: an NPC with a dialogue starts a conversation (DialogueOpen); the rest has nothing to offer
+            if (target is not NPC npc || !DialogueService.Open(player, npc))
             {
                 Reply(client, targetId, InteractOutcome.NothingToDo);
                 return;
             }
 
-            var action = interaction.ActionType!.Value;
-            Console.WriteLine($"[Interact] {player.Name} interacted with {target.Name} ({action}).");
-
-            switch (action)
-            {
-                case InteractAction.BindPoint:
-                    Reply(client, targetId, InteractOutcome.Success, action);
-                    BindHandler.Bind(client, player);
-                    break;
-                default:
-                    // OpenShop needs the vendor system (#151)
-                    Reply(client, targetId, InteractOutcome.NotAvailable, action);
-                    break;
-            }
+            Console.WriteLine($"[Interact] {player.Name} started a conversation with {target.Name}.");
         }
 
         private static void Reply(IClientConnection client, int targetId, InteractOutcome outcome, InteractAction action = InteractAction.None)

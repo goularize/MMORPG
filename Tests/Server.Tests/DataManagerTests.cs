@@ -27,7 +27,7 @@ namespace Server.Tests
 
         private const string ValidCreation = """{"StartMapId":1,"Gold":50,"StarterItems":[{"TemplateId":1,"Quantity":1},{"TemplateId":2,"Quantity":5}]}""";
 
-        private void Write(string items = ValidItems, string npcs = ValidNpcs, string loot = ValidLoot, string recipes = ValidRecipes, string spawners = ValidSpawners, string creation = ValidCreation, string nodes = "[]", string nodeSpawns = "[]")
+        private void Write(string items = ValidItems, string npcs = ValidNpcs, string loot = ValidLoot, string recipes = ValidRecipes, string spawners = ValidSpawners, string creation = ValidCreation, string nodes = "[]", string nodeSpawns = "[]", string dialogues = "[]", string quests = "[]")
         {
             File.WriteAllText(Path.Combine(_dir, "Items.json"), items);
             File.WriteAllText(Path.Combine(_dir, "Npcs.json"), npcs);
@@ -37,6 +37,8 @@ namespace Server.Tests
             File.WriteAllText(Path.Combine(_dir, "CharacterCreation.json"), creation);
             File.WriteAllText(Path.Combine(_dir, "ResourceNodes.json"), nodes);
             File.WriteAllText(Path.Combine(_dir, "ResourceSpawns.json"), nodeSpawns);
+            File.WriteAllText(Path.Combine(_dir, "Dialogues.json"), dialogues);
+            File.WriteAllText(Path.Combine(_dir, "Quests.json"), quests);
         }
 
         private string[] ErrorsOf(Action load) => Assert.Throws<DataLoadException>(load).Errors.ToArray();

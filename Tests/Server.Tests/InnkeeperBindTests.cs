@@ -70,7 +70,7 @@ namespace Server.Tests
         [Fact]
         public void ShippedInnkeeperTemplate_OffersBindPoint()
         {
-            Assert.True(DataManager.Npcs[InnkeeperTemplate].HasInteraction(InteractAction.BindPoint));
+            Assert.True(DataManager.Npcs[InnkeeperTemplate].OffersAction(InteractAction.BindPoint));
         }
 
         [Fact]
@@ -121,16 +121,46 @@ namespace Server.Tests
             Assert.False(ReadBindResponse(client).success);
         }
 
+        private static Packet Choose(int npcId, int optionId)
+        {
+            var packet = new Packet(OpCode.DialogueChoose);
+            packet.Write(npcId);
+            packet.Write(optionId);
+            return new Packet(packet.ToArray());
+        }
+
+        /// <summary>Reads the last DialogueOpen: the option ids and the actions they perform.</summary>
+        private static List<(int optionId, InteractAction action)> ReadOfferedOptions(MockClientConnection client)
+        {
+            var packet = client.SentPackets.Last(p => p.PacketId == OpCode.DialogueOpen);
+            packet.ReadInt();
+            packet.ReadString();
+            packet.ReadString();
+            int count = packet.ReadByte();
+            var options = new List<(int, InteractAction)>();
+            for (int i = 0; i < count; i++)
+            {
+                int optionId = packet.ReadInt();
+                packet.ReadString();
+                options.Add((optionId, (InteractAction)packet.ReadByte()));
+            }
+            return options;
+        }
+
         [Fact]
-        public void Interact_WithInnkeeper_ReportsSuccessAndBinds()
+        public void Interact_WithInnkeeper_OpensADialogue_AndPickingBindBinds()
         {
             var (client, player, innkeeper) = Setup(playerX: 1);
 
             InteractHandler.HandleInteractRequest(client, Interact(innkeeper.Id));
+            var bind = ReadOfferedOptions(client).Single(o => o.action == InteractAction.BindPoint);
+            Assert.Equal(new Vector3(100, 0, 100), player.BindPosition); // opening a conversation binds nothing
 
-            Assert.Equal((InteractOutcome.Success, InteractAction.BindPoint), ReadInteractResponse(client));
+            DialogueHandler.HandleChoose(client, Choose(innkeeper.Id, bind.optionId));
+
             Assert.True(ReadBindResponse(client).success);
             Assert.Equal(player.Position, player.BindPosition);
+            Assert.Null(player.Dialogue); // the conversation ends after binding
         }
 
         [Fact]
@@ -166,11 +196,13 @@ namespace Server.Tests
         }
 
         [Fact]
-        public void Interact_WithShopNpc_ReportsNotAvailableUntilVendorsExist()
+        public void Interact_WithShopNpc_OfferingTheShopReportsNotAvailableUntilVendorsExist()
         {
             var (client, _, blacksmith) = Setup(playerX: 1, templateId: 200);
 
             InteractHandler.HandleInteractRequest(client, Interact(blacksmith.Id));
+            var shop = ReadOfferedOptions(client).First(o => o.action == InteractAction.OpenShop);
+            DialogueHandler.HandleChoose(client, Choose(blacksmith.Id, shop.optionId));
 
             Assert.Equal((InteractOutcome.NotAvailable, InteractAction.OpenShop), ReadInteractResponse(client));
         }
@@ -183,21 +215,6 @@ namespace Server.Tests
             InteractHandler.HandleInteractRequest(client, Interact(mob.Id));
 
             Assert.Equal(InteractOutcome.NothingToDo, ReadInteractResponse(client).outcome);
-        }
-
-        [Fact]
-        public void Validator_RejectsUnknownInteractionAction()
-        {
-            var npc = new NpcTemplate
-            {
-                TemplateId = 950, Name = "Bad", LevelRange = new[] { 1, 1 }, StatVarianceRange = new[] { 1f, 1f },
-                Interactions = { new NpcInteraction { Action = "Teleport" } }
-            };
-            var result = DataValidator.Validate(
-                new List<ItemTemplate>(), new List<RecipeTemplate>(), new List<LootTableTemplate>(),
-                new List<NpcTemplate> { npc }, new List<SpawnerTemplate>(), new CharacterCreationTemplate());
-
-            Assert.Contains(result.Errors, e => e.Contains("950") && e.Contains("Teleport"));
         }
     }
 }

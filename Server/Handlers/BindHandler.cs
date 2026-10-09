@@ -20,7 +20,7 @@ namespace Server.Handlers
             return map.NPCs.Values.Any(npc =>
                 npc.Health > 0
                 && DataManager.Npcs.TryGetValue(npc.TemplateId, out var template)
-                && template.HasInteraction(InteractAction.BindPoint)
+                && template.OffersAction(InteractAction.BindPoint)
                 && Shared.Math.Vector3.Distance(player.Position, npc.Position) <= Shared.Constants.GameRules.InteractRange);
         }
 

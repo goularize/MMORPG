@@ -96,6 +96,16 @@ namespace Shared.Network
 
         // Loot Satchels & Harvesting (Server -> Client)
         LootSatchelSync = 88,
-        LootSatchelClose = 89
+        LootSatchelClose = 89,
+
+        // NPC dialogue (a conversation is a server-held session, see docs/npc-dialogue-and-quests.md)
+        DialogueOpen = 90,    // Server -> Client: npcId, npcName, text, optionCount, { optionId, label, InteractAction (byte) }[]
+        DialogueChoose = 91,  // Client -> Server: npcId, optionId (an id from the last DialogueOpen)
+        DialogueClose = 92,   // Server -> Client: npcId, DialogueCloseReason (byte). Client -> Server: npcId (the window was closed)
+
+        // Quests
+        QuestAbandonRequest = 93, // Client -> Server: questId
+        QuestUpdate = 94,         // Server -> Client: questId, QuestState (byte; Available = left the log), objectiveCount (byte), counters (int each)
+        QuestLogSync = 95         // Server -> Client at world entry: entryCount, { questId, QuestState (byte), objectiveCount (byte), counters (int each) }[]
     }
 }
