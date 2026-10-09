@@ -53,6 +53,10 @@ namespace Server.Network
             // Loads the character from the DB here, then queues the world entry for the game thread
             Register(OpCode.CharacterSelectRequest, PacketLane.Session, CharacterHandler.HandleSelectRequest);
 
+            // Enter / leave world (the only world packets a client may send before it is ready)
+            Register(OpCode.WorldReadyRequest, PacketLane.World, WorldEntryHandler.HandleWorldReady);
+            Register(OpCode.LogoutRequest, PacketLane.World, LogoutHandler.HandleLogoutRequest);
+
             // Movement
             Register(OpCode.PlayerMoveRequest, PacketLane.World, MovementHandler.HandleMoveRequest);
 
@@ -129,6 +133,17 @@ namespace Server.Network
             }
         }
 
+        private static bool AllowedBeforeWorldReady(OpCode opCode)
+            => opCode == OpCode.WorldReadyRequest || opCode == OpCode.LogoutRequest;
+
+        // Only called for world-lane packets, which run on the game thread
+        private static bool IsAwaitingWorldReady(IClientConnection client)
+        {
+            if (!client.PlayerId.HasValue) return false;
+            var player = Server.World.GameLogic.MapMgr.GetPlayer(client.PlayerId.Value);
+            return player != null && ReferenceEquals(player.Connection, client) && player.AwaitingWorldReady;
+        }
+
         /// <summary>
         /// Executes the handler for a packet on the calling thread. Network threads reach it through
         /// <see cref="Receive"/>; the game loop calls it when draining the command queue.
@@ -139,6 +154,12 @@ namespace Server.Network
 
             if (_routes.TryGetValue(packet.PacketId, out var route))
             {
+                if (route.Lane == PacketLane.World && IsAwaitingWorldReady(client) && !AllowedBeforeWorldReady(packet.PacketId))
+                {
+                    // The client has not loaded its map yet: it cannot act in a world it cannot see
+                    return;
+                }
+
                 route.Handler(client, packet);
             }
             else

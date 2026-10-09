@@ -133,8 +133,24 @@ namespace Server.World
                 // A character left behind by a combat log goes once its time is up or it has died
                 if (player.IsLingerOver(DateTime.UtcNow))
                 {
+                    bool died = player.Health <= 0;
+
+                    // Nobody is online to respawn a character that was killed while lingering, and it would otherwise
+                    // log back in dead. It comes back at its bind point with full vitals, as if it had respawned.
+                    if (died) player.ReviveAtBindPoint();
+
                     RemovePlayer(player.Id);
-                    Console.WriteLine($"[CombatLog] {player.Name} lingered out ({(player.Health <= 0 ? "died" : "time up")}).");
+                    Console.WriteLine($"[CombatLog] {player.Name} lingered out ({(died ? "died; will return at the bind point" : "time up")}).");
+                    continue;
+                }
+
+                // A client that never reports WorldReadyRequest (stuck loading, or not a real client) must not hold a
+                // character in the world forever
+                if (player.IsWorldReadyOverdue(DateTime.UtcNow))
+                {
+                    Console.WriteLine($"[WorldEntry] {player.Name} did not report WorldReady within {ServerConfig.WorldReadyTimeoutSeconds:0.#}s; disconnecting.");
+                    player.Connection.Disconnect();
+                    RemovePlayer(player.Id);
                     continue;
                 }
 
@@ -184,7 +200,8 @@ namespace Server.World
         {
             foreach (var player in Players.Values)
             {
-                if (Shared.Math.Vector3.Distance(player.Position, origin) <= AOI_RADIUS)
+                // A client still loading its scene gets no world traffic; it receives the full state when it is ready
+                if (!player.AwaitingWorldReady && Shared.Math.Vector3.Distance(player.Position, origin) <= AOI_RADIUS)
                 {
                     player.Connection.Send(packet);
                 }
@@ -261,6 +278,9 @@ namespace Server.World
             // In a production MMO, this would use Spatial Partitioning (Grid/QuadTree).
             foreach (var player in Players.Values)
             {
+                // Nothing is sent before the client reports WorldReadyRequest (its AoI starts then)
+                if (player.AwaitingWorldReady) continue;
+
                 if (player.AoiResetRequested)
                 {
                     player.AoiResetRequested = false;
@@ -273,6 +293,7 @@ namespace Server.World
                 foreach (var otherPlayer in Players.Values)
                 {
                     if (player.Id == otherPlayer.Id) continue; // Skip self
+                    if (otherPlayer.AwaitingWorldReady) continue; // not visible until its client has loaded the map
 
                     if (Shared.Math.Vector3.Distance(player.Position, otherPlayer.Position) <= AOI_RADIUS)
                     {

@@ -261,6 +261,10 @@ namespace Server.World
             return map.AddPlayer(player);
         }
 
+        /// <summary>True when leaving now (disconnect or logout) keeps the character in the world as a combat-log penalty.</summary>
+        public static bool WouldLinger(Player player)
+            => player.Health > 0 && ServerConfig.CombatLogoutLingerSeconds > 0 && player.IsCombatTagged;
+
         /// <summary>
         /// Takes the client's player off its connection: removes it from the world, or, when the client dropped
         /// mid-combat, leaves it lingering (see <see cref="Player.BeginLinger"/>). Only if that exact connection owns the player in the world. A stale
@@ -274,7 +278,7 @@ namespace Server.World
             if (player == null || !ReferenceEquals(player.Connection, client)) return false;
 
             // Dropping out of a fight is not an escape: the character stays (defenseless) until the linger ends
-            if (player.Health > 0 && ServerConfig.CombatLogoutLingerSeconds > 0 && player.IsCombatTagged)
+            if (WouldLinger(player))
             {
                 player.BeginLinger();
                 Console.WriteLine($"[CombatLog] {player.Name} disconnected in combat; staying in the world for {ServerConfig.CombatLogoutLingerSeconds:0.#}s.");

@@ -91,8 +91,39 @@ When a connection drops, `MapManager.RemovePlayerOwnedBy` (on the game thread) c
 the character is **not** removed. It keeps a `DetachedConnection` (sends are discarded), stays in the map, can be
 attacked, and is saved at once. `MapInstance.Update` removes it (with the normal final save) when
 `COMBAT_LOGOUT_LINGER_SECONDS` (default 15, `0` disables) passes or it dies. Selecting the same character again while it
-lingers resumes the live player (`Player.Reattach`) instead of loading a second copy from the database. Server shutdown
+lingers resumes the live player (`Player.Reattach`) instead of loading a second copy from the database. A character that
+dies while lingering is revived at its bind point (`Player.ReviveAtBindPoint`) before the final save, so it never logs
+back in dead with nobody there to respawn it. Server shutdown
 saves lingering players like any other online player.
+
+## Entering the world (WorldReady handshake)
+
+Entering the world takes two steps so nothing is sent to a client that cannot show it yet:
+
+1. `CharacterSelectRequest` (Session lane) loads the character and posts `EnterWorld` to the game thread. The player is
+   added to the map with `Player.AwaitingWorldReady = true` and the client gets only `CharacterSelectResponse`
+   (map id and position). It loads the map scene named by `Shared.Constants.MapCatalog` and spawns its local player.
+2. The client sends `WorldReadyRequest` (World lane, no payload). `WorldEntryHandler.HandleWorldReady` clears the flag
+   and sends the character state (stats, vitals, progression, EXP, inventory, equipment); the next AoI pass spawns
+   everything around it.
+
+While `AwaitingWorldReady` the character is invisible to others, `MapInstance.Broadcast` and the AoI pass skip it, and
+`PacketHandler.HandlePacket` drops every World packet except `WorldReadyRequest` and `LogoutRequest`. A duplicate or
+foreign `WorldReadyRequest` (not the connection that owns the character) is ignored. A client that never reports
+ready is disconnected and its character removed after `WORLD_READY_TIMEOUT_SECONDS` (default 60, `0` disables).
+Taking over a lingering character (`Player.Reattach`) goes through the same handshake.
+
+## Logout to character select
+
+`LogoutRequest` (World lane, payload: `confirmed` bool) leaves the world without closing the connection:
+
+- Not in combat (or dead, or the linger disabled): `MapManager.RemovePlayerOwnedBy` removes the character with the
+  normal final save, `client.PlayerId` is cleared and the reply is `LogoutResult.Success`. The client may select again.
+- In combat (`MapManager.WouldLinger`) and `confirmed == false`: nothing changes and the reply is
+  `LogoutResult.ConfirmRequired` with the linger seconds, so the client can show a modal.
+- In combat and `confirmed == true`: same removal path, which leaves the character lingering for
+  `COMBAT_LOGOUT_LINGER_SECONDS` (see Combat logging). Selecting it again resumes the live character.
+- A connection that does not own a character in the world gets `LogoutResult.NotInWorld` and nothing is touched.
 
 ## Process lifecycle
 

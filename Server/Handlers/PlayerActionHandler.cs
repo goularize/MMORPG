@@ -18,16 +18,16 @@ namespace Server.Handlers
             // Only allow respawn if actually dead
             if (player == null || player.Health > 0) return;
 
+            // A stale connection must not revive the character a newer session of it is playing
+            if (!ReferenceEquals(player.Connection, client)) return;
+
             // 1. Remove from current map. Observers get their despawn from the regular AoI pass, and the player's
             // own AoI state is reset so nearby entities are re-sent. The position is persisted below (the bind
             // point), so skip the disconnect-style save that could overwrite it with the death position.
             GameLogic.MapMgr.RemovePlayer(player.Id, saveState: false);
 
             // 2. Restore state & teleport to bind point
-            player.Health = player.MaxHealth;
-            player.Mana = player.MaxMana;
-            player.MapId = player.BindMapId;
-            player.Position = player.BindPosition;
+            player.ReviveAtBindPoint();
 
             // 3. Queue the revived state (bind point, full vitals) so it persists
             player.QueueSave(urgent: true);

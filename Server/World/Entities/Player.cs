@@ -40,6 +40,33 @@ namespace Server.World.Entities
         public Shared.Math.Vector3 BindPosition { get; set; }
 
         /// <summary>
+        /// True from world entry until the client reports WorldReadyRequest (its map scene is loaded). While set the
+        /// character is invisible to others, receives no world traffic and cannot act. Game thread only.
+        /// </summary>
+        public bool AwaitingWorldReady { get; private set; }
+
+        /// <summary>When an unready client is disconnected (see ServerConfig.WorldReadyTimeoutSeconds); null when not waiting or disabled.</summary>
+        public System.DateTime? WorldReadyDeadlineUtc { get; private set; }
+
+        public void BeginAwaitingWorldReady()
+        {
+            AwaitingWorldReady = true;
+            WorldReadyDeadlineUtc = ServerConfig.WorldReadyTimeoutSeconds > 0
+                ? DateTime.UtcNow.AddSeconds(ServerConfig.WorldReadyTimeoutSeconds)
+                : null;
+            AoiResetRequested = true; // the client knows nothing yet: everything around is spawned once it is ready
+        }
+
+        public void MarkWorldReady()
+        {
+            AwaitingWorldReady = false;
+            WorldReadyDeadlineUtc = null;
+            AoiResetRequested = true;
+        }
+
+        public bool IsWorldReadyOverdue(DateTime utcNow) => AwaitingWorldReady && WorldReadyDeadlineUtc.HasValue && utcNow >= WorldReadyDeadlineUtc.Value;
+
+        /// <summary>
         /// Set while the character stays in the world after its connection dropped in combat (combat-log
         /// protection); the map removes it when this passes. Null for a normally connected player.
         /// </summary>
@@ -66,12 +93,21 @@ namespace Server.World.Entities
             QueueSave(urgent: true);
         }
 
+        /// <summary>Full vitals at the character's bind point (respawn). The caller removes/re-adds it to the right map.</summary>
+        public void ReviveAtBindPoint()
+        {
+            Health = MaxHealth;
+            Mana = MaxMana;
+            MapId = BindMapId;
+            Position = BindPosition;
+        }
+
         /// <summary>A lingering character is picked up by a new session instead of being loaded a second time.</summary>
         public void Reattach(Server.Network.IClientConnection connection)
         {
             Connection = connection;
             LingerUntilUtc = null;
-            AoiResetRequested = true; // the new client knows nothing yet: re-send what is around
+            BeginAwaitingWorldReady(); // the new client knows nothing yet: it loads the scene, then everything is re-sent
         }
 
         /// <summary>True once a lingering character should leave the world (time is up, or it died).</summary>
@@ -96,7 +132,7 @@ namespace Server.World.Entities
             }
             
             // Sync vitals to client if they changed (e.g. from regen)
-            if (_vitalsChanged)
+            if (_vitalsChanged && !AwaitingWorldReady)
             {
                 using Shared.Network.Packet packet = new Shared.Network.Packet(Shared.Network.OpCode.VitalsUpdate);
                 packet.Write(Id);

@@ -131,6 +131,43 @@ namespace Server.Tests
         }
 
         [Fact]
+        public void LingeringPlayer_WhoDies_ComesBackAtTheBindPointWithFullVitals()
+        {
+            var client = new TestClient(9515);
+            var player = AddPlayer(9515, client);
+            player.BindMapId = 1;
+            player.BindPosition = new Vector3(5, 6, 0);
+            player.Position = new Vector3(40, 40, 0);
+            player.MarkInCombat();
+            GameLogic.MapMgr.RemovePlayerOwnedBy(client);
+
+            player.Health = 0; // killed by the mob that was fighting them
+            GameLogic.MapMgr.Update();
+
+            Assert.Null(GameLogic.MapMgr.GetPlayer(9515));
+            Assert.Equal(player.MaxHealth, player.Health);
+            Assert.Equal(player.MaxMana, player.Mana);
+            Assert.Equal(new Vector3(5, 6, 0), player.Position);
+        }
+
+        [Fact]
+        public void LingeringPlayer_WhoSurvives_KeepsItsPosition()
+        {
+            var client = new TestClient(9516);
+            var player = AddPlayer(9516, client);
+            player.BindPosition = new Vector3(5, 6, 0);
+            player.Position = new Vector3(40, 40, 0);
+            player.MarkInCombat();
+            GameLogic.MapMgr.RemovePlayerOwnedBy(client);
+
+            player.LingerUntilUtc = DateTime.UtcNow.AddSeconds(-1);
+            GameLogic.MapMgr.Update();
+
+            Assert.Null(GameLogic.MapMgr.GetPlayer(9516));
+            Assert.Equal(new Vector3(40, 40, 0), player.Position);
+        }
+
+        [Fact]
         public void DisabledLinger_RemovesImmediatelyEvenInCombat()
         {
             var client = new TestClient(9508);
