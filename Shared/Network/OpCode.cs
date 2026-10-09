@@ -66,6 +66,11 @@ namespace Shared.Network
         EntityDeath = 34,    // entityId
         EntityInteractResponse = 35, // targetId, InteractOutcome (byte), InteractAction (byte)
 
+        // Enter world / leave world
+        WorldReadyRequest = 36,  // Client -> Server: the map scene is loaded and the local player exists (no payload)
+        LogoutRequest = 37,      // Client -> Server: confirmed (bool)
+        LogoutResponse = 38,     // Server -> Client: LogoutResult (byte), lingerSeconds (float, only meaningful for ConfirmRequired)
+
         // Items & Inventory (Client -> Server)
         MoveInventoryItemRequest = 70,
         SplitItemStackRequest = 71,
