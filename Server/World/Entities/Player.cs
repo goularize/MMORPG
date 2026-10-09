@@ -33,6 +33,9 @@ namespace Server.World.Entities
         public List<Server.Database.Models.CharacterItem> Inventory { get; } = new();
         public HashSet<int> LearnedRecipes { get; } = new();
 
+        /// <summary>Story flags, kill counts and the quest log; persisted through the write-behind queue.</summary>
+        public PlayerProgress Progress { get; }
+
         // Movement tracking
         public System.DateTime LastMoveTime { get; set; } = System.DateTime.UtcNow;
         // Bind Location
@@ -78,6 +81,7 @@ namespace Server.World.Entities
             Id = id;
             Name = name;
             Connection = connection;
+            Progress = new PlayerProgress(id, Server.Persistence.PersistenceService.Instance);
         }
 
         /// <summary>

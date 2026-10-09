@@ -7,6 +7,7 @@ using System.Threading.Channels;
 using Server.Database;
 using Server.Database.Models;
 using Server.World;
+using Shared.Enums;
 
 namespace Server.Persistence
 {
@@ -38,6 +39,34 @@ namespace Server.Persistence
             public CharacterItem Item = null!;
         }
 
+        private sealed class QuestOp
+        {
+            public bool Delete;
+            public QuestState State;
+            public string ProgressJson = "[]";
+        }
+
+        /// <summary>
+        /// Pending progress changes. Each map holds the latest value per key (flags: set or cleared, kill counts:
+        /// absolute total, quests: upsert or delete), so repeated changes coalesce into one row write.
+        /// </summary>
+        private sealed class ProgressOps
+        {
+            public readonly Dictionary<string, bool> Flags = new();
+            public readonly Dictionary<int, int> KillCounts = new();
+            public readonly Dictionary<int, QuestOp> Quests = new();
+
+            public bool IsEmpty => Flags.Count == 0 && KillCounts.Count == 0 && Quests.Count == 0;
+
+            /// <summary>Puts a failed batch back underneath anything queued while it was being written.</summary>
+            public void AddUnder(ProgressOps older)
+            {
+                foreach (var pair in older.Flags) Flags.TryAdd(pair.Key, pair.Value);
+                foreach (var pair in older.KillCounts) KillCounts.TryAdd(pair.Key, pair.Value);
+                foreach (var pair in older.Quests) Quests.TryAdd(pair.Key, pair.Value);
+            }
+        }
+
         private sealed class WriteState
         {
             public readonly int CharacterId;
@@ -46,6 +75,7 @@ namespace Server.Persistence
             public CharacterState? Character;
             public Dictionary<Guid, ItemOp> Items = new();
             public HashSet<int> Recipes = new();
+            public ProgressOps Progress = new();
 
             public long Version;          // bumped by every queued change
             public long FlushedVersion;   // highest version that is safely in the database
@@ -124,6 +154,21 @@ namespace Server.Persistence
 
         public void QueueRecipe(int characterId, int recipeId, bool urgent = false)
             => Mutate(characterId, s => s.Recipes.Add(recipeId), urgent);
+
+        /// <summary>Queues a story flag being set or cleared.</summary>
+        public void QueueFlag(int characterId, string flag, bool isSet, bool urgent = false)
+            => Mutate(characterId, s => s.Progress.Flags[flag] = isSet, urgent);
+
+        /// <summary>Queues the new absolute kill total of an NPC template.</summary>
+        public void QueueKillCount(int characterId, int npcTemplateId, int count, bool urgent = false)
+            => Mutate(characterId, s => s.Progress.KillCounts[npcTemplateId] = count, urgent);
+
+        /// <summary>Queues an insert/update of a quest log entry. <paramref name="progressJson"/> is the objective counters.</summary>
+        public void QueueQuest(int characterId, int questId, QuestState state, string progressJson, bool urgent = false)
+            => Mutate(characterId, s => s.Progress.Quests[questId] = new QuestOp { State = state, ProgressJson = progressJson }, urgent);
+
+        public void QueueQuestDelete(int characterId, int questId, bool urgent = false)
+            => Mutate(characterId, s => s.Progress.Quests[questId] = new QuestOp { Delete = true }, urgent);
 
         /// <summary>Marks the character's pending changes as durable (flush now). No effect when nothing is pending.</summary>
         public void Expedite(int characterId)
@@ -329,6 +374,7 @@ namespace Server.Persistence
             CharacterState? character;
             Dictionary<Guid, ItemOp> items;
             HashSet<int> recipes;
+            ProgressOps progress;
             long taken;
 
             lock (state.Gate)
@@ -336,13 +382,15 @@ namespace Server.Persistence
                 character = state.Character;
                 items = state.Items;
                 recipes = state.Recipes;
+                progress = state.Progress;
                 state.Character = null;
                 state.Items = new Dictionary<Guid, ItemOp>();
                 state.Recipes = new HashSet<int>();
+                state.Progress = new ProgressOps();
                 taken = state.Version;
             }
 
-            bool ok = TryWrite(state.CharacterId, character, items, recipes, out string? error);
+            bool ok = TryWrite(state.CharacterId, character, items, recipes, progress, out string? error);
 
             lock (state.Gate)
             {
@@ -373,6 +421,7 @@ namespace Server.Persistence
                         state.Character ??= character;
                         foreach (var pair in items) state.Items.TryAdd(pair.Key, pair.Value);
                         state.Recipes.UnionWith(recipes);
+                        state.Progress.AddUnder(progress);
 
                         double backoff = Math.Min(30.0, 0.5 * Math.Pow(2, state.Attempts - 1));
                         state.RetryAtUtc = DateTime.UtcNow.AddSeconds(backoff);
@@ -393,10 +442,10 @@ namespace Server.Persistence
             }
         }
 
-        private bool TryWrite(int characterId, CharacterState? character, Dictionary<Guid, ItemOp> items, HashSet<int> recipes, out string? error)
+        private bool TryWrite(int characterId, CharacterState? character, Dictionary<Guid, ItemOp> items, HashSet<int> recipes, ProgressOps progress, out string? error)
         {
             error = null;
-            if (character == null && items.Count == 0 && recipes.Count == 0) return true;
+            if (character == null && items.Count == 0 && recipes.Count == 0 && progress.IsEmpty) return true;
 
             try
             {
@@ -433,6 +482,8 @@ namespace Server.Persistence
                     }
                 }
 
+                WriteProgress(db, characterId, progress);
+
                 db.SaveChanges(); // one call = one atomic commit for the whole batch
                 return true;
             }
@@ -440,6 +491,48 @@ namespace Server.Persistence
             {
                 error = ex.Message;
                 return false;
+            }
+        }
+
+        private static void WriteProgress(AppDbContext db, int characterId, ProgressOps progress)
+        {
+            foreach (var (flag, isSet) in progress.Flags)
+            {
+                var existing = db.CharacterFlags.Find(characterId, flag);
+                if (isSet)
+                {
+                    if (existing == null) db.CharacterFlags.Add(new CharacterFlag { CharacterId = characterId, Flag = flag, SetAt = DateTime.UtcNow });
+                }
+                else if (existing != null)
+                {
+                    db.CharacterFlags.Remove(existing);
+                }
+            }
+
+            foreach (var (templateId, count) in progress.KillCounts)
+            {
+                var existing = db.CharacterKillCounts.Find(characterId, templateId);
+                if (existing == null) db.CharacterKillCounts.Add(new CharacterKillCount { CharacterId = characterId, NpcTemplateId = templateId, Count = count });
+                else existing.Count = count;
+            }
+
+            foreach (var (questId, op) in progress.Quests)
+            {
+                var existing = db.CharacterQuests.Find(characterId, questId);
+                if (op.Delete)
+                {
+                    if (existing != null) db.CharacterQuests.Remove(existing);
+                }
+                else if (existing == null)
+                {
+                    db.CharacterQuests.Add(new CharacterQuest { CharacterId = characterId, QuestId = questId, State = op.State, ProgressJson = op.ProgressJson, UpdatedAt = DateTime.UtcNow });
+                }
+                else
+                {
+                    existing.State = op.State;
+                    existing.ProgressJson = op.ProgressJson;
+                    existing.UpdatedAt = DateTime.UtcNow;
+                }
             }
         }
 

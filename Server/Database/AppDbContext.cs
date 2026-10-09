@@ -28,6 +28,11 @@ namespace Server.Database
         // This DbSet represents the "CharacterLearnedRecipes" table
         public DbSet<CharacterLearnedRecipe> CharacterLearnedRecipes { get; set; }
 
+        // Per-character progress: story flags, kill counts and the quest log
+        public DbSet<CharacterFlag> CharacterFlags { get; set; }
+        public DbSet<CharacterKillCount> CharacterKillCounts { get; set; }
+        public DbSet<CharacterQuest> CharacterQuests { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
