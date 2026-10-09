@@ -1,0 +1,25 @@
+[
+  {
+    "Id": 1,
+    "Name": "The Slime Menace",
+    "MinLevel": 1,
+    "GiverNpcTemplateId": 200,
+    "TurnInNpcTemplateId": 200,
+    "Prerequisites": [],
+    "Objectives": [
+      { "Type": "Kill", "Id": 101, "Count": 10 }
+    ],
+    "Rewards": {
+      "Exp": 120,
+      "Gold": 50,
+      "Items": [
+        { "ItemTemplateId": 2001, "Quantity": 3 }
+      ]
+    },
+    "Text": {
+      "Offer": "Slimes are creeping closer to town. Clear out ten of them and I will make it worth your while.",
+      "Progress": "Still some slimes left out there. Keep at it.",
+      "Complete": "Ten slimes down! The town sleeps easier tonight. Take this for your trouble."
+    }
+  }
+]

@@ -29,6 +29,8 @@ namespace Server.Data
         public static Dictionary<int, RecipeTemplate> Recipes { get; private set; } = new();
         public static Dictionary<int, LootTableTemplate> LootTables { get; private set; } = new();
         public static CharacterCreationTemplate CharacterCreation { get; private set; } = new();
+        public static Dictionary<string, DialogueTemplate> Dialogues { get; private set; } = new(StringComparer.Ordinal);
+        public static Dictionary<int, QuestTemplate> Quests { get; private set; } = new();
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -54,12 +56,14 @@ namespace Server.Data
             var resourceNodes = Read<ResourceNodeTemplate>(dataDirectory, "ResourceNodes.json", errors);
             var resourceSpawns = Read<ResourceSpawnTemplate>(dataDirectory, "ResourceSpawns.json", errors);
             var characterCreation = ReadOne<CharacterCreationTemplate>(dataDirectory, "CharacterCreation.json", errors);
+            var dialogues = Read<DialogueTemplate>(dataDirectory, "Dialogues.json", errors);
+            var quests = Read<QuestTemplate>(dataDirectory, "Quests.json", errors);
 
             // Cross-references only make sense once every file parsed
             var warnings = new List<string>();
             if (errors.Count == 0)
             {
-                var result = DataValidator.Validate(items, recipes, lootTables, npcs, spawners, characterCreation, resourceNodes, resourceSpawns);
+                var result = DataValidator.Validate(items, recipes, lootTables, npcs, spawners, characterCreation, resourceNodes, resourceSpawns, dialogues, quests);
                 errors.AddRange(result.Errors);
                 warnings.AddRange(result.Warnings);
             }
@@ -79,8 +83,10 @@ namespace Server.Data
             ResourceNodes = resourceNodes.ToDictionary(r => r.TemplateId);
             ResourceSpawns = resourceSpawns;
             CharacterCreation = characterCreation;
+            Dialogues = dialogues.ToDictionary(d => d.Id, StringComparer.Ordinal);
+            Quests = quests.ToDictionary(q => q.Id);
 
-            Console.WriteLine($"[DataManager] Loaded {Items.Count} items, {Recipes.Count} recipes, {LootTables.Count} loot tables, {Npcs.Count} NPC templates, {Spawners.Count} spawners, {ResourceNodes.Count} resource node types, {ResourceSpawns.Count} resource spawns.");
+            Console.WriteLine($"[DataManager] Loaded {Items.Count} items, {Recipes.Count} recipes, {LootTables.Count} loot tables, {Npcs.Count} NPC templates, {Spawners.Count} spawners, {ResourceNodes.Count} resource node types, {ResourceSpawns.Count} resource spawns, {Dialogues.Count} dialogues, {Quests.Count} quests.");
         }
 
         private static T ReadOne<T>(string directory, string fileName, List<string> errors) where T : new()

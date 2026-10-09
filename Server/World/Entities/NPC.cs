@@ -380,6 +380,7 @@ namespace Server.World.Entities
 
         public void Die(MapInstance? map, Player? killer = null)
         {
+            bool wasAlive = CurrentState != AIState.Dead;
             CurrentState = AIState.Dead;
             Target = null;
             Health = 0;
@@ -389,6 +390,12 @@ namespace Server.World.Entities
             if (map != null && killer != null)
             {
                 DropLoot(map, killer);
+            }
+
+            // Kill credit goes to the killer only, and only for the blow that actually killed it
+            if (wasAlive && killer != null && TemplateId > 0)
+            {
+                GameEvents.Instance.RaiseNpcKilled(killer, TemplateId);
             }
         }
 

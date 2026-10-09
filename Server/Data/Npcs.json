@@ -12,8 +12,7 @@
     "BaseIntelligence": 2,
     "BaseConstitution": 8,
     "BaseKnowledge": 2,
-    "BaseExp": 25,
-    "Interactions": []
+    "BaseExp": 25
   },
   {
     "TemplateId": 200,
@@ -28,14 +27,7 @@
     "BaseIntelligence": 50,
     "BaseConstitution": 999,
     "BaseKnowledge": 50,
-    "Interactions": [
-      {
-        "ConditionType": "None",
-        "ConditionValue": 0,
-        "Action": "OpenShop",
-        "ActionValue": 15
-      }
-    ]
+    "DialogueId": "town_blacksmith"
   },
   {
     "TemplateId": 201,
@@ -50,17 +42,9 @@
     "BaseIntelligence": 50,
     "BaseConstitution": 999,
     "BaseKnowledge": 50,
-    "Interactions": [
-      {
-        "ConditionType": "None",
-        "ConditionValue": 0,
-        "Action": "BindPoint",
-        "ActionValue": 0
-      }
-    ]
+    "DialogueId": "town_innkeeper"
   },
   {
-    "Interactions": [],
     "BaseKnowledge": 1,
     "TemplateId": 101,
     "BaseIntelligence": 1,

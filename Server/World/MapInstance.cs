@@ -111,6 +111,9 @@ namespace Server.World
                 // are handled by the regular AoI pass (despawn, or just a position update after a same-map respawn).
                 player.AoiResetRequested = true;
 
+                // A conversation does not survive leaving the map (logout, respawn, disconnect)
+                player.Dialogue = null;
+
                 // Final state (position, map, vitals, ...) goes to the write-behind queue; it is a durable event
                 if (saveState) player.QueueSave(urgent: true);
 

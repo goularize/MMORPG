@@ -2,18 +2,6 @@ using System.Collections.Generic;
 
 namespace Server.Data.Models
 {
-    public class NpcInteraction
-    {
-        public string ConditionType { get; set; } = "None";
-        public int ConditionValue { get; set; } = 0;
-        public string Action { get; set; } = "None";
-        public int ActionValue { get; set; } = 0;
-
-        /// <summary>The parsed Action, or null when the name is not an InteractAction (rejected at startup).</summary>
-        public Shared.Enums.InteractAction? ActionType =>
-            System.Enum.TryParse<Shared.Enums.InteractAction>(Action, true, out var parsed) ? parsed : null;
-    }
-
     public class NpcTemplate
     {
         public int TemplateId { get; set; }
@@ -36,10 +24,13 @@ namespace Server.Data.Models
         public int BaseConstitution { get; set; }
         public int BaseKnowledge { get; set; }
         public int BaseExp { get; set; } = 25;
-        public List<NpcInteraction> Interactions { get; set; } = new List<NpcInteraction>();
 
-        public bool HasInteraction(Shared.Enums.InteractAction action) =>
-            Interactions.Exists(i => i.ActionType == action);
+        /// <summary>Id of the Dialogues.json entry shown when a player talks to this NPC; empty when it offers no conversation.</summary>
+        public string DialogueId { get; set; } = string.Empty;
+
+        /// <summary>True when the NPC's dialogue has an option with this action (e.g. an innkeeper offers BindPoint).</summary>
+        public bool OffersAction(Shared.Enums.InteractAction action) =>
+            !string.IsNullOrEmpty(DialogueId) && DataManager.Dialogues.TryGetValue(DialogueId, out var dialogue) && dialogue.OffersAction(action);
 
         public bool IsFriendly => string.Equals(Type, "Friendly", System.StringComparison.OrdinalIgnoreCase);
 

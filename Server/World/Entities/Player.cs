@@ -36,6 +36,9 @@ namespace Server.World.Entities
         /// <summary>Story flags, kill counts and the quest log; persisted through the write-behind queue.</summary>
         public PlayerProgress Progress { get; }
 
+        /// <summary>The conversation the player has open, if any. Game thread only.</summary>
+        public Server.Dialogue.DialogueSession? Dialogue { get; set; }
+
         // Movement tracking
         public System.DateTime LastMoveTime { get; set; } = System.DateTime.UtcNow;
         // Bind Location
@@ -123,6 +126,9 @@ namespace Server.World.Entities
         public override void Update()
         {
             base.Update();
+
+            // Ends a conversation whose NPC is gone or too far away, or when the player died
+            Server.Dialogue.DialogueService.Tick(this);
 
             var utcNow = DateTime.UtcNow;
             if (_nextAutosaveUtc == default)

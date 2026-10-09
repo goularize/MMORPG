@@ -67,6 +67,11 @@ namespace Server.Network
             Register(OpCode.EntityInteractRequest, PacketLane.World, InteractHandler.HandleInteractRequest);
             Register(OpCode.EntityAttackRequest, PacketLane.World, CombatHandler.HandleAttackRequest);
 
+            // NPC dialogue & quests
+            Register(OpCode.DialogueChoose, PacketLane.World, DialogueHandler.HandleChoose);
+            Register(OpCode.DialogueClose, PacketLane.World, DialogueHandler.HandleClose);
+            Register(OpCode.QuestAbandonRequest, PacketLane.World, QuestHandler.HandleAbandon);
+
             // Binding
             Register(OpCode.SetBindPointRequest, PacketLane.World, BindHandler.HandleSetBindPointRequest);
 

@@ -1,0 +1,49 @@
+[
+  {
+    "Id": "town_blacksmith",
+    "Greetings": [
+      {
+        "Priority": 20,
+        "Conditions": [
+          { "Type": "KillCount", "Id": 101, "Min": 10 },
+          { "Type": "Flag", "Name": "heard_slime_history", "Negate": true }
+        ],
+        "Text": "Hi {{playerName}}, I can buy and sell equipment. Want to see my shop? I also heard you have killed 10 slimes. Want to know how they got here?",
+        "Options": [
+          { "Label": "Show me your shop", "Action": "OpenShop", "Value": 15 },
+          { "Label": "Tell me about the slimes", "Action": "GotoNode", "Node": "slime_history" },
+          { "Label": "Goodbye", "Action": "Close" }
+        ]
+      },
+      {
+        "Priority": 0,
+        "Text": "Hi {{playerName}}, I can buy and sell equipment. Want to see my shop?",
+        "Options": [
+          { "Label": "Show me your shop", "Action": "OpenShop", "Value": 15 },
+          { "Label": "Goodbye", "Action": "Close" }
+        ]
+      }
+    ],
+    "Nodes": {
+      "slime_history": {
+        "Text": "Long ago a sticky tide rolled in from the old quarry. Nobody knows who woke it, but the slimes have been multiplying ever since.",
+        "Options": [
+          { "Label": "Interesting.", "Action": "SetFlag", "Name": "heard_slime_history", "Node": "$greeting" }
+        ]
+      }
+    }
+  },
+  {
+    "Id": "town_innkeeper",
+    "Greetings": [
+      {
+        "Priority": 0,
+        "Text": "Welcome, {{playerName}}. Would you like to make this inn your home?",
+        "Options": [
+          { "Label": "Set my bind point here", "Action": "BindPoint" },
+          { "Label": "Goodbye", "Action": "Close" }
+        ]
+      }
+    ]
+  }
+]

@@ -1,6 +1,6 @@
 # Static Data Loading (`DataManager`)
 
-Items, recipes, loot tables, NPC templates, spawners and resource nodes are JSON files in `Server/Data/`, loaded once at startup by
+Items, recipes, loot tables, NPC templates, dialogues, quests, spawners and resource nodes are JSON files in `Server/Data/`, loaded once at startup by
 `DataManager.Initialize()`.
 
 ## Fail fast
@@ -65,12 +65,28 @@ drops nothing. Spawn positions are checked to be walkable by `ShippedResourceNod
   template differ slightly.
 - **Type**: `Enemy` or `Friendly` (anything else fails startup). A `Friendly` template always gets the `Friendly`
   behavior, which makes it unattackable, and is sent to clients as `EntityType.Npc` instead of `Enemy`.
-- **Interactions**: each entry's `Action` must be an `InteractAction` (`None`, `BindPoint`, `OpenShop`; anything else
-  fails startup). `InteractHandler` runs the first non-`None` action of the target and always answers with an
-  `EntityInteractResponse` (`targetId`, `InteractOutcome`, `InteractAction`): `Success`, `NotFound`, `TooFar`,
-  `TargetDead`, `NothingToDo` or `NotAvailable`. `BindPoint` binds the player where they stand and also sends the usual
-  `SetBindPointResponse`. `SetBindPointRequest` on its own is only honored within `InteractRange` of a living NPC whose
-  template offers `BindPoint` (the Town Innkeeper, id 201); otherwise it answers `success = false` with the old bind
-  point. `OpenShop` answers `NotAvailable` until the vendor system lands (#151). `ConditionType` is not evaluated yet.
+- **DialogueId**: the `Dialogues.json` entry shown when a player interacts with the NPC (see "Dialogues" below); an NPC
+  without one answers `NothingToDo`. `InteractHandler` checks existence, area of interest, range and that the target is
+  alive, then opens the conversation; failures are answered with an `EntityInteractResponse` (`targetId`,
+  `InteractOutcome`, `InteractAction`): `NotFound`, `TooFar`, `TargetDead` or `NothingToDo`. `SetBindPointRequest` on
+  its own is only honored within `InteractRange` of a living NPC whose dialogue offers a `BindPoint` option (the Town
+  Innkeeper, id 201); otherwise it answers `success = false` with the old bind point.
 
 Not done yet (tracked on #166): the Goblin Looter, Town Blacksmith and Town Innkeeper have no spawner because their `Entity_Goblin` / `Entity_HumanBlacksmith` / `Entity_HumanInnkeeper` client prefabs do not exist.
+
+## Dialogues and quests
+
+`Dialogues.json` and `Quests.json` (both required, `[]` is fine) hold NPC conversations and quests. The full model,
+the conversation protocol and the quest rules are in `docs/npc-dialogue-and-quests.md`; this is the startup validation.
+
+| Area | Rule |
+| :--- | :--- |
+| Dialogues | Unique `Id` (1-64 chars: letters, digits, `_ - .`). At least one greeting, one of them without conditions (the fallback), unique `Priority`. |
+| Text | Greeting, node, option label and quest text are non-empty, at most 600 (labels 80) characters, and only use the known `{{playerName}}`, `{{playerLevel}}`, `{{npcName}}` tokens, balanced. |
+| Options | 1 to 8 per screen. `Action` must be set; `GotoNode` needs a `Node`; `Close` cannot have one; `SetFlag`/`ClearFlag` need a valid `Name`; `StartQuest`/`TurnInQuest` must reference an existing quest; a `Node` must be a node of the dialogue or `$greeting`. |
+| Reachability | Every greeting and node must be able to reach an option that ends the conversation. Node names cannot be empty or start with `$` or `quest:` (reserved for the server). |
+| NPCs | A `DialogueId` must exist. A dialogue no NPC uses is a warning. |
+| Conditions | `Type` known; `KillCount` NPC exists and `Min >= 1`; `QuestState` quest exists; `Flag` name valid; `Level` `Min >= 1` and `Max` 0 or `>= Min`; `HasItem` item exists and `Min >= 1`. |
+| Quests | Unique positive `Id`, name, `MinLevel >= 1`. Giver and turn-in NPCs exist and have a `DialogueId`. 1 to 6 objectives (`Kill`/`Talk` target an NPC template, `Collect` an item, `Count >= 1`). Rewards: `Exp`/`Gold >= 0`, items exist and their quantity fits `MaxStack`. Offer/Progress/Complete texts valid. Prerequisites valid and not about the quest itself. |
+
+Tests: `DialogueDataValidationTests`, plus `ShippedData_PassesValidation` for the real files.

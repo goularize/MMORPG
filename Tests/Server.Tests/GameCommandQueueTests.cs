@@ -178,6 +178,16 @@ namespace Server.Tests
         }
 
         [Fact]
+        public void DialogueAndQuestPackets_RunOnTheGameThread()
+        {
+            // They read and change world state (NPCs, inventory, progress), so they must be World lane packets
+            foreach (var opCode in new[] { OpCode.EntityInteractRequest, OpCode.DialogueChoose, OpCode.DialogueClose, OpCode.QuestAbandonRequest })
+            {
+                Assert.Equal(PacketLane.World, PacketHandler.GetLane(opCode));
+            }
+        }
+
+        [Fact]
         public void WorldPacket_IsOnlyAppliedWhenTheGameLoopDrains()
         {
             var client = new TestClient(9100) { PlayerId = 9100 };

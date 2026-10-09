@@ -114,7 +114,7 @@
 - [ ] **Player-to-Player Secure Trading**: Two-way trade window with simultaneous "Lock" and "Confirm" verification steps.
 - [ ] **Guilds & Clans**: Guild creation, rank hierarchies, shared guild bank vaults, and guild chat channels.
 - [ ] **Social Lists**: Friends list, online status notifications, and player block/ignore lists.
-- [ ] **Quest & Mission Engine**: Static quest definitions (kill, collect, deliver), NPC dialogue windows, and reward distribution. *(Design: `docs/npc-dialogue-and-quests.md`; tracked in #233-#242 with #172 and #151)*
+- [ ] **Quest & Mission Engine**: Static quest definitions (kill, collect, talk), NPC dialogue and reward distribution. *(Server side done: data-driven dialogues with conditions, per-character progress, game events with kill credit and the quest state machine, see `docs/npc-dialogue-and-quests.md`, #233-#238. Still open: the Unity dialogue window #172, quest log and markers #239/#240, authoring tools #225/#241, validation in CI #242.)*
 - [ ] **Instanced Dungeons**: Private dungeon instances with dedicated boss state machines and loot chests.
 
 > *Plus emerging features, architectural refinements, and quality-of-life improvements identified during active development sprints.*
