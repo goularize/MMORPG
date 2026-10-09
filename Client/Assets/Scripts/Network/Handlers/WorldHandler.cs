@@ -21,6 +21,19 @@ namespace Client.Network.Handlers
 
         public static event System.Action OnStatsUpdated;
 
+        /// <summary>Back to the defaults of a fresh session (called when returning to character select).</summary>
+        public static void ResetSession()
+        {
+            _localMaxHealth = 100;
+            _localMaxMana = 50;
+            _localHealth = 100;
+            _localMana = 50;
+            Attack = 0;
+            MagicAttack = 0;
+            Defense = 0;
+            MagicDefense = 0;
+        }
+
         public static void HandleStatsUpdate(Packet packet)
         {
             int maxHealth = packet.ReadInt();

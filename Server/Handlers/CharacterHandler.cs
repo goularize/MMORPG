@@ -307,8 +307,14 @@ namespace Server.Handlers
             SendWorldState(client, player);
         }
 
+        /// <summary>
+        /// Tells the client which map to load and where the character stands. The rest of the state (stats, inventory,
+        /// nearby entities) follows once the client reports WorldReadyRequest, see <see cref="WorldEntryHandler"/>.
+        /// </summary>
         private static void SendWorldState(IClientConnection client, Player player)
         {
+            player.BeginAwaitingWorldReady();
+
             using Packet response = new Packet(OpCode.CharacterSelectResponse);
             response.Write(true);
             // Send starting coordinates so client can load scene
@@ -317,50 +323,6 @@ namespace Server.Handlers
             response.Write(player.Position.Y);
             response.Write(player.Position.Z);
             client.Send(response);
-
-            var activePlayer = GameLogic.MapMgr.GetPlayer(player.Id);
-            if (activePlayer != null)
-            {
-                using Packet statsPacket = new Packet(OpCode.StatsUpdate);
-                statsPacket.Write(activePlayer.MaxHealth);
-                statsPacket.Write(activePlayer.MaxMana);
-                statsPacket.Write(activePlayer.Attack);
-                statsPacket.Write(activePlayer.MagicAttack);
-                statsPacket.Write(activePlayer.Defense);
-                statsPacket.Write(activePlayer.MagicDefense);
-                client.Send(statsPacket);
-
-                using Packet vitalsPacket = new Packet(OpCode.VitalsUpdate);
-                vitalsPacket.Write(activePlayer.Id);
-                vitalsPacket.Write(activePlayer.Health);
-                vitalsPacket.Write(activePlayer.Mana);
-                client.Send(vitalsPacket);
-
-                // Sync Progression & Base Attributes
-                long expToNextLevel = ServerConfig.GetExpForNextLevel(activePlayer.Level);
-                using Packet progPacket = new Packet(OpCode.PlayerProgressionSync);
-                progPacket.Write(activePlayer.Level);
-                progPacket.Write(activePlayer.Exp);
-                progPacket.Write(expToNextLevel);
-                progPacket.Write(activePlayer.StatPoints);
-                progPacket.Write(activePlayer.Strength);
-                progPacket.Write(activePlayer.Intelligence);
-                progPacket.Write(activePlayer.Constitution);
-                progPacket.Write(activePlayer.Knowledge);
-                client.Send(progPacket);
-
-                // Sync Exp Bar specifically
-                using Packet expPacket = new Packet(OpCode.PlayerExpUpdate);
-                expPacket.Write(activePlayer.Id);
-                expPacket.Write(activePlayer.Exp);
-                expPacket.Write(expToNextLevel);
-                client.Send(expPacket);
-
-                // Sync Inventory & Equipment
-                InventoryHandler.SendInventorySync(activePlayer);
-                EquipmentHandler.SendEquippedItemsSync(activePlayer);
-            }
-
         }
     }
 }

@@ -104,50 +104,12 @@ namespace Client.Network
 
         private System.Collections.Concurrent.ConcurrentQueue<byte[]> _packetQueue = new();
 
-        // While the world scene loads, packets for it (entity spawns, vitals, positions...) would reach handlers whose
-        // targets do not exist yet and be lost for good. They wait here until the scene is ready.
-        private const float WorldHoldTimeoutSeconds = 15f;
-        private readonly System.Collections.Generic.Queue<byte[]> _heldPackets = new();
-        private bool _holdingWorldPackets;
-        private float _holdStartedAt;
-
-        /// <summary>Start holding every incoming packet. Call when the server accepts a character, before the world loads.</summary>
-        public void HoldWorldPackets()
-        {
-            _holdingWorldPackets = true;
-            _holdStartedAt = Time.unscaledTime;
-        }
-
-        /// <summary>Handles everything held so far, in arrival order, and goes back to handling packets immediately.</summary>
-        public void ReleaseWorldPackets()
-        {
-            if (!_holdingWorldPackets) return;
-
-            _holdingWorldPackets = false;
-            while (_heldPackets.Count > 0)
-            {
-                PacketHandler.HandlePacket(_heldPackets.Dequeue());
-            }
-        }
-
         private void Update()
         {
-            // Safety net: never hold packets forever if the world scene fails to come up
-            if (_holdingWorldPackets && Time.unscaledTime - _holdStartedAt > WorldHoldTimeoutSeconds)
-            {
-                Debug.LogWarning("[Network] The world did not become ready in time; releasing held packets.");
-                ReleaseWorldPackets();
-            }
-
-            // Process all packets that arrived on the background thread
+            // Process all packets that arrived on the background thread. The server sends nothing about the world
+            // until this client reports WorldReadyRequest, so every packet here has a target to handle it.
             while (_packetQueue.TryDequeue(out byte[] packetData))
             {
-                if (_holdingWorldPackets)
-                {
-                    _heldPackets.Enqueue(packetData);
-                    continue;
-                }
-
                 // Safely handle the packet on the Unity Main Thread
                 PacketHandler.HandlePacket(packetData);
             }

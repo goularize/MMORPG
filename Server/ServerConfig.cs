@@ -25,6 +25,9 @@ namespace Server
         public static double CombatTagSeconds { get; private set; } = 10.0;
         public static double CombatLogoutLingerSeconds { get; private set; } = 15.0;
 
+        /// <summary>How long a client may take to load the map and send WorldReadyRequest before it is disconnected (0 disables).</summary>
+        public static double WorldReadyTimeoutSeconds { get; private set; } = 60.0;
+
         // Network -> game thread command queue
         public static int MaxPendingCommandsPerClient { get; private set; } = 128;
         public static double CommandBudgetMs { get; private set; } = 10.0;
@@ -106,6 +109,7 @@ namespace Server
 
             CombatTagSeconds = ReadDouble("COMBAT_TAG_SECONDS", 10.0, min: 0);
             CombatLogoutLingerSeconds = ReadDouble("COMBAT_LOGOUT_LINGER_SECONDS", 15.0, min: 0);
+            WorldReadyTimeoutSeconds = ReadDouble("WORLD_READY_TIMEOUT_SECONDS", 60.0, min: 0);
 
             MaxPendingCommandsPerClient = ReadInt("MAX_PENDING_COMMANDS_PER_CLIENT", 128, min: 1);
             CommandBudgetMs = ReadDouble("COMMAND_BUDGET_MS", 10.0, min: 0.001);
