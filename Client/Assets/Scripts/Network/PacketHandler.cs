@@ -23,6 +23,9 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.CharacterDeleteResponse, Handlers.CharacterHandler.HandleDeleteResponse);
             _packetHandlers.Add((int)OpCode.CharacterSelectResponse, Handlers.CharacterHandler.HandleSelectResponse);
 
+            _packetHandlers.Add((int)OpCode.PlayerRespawnResponse, Handlers.RespawnHandler.HandleRespawnResponse);
+            _packetHandlers.Add((int)OpCode.LogoutResponse, Handlers.LogoutHandler.HandleLogoutResponse);
+
             _packetHandlers.Add((int)OpCode.StatsUpdate, Handlers.WorldHandler.HandleStatsUpdate);
             _packetHandlers.Add((int)OpCode.VitalsUpdate, Handlers.WorldHandler.HandleVitalsUpdate);
             _packetHandlers.Add((int)OpCode.EntityPositionUpdate, Handlers.WorldHandler.HandleEntityPositionUpdate);

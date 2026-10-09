@@ -26,15 +26,18 @@ namespace Client.World
         private void LoadMap(int mapId)
         {
             // Map the Server's MapId to the Unity Scene Name
-            string sceneName = "01_StartingVillage"; 
-            
-            // In the future, you can add more maps like: if (mapId == 2) sceneName = "02_Forest";
+            if (!Shared.Constants.MapCatalog.TryGetSceneName(mapId, out string sceneName))
+            {
+                Debug.LogError($"[GameManager] No scene is registered for Map ID {mapId} (Shared.Constants.MapCatalog). Leaving the world.");
+                LeaveBecauseTheWorldCannotBeShown();
+                return;
+            }
 
             Debug.Log($"[GameManager] Loading Map Scene: {sceneName} for Map ID: {mapId}");
-            
+
             // Load the map dynamically in the background, merging it with the GameScene
             var loadOp = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Additive);
-            
+
             StartCoroutine(TrackMapLoad(loadOp));
         }
 
@@ -54,11 +57,18 @@ namespace Client.World
                 Client.UI.LoadingScreenUI.Instance.UpdateProgress(1f, "Synchronizing World State...");
             }
 
-            SpawnLocalPlayer();
+            if (!SpawnLocalPlayer())
+            {
+                LeaveBecauseTheWorldCannotBeShown();
+                yield break;
+            }
 
-            // The server's initial state (entity spawns, vitals, positions) was held while the scene loaded; handle it
-            // now that the local player exists. A WorldReady handshake (#177) would make the server wait instead.
-            Network.NetworkManager.Instance?.ReleaseWorldPackets();
+            // The map is loaded and the local player exists: only now does the server send the character's state and
+            // start replicating the world to this client (entity spawns, vitals, positions).
+            using (Shared.Network.Packet ready = new Shared.Network.Packet(Shared.Network.OpCode.WorldReadyRequest))
+            {
+                Network.NetworkManager.Instance.SendPacket(ready);
+            }
 
             if (Client.UI.LoadingScreenUI.Instance != null)
             {
@@ -66,13 +76,23 @@ namespace Client.World
             }
         }
 
-        private void SpawnLocalPlayer()
+        /// <summary>
+        /// The scene or the player prefab is missing, so the server would wait for WorldReady for nothing (and drop
+        /// us after its timeout). Give the character back and return to character select.
+        /// </summary>
+        private void LeaveBecauseTheWorldCannotBeShown()
+        {
+            Client.UI.LoadingScreenUI.Instance?.Hide();
+            LogoutHandler.RequestLogout(true);
+        }
+
+        private bool SpawnLocalPlayer()
         {
             GameObject dynamicPrefab = Resources.Load<GameObject>("Prefabs/Entities/Character");
             if (dynamicPrefab == null)
             {
                 Debug.LogError("[GameManager] Character prefab could not be loaded from Resources!");
-                return;
+                return false;
             }
 
             Vector3 spawnPos = CharacterHandler.SpawnPosition;
@@ -88,6 +108,17 @@ namespace Client.World
             Camera.main.transform.localPosition = new Vector3(0, 0, -10);
 
             Debug.Log($"[GameManager] Spawned local player at {spawnPos} for Map {CharacterHandler.CurrentMapId}");
+            return true;
+        }
+
+        /// <summary>Moves the local player to a position the server decided (respawn at the bind point).</summary>
+        public void TeleportLocalPlayer(Vector3 position)
+        {
+            if (_localPlayer == null) return;
+
+            _localPlayer.transform.position = position;
+            var body = _localPlayer.GetComponent<Rigidbody2D>();
+            if (body != null) body.position = position;
         }
 
         public void SpawnRemoteEntity(int entityId, Shared.Enums.EntityType type, string prefabName, string entityName, Vector3 pos)

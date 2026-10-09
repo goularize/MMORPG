@@ -55,6 +55,14 @@ namespace Client.Network.Handlers
         public static Vector3 SpawnPosition { get; private set; }
         public static int LocalPlayerId { get; set; }
 
+        /// <summary>Forgets the character that was in the world (called when returning to character select).</summary>
+        public static void ResetSession()
+        {
+            CurrentMapId = 0;
+            SpawnPosition = Vector3.zero;
+            LocalPlayerId = 0;
+        }
+
         public static void HandleSelectResponse(Packet packet)
         {
             bool success = packet.ReadBool();
@@ -70,8 +78,7 @@ namespace Client.Network.Handlers
 
                 Debug.Log($"[CharacterHandler] Selection successful. Loading MapId {mapId}. Spawning at {x}, {y}, {z}");
                 
-                // The server starts streaming world state right away; hold it until GameManager has the scene ready
-                NetworkManager.Instance.HoldWorldPackets();
+                // The server sends nothing else until GameManager has loaded the map and reports WorldReadyRequest
 
                 // Show loading screen
                 Client.UI.LoadingScreenUI.ShowLoading("Loading World...");

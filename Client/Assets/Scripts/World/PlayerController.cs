@@ -26,6 +26,15 @@ namespace Client.World
 
         private void Update()
         {
+            // The server ignores everything a dead character does, so do not let it walk or attack locally either
+            // (it would drift away from its real position). The respawn flow itself is #171.
+            if (Client.Network.Handlers.WorldHandler.LocalHealth <= 0)
+            {
+                _moveInput = Vector2.zero;
+                _wasMoving = false;
+                return;
+            }
+
             HandleInput();
             HandleCombatInput();
         }

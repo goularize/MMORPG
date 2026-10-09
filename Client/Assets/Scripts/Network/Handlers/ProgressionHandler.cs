@@ -16,6 +16,19 @@ namespace Client.Network.Handlers
 
         public static event System.Action OnProgressionUpdated;
 
+        /// <summary>Back to the defaults of a fresh session (called when returning to character select).</summary>
+        public static void ResetSession()
+        {
+            Level = 1;
+            CurrentExp = 0;
+            ExpToNextLevel = 100;
+            StatPoints = 0;
+            Strength = 10;
+            Intelligence = 10;
+            Constitution = 10;
+            Knowledge = 10;
+        }
+
         public static void HandleProgressionSync(Packet packet)
         {
             Level = packet.ReadInt();
