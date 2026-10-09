@@ -4,13 +4,13 @@ The game thread never touches the database. Changes are queued as **immutable sn
 background by `PersistenceService` (`Server/Persistence`).
 
 ```
-game thread: player.QueueSave() / InventoryHandler.SaveDbItem() / QueueRecipe() / QueueChatLog()
+game thread: player.QueueSave() / InventoryHandler.SaveDbItem() / QueueRecipe() / Progress.* / QueueChatLog()
                  │  (snapshot taken here; returns immediately)
                  ▼
      per-character WriteState  ── coalesced: a newer snapshot replaces an unflushed older one
                  │  owned by worker  (characterId % PERSISTENCE_WORKERS)
                  ▼
-     worker thread: ONE SaveChanges per character  (character row + items + recipes, atomic)
+     worker thread: ONE SaveChanges per character  (character row + items + recipes + progress, atomic)
 ```
 
 ## Guarantees
@@ -35,10 +35,24 @@ game thread: player.QueueSave() / InventoryHandler.SaveDbItem() / QueueRecipe() 
 ## What is durable (flushed immediately instead of waiting for the delay)
 
 Events that create, destroy or transfer value, plus lifecycle: crafting, looting (satchels only live in memory),
-dropping/destroying items, refining, learning a recipe, level-up, bind, respawn, disconnect and shutdown.
-Everything else (inventory moves, equipping, stat points, vitals) uses the normal ~2 s write-behind, and every online
+dropping/destroying items, refining, learning a recipe, any quest log change (accept, progress, turn-in, abandon), level-up, bind, respawn, disconnect and shutdown.
+Everything else (inventory moves, equipping, stat points, vitals, story flags, kill counts) uses the normal ~2 s write-behind, and every online
 player is also autosaved every ~60 s (staggered), which is also what persists health, mana and map during play.
 A crash can therefore lose at most the last write-behind window of non-durable changes.
+
+## Player progress
+
+`Player.Progress` (`PlayerProgress`) holds what NPC dialogue and quests react to: story flags, kills per NPC template and the quest log. It is plain collections owned by the game thread, like the inventory. Every change is queued as a snapshot and coalesced per key (latest value wins):
+
+| Data | Table (composite key) | Queue call | Flush |
+| :--- | :--- | :--- | :--- |
+| Story flags | `CharacterFlags (CharacterId, Flag)` | `QueueFlag` | write-behind |
+| Kill counts | `CharacterKillCounts (CharacterId, NpcTemplateId)` | `QueueKillCount` (absolute total) | write-behind |
+| Quest log | `CharacterQuests (CharacterId, QuestId)`: state + objective counters as a JSON int array | `QueueQuest` / `QueueQuestDelete` | durable (urgent) |
+
+Progress rides in the same single `SaveChanges` as the character row, items and recipes, and is retried with the rest of a failed batch. A quest in state `Available` is never stored (no row = available). Flags are validated by `ProgressRules.ValidateFlag` (max 64 characters; letters, digits, `_`, `-`, `.`). All three tables cascade on character delete.
+
+It is loaded in `CharacterHandler.HandleSelectRequest`, off the game thread and before the `Player` is posted to it, right after the pending-writes flush, so a quick relog reads its latest progress.
 
 ## Configuration (`Server/.env`)
 

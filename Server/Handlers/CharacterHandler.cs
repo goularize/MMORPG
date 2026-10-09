@@ -251,6 +251,12 @@ namespace Server.Handlers
                 var dbRecipes = db.CharacterLearnedRecipes.Where(clr => clr.CharacterId == characterId).Select(clr => clr.RecipeId).ToList();
                 player.LearnedRecipes.UnionWith(dbRecipes);
 
+                // Load progress (story flags, kill counts, quest log)
+                player.Progress.Load(
+                    db.CharacterFlags.Where(f => f.CharacterId == characterId).Select(f => f.Flag).ToList(),
+                    db.CharacterKillCounts.Where(k => k.CharacterId == characterId).ToDictionary(k => k.NpcTemplateId, k => k.Count),
+                    db.CharacterQuests.Where(q => q.CharacterId == characterId).AsEnumerable().Select(q => (q.QuestId, q.State, q.ProgressJson)).ToList());
+
                 // Calculate all derived stats correctly with gear scaling
                 player.CalculateDerivedStats();
 
