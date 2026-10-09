@@ -181,12 +181,26 @@ turn-in itself is never wrong. Party-shared kill credit comes with the Party sys
   most six objectives with existing targets, positive counts, rewards reference existing items within their
   `MaxStack`, texts valid, prerequisites valid and not self-referential.
 
-## 7. Client (not implemented) — #172, #239, #240
+## 7. Client — #172 (done), #239, #240 (not implemented)
 
-The Unity client must render what the server sends and send nothing else: the dialogue window (`DialogueOpen` /
-`DialogueChoose` / `DialogueClose`, click-to-interact with range feedback), the quest log and tracker (`QuestLogSync`,
-`QuestUpdate`), and the `!` / `?` markers. The client holds no quest or dialogue rules. The opcodes are in
-`Shared/Network/OpCode.cs` (protocol `0.2.3-alpha`).
+The Unity client must render what the server sends and send nothing else: the dialogue window, the quest log and
+tracker (`QuestLogSync`, `QuestUpdate`), and the `!` / `?` markers. The client holds no quest or dialogue rules. The
+opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.3-alpha`).
+
+**Dialogue and bind point (#172, implemented):**
+
+- `DialogueHandler` (`Client/Assets/Scripts/Network/Handlers/`) parses `DialogueOpen` / `DialogueClose` /
+  `EntityInteractResponse` / `SetBindPointResponse` into static events and sends `EntityInteractRequest`,
+  `DialogueChoose` (only an offered `optionId`) and `DialogueClose`. Its state is reset on logout.
+- `PlayerController`: a left or right click on an `EntityType.Npc` sends the interact request (the client-side range
+  check against `GameRules.InteractRange` is feedback only, the server validates again). Clicks over UI are ignored and
+  NPCs are never attacked.
+- `DialogueUI` + `DialogueOptionButton`: the window with a pooled option list. Buttons are disabled after a pick until
+  the next `DialogueOpen` / `DialogueClose` (or a timeout); Esc or the X closes it and tells the server. Every
+  `DialogueCloseReason` and failed `InteractOutcome` becomes a short floating text above the player (bind point:
+  "Bound to this inn", shops: "Shops are not available yet").
+- Placeholder prefabs `Entity_HumanBlacksmith` and `Entity_HumanInnkeeper` (tinted `Npc_Farmer` frame) and spawners for
+  NPC templates 200 and 201 near the start position. Final art and `Entity_Goblin` are still open (#232).
 
 ## 8. Tooling and content (not implemented) — #225, #241, #242
 
