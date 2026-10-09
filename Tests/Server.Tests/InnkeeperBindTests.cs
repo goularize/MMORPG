@@ -18,6 +18,8 @@ namespace Server.Tests
 
         public InnkeeperBindTests()
         {
+            // Own the shipped NPC templates instead of relying on whichever test class ran before
+            DataManager.Initialize();
             GameLogic.MapMgr.ActiveMaps.Clear();
             GameLogic.MapMgr.ActiveMaps.TryAdd(1, new MapInstance(1));
         }
