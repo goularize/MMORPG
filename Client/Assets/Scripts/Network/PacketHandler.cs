@@ -45,6 +45,9 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.AllocateStatPointResponse, Handlers.ProgressionHandler.HandleStatPointResponse);
             _packetHandlers.Add((int)OpCode.PlayerProgressionSync, Handlers.ProgressionHandler.HandleProgressionSync);
 
+            _packetHandlers.Add((int)OpCode.QuestLogSync, Handlers.QuestHandler.HandleQuestLogSync);
+            _packetHandlers.Add((int)OpCode.QuestUpdate, Handlers.QuestHandler.HandleQuestUpdate);
+
             Debug.Log($"[PacketHandler] Initialized with {_packetHandlers.Count} routes.");
         }
 

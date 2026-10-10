@@ -12,17 +12,16 @@ namespace Client.UI
         [Tooltip("Optional. Hidden when there is no sprite for the option's action.")]
         [SerializeField] private Image icon;
 
-        public Button Button { get; private set; }
+        private Button _button;
 
-        private void Awake()
-        {
-            Button = GetComponent<Button>();
-        }
+        /// <summary>
+        /// Fetched on demand: a button created under a hidden window has not had its Awake yet when the window code
+        /// first uses it.
+        /// </summary>
+        public Button Button => _button != null ? _button : (_button = GetComponent<Button>());
 
         public void Setup(string text, Sprite sprite)
         {
-            if (Button == null) Button = GetComponent<Button>();
-
             label.text = text;
             if (icon != null)
             {
