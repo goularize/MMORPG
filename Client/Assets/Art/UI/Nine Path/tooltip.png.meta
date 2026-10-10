@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 6f4c51d16f6e9ba4795adf0fcb98106c
+guid: 8d0b7b94867b3de449a1d25d370b5719
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1603659592809197610
-    second: nine_path_focus_0
+      213: -8747778316048434277
+    second: nine_path_panel_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,13 +46,13 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
-  spriteBorder: {x: 3, y: 3, z: 3, w: 3}
+  spritePixelsToUnits: 16
+  spriteBorder: {x: 6, y: 5, z: 5, w: 6}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -115,13 +115,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: nine_path_focus_0
+      name: nine_path_panel_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 8
-        height: 8
+        width: 16
+        height: 16
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -130,8 +130,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6dfc5fdc818aeb9e0800000000000000
-      internalID: -1603659592809197610
+      spriteID: b9b711228f5a99680800000000000000
+      internalID: -8747778316048434277
       vertices: []
       indices: 
       edges: []
@@ -150,7 +150,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      nine_path_focus_0: -1603659592809197610
+      nine_path_panel_0: -8747778316048434277
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
