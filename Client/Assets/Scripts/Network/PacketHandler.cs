@@ -50,6 +50,10 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.QuestLogSync, Handlers.QuestHandler.HandleQuestLogSync);
             _packetHandlers.Add((int)OpCode.QuestUpdate, Handlers.QuestHandler.HandleQuestUpdate);
 
+            _packetHandlers.Add((int)OpCode.InventorySync, Handlers.InventoryHandler.HandleInventorySync);
+            _packetHandlers.Add((int)OpCode.InventorySlotUpdate, Handlers.InventoryHandler.HandleInventorySlotUpdate);
+            _packetHandlers.Add((int)OpCode.EquippedItemsSync, Handlers.InventoryHandler.HandleEquippedItemsSync);
+
             Debug.Log($"[PacketHandler] Initialized with {_packetHandlers.Count} routes.");
         }
 

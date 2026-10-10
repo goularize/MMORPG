@@ -1,4 +1,6 @@
 using System;
+using Server.Data;
+using Server.Data.Models;
 using Server.Database.Models;
 using Server.Handlers;
 using Shared.Enums;
@@ -26,8 +28,26 @@ namespace Server.Tests
                 RolledMovementSpeed = 0.4f, RolledAttackSpeedBonus = 0.5f, RolledHealthRegen = 19, RolledManaRegen = 20
             };
 
-            using var write = new Packet(OpCode.InventorySlotUpdate);
-            InventoryHandler.WriteItemData(write, item);
+            DataManager.Items[101] = new ItemTemplate
+            {
+                TemplateId = 101, Name = "Test Sword", Description = "Cuts things.", Type = ItemType.Equipment,
+                Slot = EquipmentSlot.MainHand, RequiredLevel = 4, MaxStack = 1, BasePrice = 30, IsTwoHanded = true, Icon = "sword_test"
+            };
+
+            try
+            {
+                using var write = new Packet(OpCode.InventorySlotUpdate);
+                InventoryHandler.WriteItemData(write, item);
+                AssertLayout(write, id);
+            }
+            finally
+            {
+                DataManager.Items.Remove(101);
+            }
+        }
+
+        private static void AssertLayout(Packet write, Guid id)
+        {
             using var read = new Packet(write.ToArray());
 
             Assert.Equal(id.ToString(), read.ReadString());
@@ -46,6 +66,43 @@ namespace Server.Tests
             Assert.Equal(0.5f, read.ReadFloat());  // AttackSpeedBonus
             Assert.Equal(19, read.ReadInt());      // HealthRegen
             Assert.Equal(20, read.ReadInt());      // ManaRegen
+            Assert.Equal("Test Sword", read.ReadString());   // template display data
+            Assert.Equal("Cuts things.", read.ReadString());
+            Assert.Equal((byte)ItemType.Equipment, read.ReadByte());
+            Assert.Equal((byte)EquipmentSlot.MainHand, read.ReadByte());
+            Assert.Equal(4, read.ReadInt());       // RequiredLevel
+            Assert.Equal(1, read.ReadInt());       // MaxStack
+            Assert.Equal(30, read.ReadInt());      // BasePrice
+            Assert.True(read.ReadBool());          // IsTwoHanded
+            Assert.Equal("sword_test", read.ReadString());
+            Assert.Throws<System.IO.EndOfStreamException>(() => read.ReadByte());
+        }
+
+        [Fact]
+        public void InventoryHandler_WriteItemData_UnknownTemplate_WritesPlaceholderDisplayData()
+        {
+            var item = new CharacterItem { TemplateId = 987654 };
+
+            using var write = new Packet(OpCode.InventorySlotUpdate);
+            InventoryHandler.WriteItemData(write, item);
+            using var read = new Packet(write.ToArray());
+
+            read.ReadString();                                   // Id
+            for (int i = 0; i < 5; i++) read.ReadInt();          // TemplateId .. UpgradeLevel
+            read.ReadByte();                                     // Rarity
+            for (int i = 0; i < 8; i++) read.ReadInt();          // primary stats
+            for (int i = 0; i < 5; i++) read.ReadFloat();        // secondary stats
+            read.ReadInt(); read.ReadInt();                      // regen
+
+            Assert.Equal("Unknown item", read.ReadString());
+            Assert.Equal(string.Empty, read.ReadString());
+            Assert.Equal((byte)ItemType.Unknown, read.ReadByte());
+            Assert.Equal((byte)EquipmentSlot.None, read.ReadByte());
+            Assert.Equal(1, read.ReadInt());
+            Assert.Equal(1, read.ReadInt());
+            Assert.Equal(0, read.ReadInt());
+            Assert.False(read.ReadBool());
+            Assert.Equal(string.Empty, read.ReadString());
             Assert.Throws<System.IO.EndOfStreamException>(() => read.ReadByte());
         }
     }

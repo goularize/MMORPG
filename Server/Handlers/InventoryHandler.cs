@@ -42,6 +42,32 @@ namespace Server.Handlers
             packet.Write(item.RolledAttackSpeedBonus);
             packet.Write(item.RolledHealthRegen);
             packet.Write(item.RolledManaRegen);
+
+            // Display data of the template: the client has no item catalog, so every item carries what its window shows
+            if (DataManager.Items.TryGetValue(item.TemplateId, out var template))
+            {
+                packet.Write(template.Name);
+                packet.Write(template.Description);
+                packet.Write((byte)template.Type);
+                packet.Write((byte)template.Slot);
+                packet.Write(template.RequiredLevel);
+                packet.Write(template.MaxStack);
+                packet.Write(template.BasePrice);
+                packet.Write(template.IsTwoHanded);
+                packet.Write(template.Icon);
+            }
+            else
+            {
+                packet.Write("Unknown item");
+                packet.Write(string.Empty);
+                packet.Write((byte)ItemType.Unknown);
+                packet.Write((byte)EquipmentSlot.None);
+                packet.Write(1);
+                packet.Write(1);
+                packet.Write(0);
+                packet.Write(false);
+                packet.Write(string.Empty);
+            }
         }
 
         public static void SendInventorySync(Player player)

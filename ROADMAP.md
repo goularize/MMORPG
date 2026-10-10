@@ -58,7 +58,7 @@
 - [x] **Authoritative 3-Pillar Combat Math**: Weapon reach validation, swing cooldowns, hit/dodge/crit rolls, and armor mitigation calculations.
 - [x] **World Loot Satchels & Harvesting**: Dropped loot bags with 30s killer ownership protection and 120s world decay timers (`LootSatchel.cs`), plus depletable resource nodes with respawn timers, spawned from `ResourceNodes.json` / `ResourceSpawns.json` with data-driven drops.
 - [x] **Backend Inventory & Paperdoll Equipment**: Full server-side inventory slots, stack splitting, equipment stat aggregation, item refinement, and recipe crafting.
-- [ ] **Client Paperdoll & Inventory UI**: Drag-and-drop inventory bag grid, equipment slot panel, and item tooltip displays.
+- [ ] **Client Paperdoll & Inventory UI** *(code done, in-editor verification pending, see `docs/client-inventory.md`)*: Drag-and-drop inventory bag grid, equipment slot panel, and item tooltip displays.
 - [ ] **Client Ground Loot & Harvesting UI**: Interactive loot popup window displaying satchel contents with "Loot" and "Loot All" buttons.
 - [ ] **Spell & Skill Casting Pipeline**: Cast times, cooldown trackers, channel interrupts, and mana consumption.
 - [ ] **Status Effects & Auras**: Buffs, Debuffs, Damage-over-Time (DoT), Heal-over-Time (HoT), and crowd control (stuns, slows).
