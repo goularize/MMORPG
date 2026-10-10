@@ -105,7 +105,8 @@ namespace Shared.Network
 
         // Quests
         QuestAbandonRequest = 93, // Client -> Server: questId
-        QuestUpdate = 94,         // Server -> Client: questId, QuestState (byte; Available = left the log), objectiveCount (byte), counters (int each)
-        QuestLogSync = 95         // Server -> Client at world entry: entryCount, { questId, QuestState (byte), objectiveCount (byte), counters (int each) }[]
+        QuestUpdate = 94,         // Server -> Client: questId, QuestEntry (see below; state Available = left the log, empty name, no objectives)
+        QuestLogSync = 95         // Server -> Client at world entry: entryCount, { questId, QuestEntry }[]
+        // QuestEntry: QuestState (byte), name (string), objectiveCount (byte), { text (string), current (int), required (int) }[]
     }
 }
