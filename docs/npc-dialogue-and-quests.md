@@ -213,7 +213,10 @@ opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.4-alpha`).
 - `QuestLogUI` (key `L`, Esc or X closes): quests in progress first, completed after, with the selected quest's
   objectives and a two-click Abandon (not offered for completed quests). It never changes the log itself: the
   server's `QuestUpdate` does.
-- `QuestTrackerUI`: HUD list of the quests in progress with their counters, hidden when empty.
+- `QuestTrackerUI`: HUD list of the tracked quests with their counters, hidden when empty. Every quest in progress is
+  tracked automatically; the log's Track / Untrack button changes that (a client-side choice, not saved and unknown to
+  the server). At most 3 quests are listed, the rest become a "+N more" line. The tracker is 70% opaque and 100% while
+  the mouse is over it (both values, and the fade speed, are Inspector fields).
 - The offer, progress and turn-in screens (with the reward preview) are server-built dialogue nodes, so the dialogue
   window from #172 already shows them. State resets on logout.
 
