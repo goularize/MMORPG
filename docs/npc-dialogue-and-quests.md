@@ -196,7 +196,7 @@ turn-in itself is never wrong. Party-shared kill credit comes with the Party sys
 
 The Unity client must render what the server sends and send nothing else: the dialogue window, the quest log and
 tracker (`QuestLogSync`, `QuestUpdate`), and the `!` / `?` markers. The client holds no quest or dialogue rules. The
-opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.5-alpha`).
+opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.6-alpha`).
 
 **Dialogue and bind point (#172, implemented):**
 

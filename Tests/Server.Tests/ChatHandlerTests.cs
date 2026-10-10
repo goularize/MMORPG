@@ -46,10 +46,12 @@ namespace Server.Tests
             Assert.Equal(OpCode.ChatMessageBroadcast, response.PacketId);
             
             ChatChannel channel = (ChatChannel)response.ReadByte();
+            int senderId = response.ReadInt();
             string senderName = response.ReadString();
             string message = response.ReadString();
 
             Assert.Equal(ChatChannel.Global, channel);
+            Assert.Equal(1, senderId); // Alice
             Assert.Equal("Alice", senderName);
             Assert.Equal("Hello World!", message);
         }
@@ -77,6 +79,25 @@ namespace Server.Tests
         }
 
         [Fact]
+        public void HandleChatMessage_Local_BroadcastCarriesTheSendersEntityId()
+        {
+            SetupWorld(out var senderClient, out var receiverClient);
+
+            using var writePacket = new Packet(OpCode.ChatMessageRequest);
+            writePacket.Write((byte)ChatChannel.Local);
+            writePacket.Write("Over here!");
+            using var packet = new Packet(writePacket.ToArray());
+
+            ChatHandler.HandleChatMessage(senderClient, packet);
+
+            var received = receiverClient.SentPackets.Single();
+            Assert.Equal(ChatChannel.Local, (ChatChannel)received.ReadByte());
+            Assert.Equal(1, received.ReadInt()); // Alice's entity id, so a client can put a bubble over her
+            Assert.Equal("Alice", received.ReadString());
+            Assert.Equal("Over here!", received.ReadString());
+        }
+
+        [Fact]
         public void HandleChatMessage_Whisper_ShouldSendToTargetAndEcho()
         {
             SetupWorld(out var senderClient, out var receiverClient);
@@ -94,10 +115,12 @@ namespace Server.Tests
             var response = receiverClient.SentPackets[0];
             
             ChatChannel channel = (ChatChannel)response.ReadByte();
+            int senderId = response.ReadInt();
             string senderName = response.ReadString();
             string message = response.ReadString();
 
             Assert.Equal(ChatChannel.Whisper, channel);
+            Assert.Equal(1, senderId); // Alice
             Assert.Equal("Alice", senderName);
             Assert.Equal("Hello Bob!", message);
 
@@ -106,9 +129,11 @@ namespace Server.Tests
             var echo = senderClient.SentPackets[0];
             
             ChatChannel echoChannel = (ChatChannel)echo.ReadByte();
+            int echoSenderId = echo.ReadInt();
             string echoName = echo.ReadString();
             
             Assert.Equal(ChatChannel.Whisper, echoChannel);
+            Assert.Equal(0, echoSenderId); // the echo is not a message from an entity
             Assert.Equal("To Bob", echoName);
         }
 
@@ -131,10 +156,12 @@ namespace Server.Tests
             var error = senderClient.SentPackets[0];
             
             ChatChannel errorChannel = (ChatChannel)error.ReadByte();
+            int errorSenderId = error.ReadInt();
             string errorName = error.ReadString();
             string errorMessage = error.ReadString();
 
             Assert.Equal(ChatChannel.System, errorChannel);
+            Assert.Equal(0, errorSenderId);
             Assert.Equal("System", errorName);
             Assert.Equal("Player 'Charlie' is not online.", errorMessage);
         }

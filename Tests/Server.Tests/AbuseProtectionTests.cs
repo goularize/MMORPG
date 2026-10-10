@@ -157,7 +157,7 @@ namespace Server.Tests
         }
 
         private static string[] ChatTextsReceived(MockClientConnection client) =>
-            client.SentPackets.Select(p => { p.ReadByte(); p.ReadString(); return p.ReadString(); }).ToArray();
+            client.SentPackets.Select(p => { p.ReadByte(); p.ReadInt(); p.ReadString(); return p.ReadString(); }).ToArray();
 
         [Fact]
         public void Chat_OverTheLengthCap_IsRefusedWithNotice()

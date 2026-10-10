@@ -33,7 +33,7 @@ namespace Shared.Network
 
         // Chat
         ChatMessageRequest = 17,
-        ChatMessageBroadcast = 18,
+        ChatMessageBroadcast = 18, // Server -> Client: ChatChannel (byte), senderId (int; 0 for System messages and the whisper echo), senderName, message
 
         // Vitals & Stats
         StatsUpdate = 19,
