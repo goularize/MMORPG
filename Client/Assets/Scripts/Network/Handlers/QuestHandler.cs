@@ -52,10 +52,59 @@ namespace Client.Network.Handlers
 
         public static bool TryGet(int questId, out QuestView quest) => _quests.TryGetValue(questId, out quest);
 
+        // The quests shown in the HUD tracker, most recently tracked first. A quest is tracked automatically when it
+        // enters the log; the player can untrack it (it stays in the log) and track it again. Only a display
+        // preference of this client session: the server does not know about it.
+        private static readonly List<int> _tracked = new();
+        private static readonly HashSet<int> _untracked = new();
+
+        /// <summary>The tracking changed (a quest was tracked, untracked, or left the log).</summary>
+        public static event Action OnTrackingChanged;
+
+        public static bool IsTracked(int questId) => _tracked.Contains(questId);
+
+        /// <summary>Position among the tracked quests (0 = top of the tracker), or int.MaxValue when not tracked.</summary>
+        public static int TrackOrder(int questId)
+        {
+            int index = _tracked.IndexOf(questId);
+            return index < 0 ? int.MaxValue : index;
+        }
+
+        /// <summary>Stops tracking the quest, or tracks it again (it goes to the top of the tracker).</summary>
+        public static void ToggleTracked(int questId)
+        {
+            if (_tracked.Remove(questId))
+            {
+                _untracked.Add(questId);
+            }
+            else
+            {
+                _untracked.Remove(questId);
+                _tracked.Insert(0, questId);
+            }
+            OnTrackingChanged?.Invoke();
+        }
+
+        // A quest that is in progress and was not untracked by the player is tracked; anything else is not
+        private static void UpdateTracking(QuestView quest)
+        {
+            bool inProgress = quest.State is QuestState.Active or QuestState.ReadyToTurnIn;
+            if (!inProgress)
+            {
+                _tracked.Remove(quest.Id);
+            }
+            else if (!_tracked.Contains(quest.Id) && !_untracked.Contains(quest.Id))
+            {
+                _tracked.Insert(0, quest.Id);
+            }
+        }
+
         /// <summary>Back to an empty log (called when returning to character select).</summary>
         public static void ResetSession()
         {
             _quests.Clear();
+            _tracked.Clear();
+            _untracked.Clear();
         }
 
         public static void RequestAbandon(int questId)
@@ -79,6 +128,11 @@ namespace Client.Network.Handlers
                 if (quest != null) _quests[questId] = quest;
             }
 
+            // Every quest in progress starts tracked (the lowest id on top)
+            _tracked.Clear();
+            _untracked.Clear();
+            foreach (var quest in _quests.Values.OrderByDescending(q => q.Id)) UpdateTracking(quest);
+
             OnLogSynced?.Invoke();
         }
 
@@ -87,8 +141,17 @@ namespace Client.Network.Handlers
             int questId = packet.ReadInt();
             var quest = ReadEntry(packet, questId);
 
-            if (quest == null) _quests.Remove(questId);
-            else _quests[questId] = quest;
+            if (quest == null)
+            {
+                _quests.Remove(questId);
+                _tracked.Remove(questId);
+                _untracked.Remove(questId);
+            }
+            else
+            {
+                _quests[questId] = quest;
+                UpdateTracking(quest);
+            }
 
             OnQuestChanged?.Invoke(questId, quest);
         }

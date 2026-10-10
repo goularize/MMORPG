@@ -31,6 +31,9 @@ namespace Client.UI
         [SerializeField] private TMP_Text detailText;
         [Tooltip("Shown instead of the list when the log is empty. Optional.")]
         [SerializeField] private GameObject emptyLabel;
+        [Tooltip("Tracks the quest (it goes to the top of the HUD tracker) or stops tracking it. Optional.")]
+        [SerializeField] private Button trackButton;
+        [SerializeField] private TMP_Text trackLabel;
         [SerializeField] private Button abandonButton;
         [SerializeField] private TMP_Text abandonLabel;
         [SerializeField] private Button closeButton;
@@ -52,16 +55,19 @@ namespace Client.UI
         {
             closeButton.onClick.AddListener(Close);
             abandonButton.onClick.AddListener(OnAbandonClicked);
+            if (trackButton != null) trackButton.onClick.AddListener(OnTrackClicked);
             panel.SetActive(false);
 
             QuestHandler.OnQuestChanged += OnQuestChanged;
             QuestHandler.OnLogSynced += Refresh;
+            QuestHandler.OnTrackingChanged += ShowDetails;
         }
 
         private void OnDestroy()
         {
             QuestHandler.OnQuestChanged -= OnQuestChanged;
             QuestHandler.OnLogSynced -= Refresh;
+            QuestHandler.OnTrackingChanged -= ShowDetails;
             if (Instance == this) Instance = null;
         }
 
@@ -158,6 +164,7 @@ namespace Client.UI
                 titleText.text = string.Empty;
                 detailText.text = string.Empty;
                 abandonButton.gameObject.SetActive(false);
+                if (trackButton != null) trackButton.gameObject.SetActive(false);
                 return;
             }
 
@@ -177,6 +184,18 @@ namespace Client.UI
             bool canAbandon = quest.State is QuestState.Active or QuestState.ReadyToTurnIn;
             abandonButton.gameObject.SetActive(canAbandon);
             abandonLabel.text = _confirmingAbandon ? "Confirm abandon?" : "Abandon";
+
+            // Only quests in progress can be shown in the tracker
+            if (trackButton != null)
+            {
+                trackButton.gameObject.SetActive(canAbandon);
+                if (trackLabel != null) trackLabel.text = QuestHandler.IsTracked(quest.Id) ? "Untrack" : "Track";
+            }
+        }
+
+        private void OnTrackClicked()
+        {
+            if (_selectedId >= 0) QuestHandler.ToggleTracked(_selectedId);
         }
 
         private void OnAbandonClicked()
