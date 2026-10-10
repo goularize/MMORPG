@@ -14,6 +14,19 @@ namespace Server.World.Entities
         // spawned again on the client after a respawn or re-entry (the set is only touched on the game thread).
         public volatile bool AoiResetRequested;
 
+        // The marker each known NPC currently has on this player's client (absent = None), so only changes are sent
+        public Dictionary<int, Shared.Enums.EntityMarker> KnownMarkers { get; } = new();
+
+        /// <summary>
+        /// Set when something that decides NPC markers changed (quest log, flags, kills, level, items). The map
+        /// recomputes the markers of the NPCs this player knows on its next AoI pass, instead of scanning every tick.
+        /// </summary>
+        public bool MarkersDirty { get; private set; }
+
+        public void MarkMarkersDirty() => MarkersDirty = true;
+
+        public void ClearMarkersDirty() => MarkersDirty = false;
+
         // Account Relationship
         public int AccountId { get; set; }
         public Server.Network.IClientConnection Connection { get; set; } // The active network session
@@ -85,6 +98,7 @@ namespace Server.World.Entities
             Name = name;
             Connection = connection;
             Progress = new PlayerProgress(id, Server.Persistence.PersistenceService.Instance);
+            Progress.Changed += MarkMarkersDirty;
         }
 
         /// <summary>
@@ -202,6 +216,9 @@ namespace Server.World.Entities
 
             if (leveledUp)
             {
+                // A new level can make quests available
+                MarkMarkersDirty();
+
                 // Sync updated Stats to player
                 using Shared.Network.Packet statsPacket = new Shared.Network.Packet(Shared.Network.OpCode.StatsUpdate);
                 statsPacket.Write(MaxHealth);

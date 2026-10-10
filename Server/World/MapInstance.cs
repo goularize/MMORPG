@@ -288,6 +288,7 @@ namespace Server.World
                 {
                     player.AoiResetRequested = false;
                     player.KnownEntities.Clear();
+                    player.KnownMarkers.Clear();
                 }
 
                 List<Entity> nearbyEntities = new List<Entity>();
@@ -363,6 +364,9 @@ namespace Server.World
 
                         // Late joiners must learn the entity's current health/death state
                         SendEntityState(player, entity);
+
+                        // ... and the marker it has for this player
+                        if (entity is NPC markedNpc) SyncMarker(player, markedNpc);
                     }
                     else
                     {
@@ -393,8 +397,36 @@ namespace Server.World
                 foreach (var id in toRemove)
                 {
                     player.KnownEntities.Remove(id);
+                    player.KnownMarkers.Remove(id);
+                }
+
+                // Quest state, flags, kills, level or items changed: refresh the markers of the NPCs this player
+                // sees. Only then, so a quiet tick costs nothing.
+                if (player.MarkersDirty)
+                {
+                    player.ClearMarkersDirty();
+                    foreach (var knownId in player.KnownEntities)
+                    {
+                        if (NPCs.TryGetValue(knownId, out var knownNpc)) SyncMarker(player, knownNpc);
+                    }
                 }
             }
+        }
+
+        /// <summary>Tells the player the NPC's marker when it differs from what its client already shows.</summary>
+        private static void SyncMarker(Player player, NPC npc)
+        {
+            var marker = Quests.QuestMarkers.For(player, npc);
+            player.KnownMarkers.TryGetValue(npc.Id, out var shown);
+            if (marker == shown) return;
+
+            if (marker == Shared.Enums.EntityMarker.None) player.KnownMarkers.Remove(npc.Id);
+            else player.KnownMarkers[npc.Id] = marker;
+
+            using var packet = new Shared.Network.Packet(Shared.Network.OpCode.EntityMarker);
+            packet.Write(npc.Id);
+            packet.Write((byte)marker);
+            player.Connection.Send(packet);
         }
     }
 }
