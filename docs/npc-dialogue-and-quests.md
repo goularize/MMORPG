@@ -192,7 +192,7 @@ turn-in itself is never wrong. Party-shared kill credit comes with the Party sys
   most six objectives with existing targets, positive counts, rewards reference existing items within their
   `MaxStack`, texts valid, prerequisites valid and not self-referential.
 
-## 7. Client — #172, #239 (done), #240 (not implemented)
+## 7. Client — #172, #239, #240 (done)
 
 The Unity client must render what the server sends and send nothing else: the dialogue window, the quest log and
 tracker (`QuestLogSync`, `QuestUpdate`), and the `!` / `?` markers. The client holds no quest or dialogue rules. The
@@ -226,6 +226,14 @@ opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.5-alpha`).
   the mouse is over it (both values, and the fade speed, are Inspector fields).
 - The offer, progress and turn-in screens (with the reward preview) are server-built dialogue nodes, so the dialogue
   window from #172 already shows them. State resets on logout.
+
+**Quest markers (#240, implemented):**
+
+- `MarkerHandler` keeps the `EntityMarker` the server sent per entity and raises an event; reset on logout.
+- `QuestMarkerController` (one in the game scene) puts a `QuestMarkerView` object ("!" for an offer, "?" for a turn-in)
+  above the NPC's head and removes it when the server clears it. The look (height, bobbing, colours, font size and
+  outline, sorting order) is editable in the Inspector. The markers are text by default; assigning a sprite per marker
+  type shows art instead.
 
 ## 8. Tooling and content (not implemented) — #225, #241, #242
 
