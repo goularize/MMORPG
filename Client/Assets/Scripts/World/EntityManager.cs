@@ -127,11 +127,17 @@ namespace Client.World
                 textColor = Color.yellow;
             }
 
+            ShowMessage(textToShow, textColor, isCrit);
+        }
+
+        /// <summary>Floating text above this entity (damage numbers, and short feedback like "Too far away").</summary>
+        public void ShowMessage(string text, Color color, bool large = false)
+        {
             if (floatingTextPrefab != null)
             {
                 // Spawn slightly above the character's origin
                 Vector3 spawnPos = transform.position + new Vector3(0, 1.5f, 0);
-                
+
                 // Add slight randomness to X and Y so rapid attacks don't overlap perfectly
                 spawnPos.x += UnityEngine.Random.Range(-0.3f, 0.3f);
                 spawnPos.y += UnityEngine.Random.Range(-0.2f, 0.2f);
@@ -140,13 +146,13 @@ namespace Client.World
                 var ft = go.GetComponent<Client.UI.FloatingText>();
                 if (ft != null)
                 {
-                    ft.Setup(textToShow, textColor, isCrit);
+                    ft.Setup(text, color, large);
                 }
             }
             else
             {
                 // Fallback if the prefab hasn't been assigned in the Unity Editor yet
-                Debug.Log($"[Combat] {gameObject.name} takes {textToShow}");
+                Debug.Log($"[Combat] {gameObject.name}: {text}");
             }
         }
     }

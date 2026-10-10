@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Client.Network;
 using Shared.Network;
 
@@ -89,26 +90,50 @@ namespace Client.World
         {
             if (UnityEngine.InputSystem.Mouse.current == null) return;
 
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+
             // Allow the player to hold the mouse down to auto-attack, or spam click
-            if (UnityEngine.InputSystem.Mouse.current.leftButton.isPressed)
+            bool attackHeld = mouse.leftButton.isPressed;
+            bool interactClicked = mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame;
+            if (!attackHeld && !interactClicked) return;
+
+            // Clicks on windows (dialogue, HUD) must not reach the world behind them
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+
+            // Raycast to find an entity under the mouse cursor
+            Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(mouse.position.ReadValue());
+            RaycastHit2D hit = Physics2D.Raycast(mouseWorldPos, Vector2.zero);
+            if (hit.collider == null) return;
+
+            // Check if it's a remote entity (monsters/other players will have this script)
+            var targetEntity = hit.collider.GetComponentInParent<NetworkEntity>();
+            if (targetEntity == null) return;
+
+            // Friendly NPCs are talked to, never attacked
+            if (targetEntity.EntityType == Shared.Enums.EntityType.Npc)
             {
-                if (Time.time - _lastAttackTime < attackCooldown) return;
-
-                // Raycast to find an entity under the mouse cursor
-                Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(UnityEngine.InputSystem.Mouse.current.position.ReadValue());
-                RaycastHit2D hit = Physics2D.Raycast(mouseWorldPos, Vector2.zero);
-
-                if (hit.collider != null)
-                {
-                    // Check if it's a remote entity (monsters/other players will have this script)
-                    var targetEntity = hit.collider.GetComponentInParent<NetworkEntity>();
-                    if (targetEntity != null)
-                    {
-                        _lastAttackTime = Time.time;
-                        SendAttackRequest(targetEntity.EntityId);
-                    }
-                }
+                if (interactClicked) TryInteract(targetEntity);
+                return;
             }
+
+            if (attackHeld && Time.time - _lastAttackTime >= attackCooldown)
+            {
+                _lastAttackTime = Time.time;
+                SendAttackRequest(targetEntity.EntityId);
+            }
+        }
+
+        private void TryInteract(NetworkEntity npc)
+        {
+            // Only saves a round trip; the server validates the range again
+            float distance = Vector2.Distance(transform.position, npc.transform.position);
+            if (distance > Shared.Constants.GameRules.InteractRange)
+            {
+                GetComponent<EntityManager>()?.ShowMessage("Too far away", Color.white);
+                return;
+            }
+
+            Client.Network.Handlers.DialogueHandler.RequestInteract(npc.EntityId);
         }
 
         private void SendAttackRequest(int targetId)

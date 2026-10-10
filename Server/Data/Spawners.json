@@ -1,8 +1,27 @@
 [
   {
+    "Type": "Point",
+    "TemplateId": 201,
+    "X": -16.14,
+    "Y": -4.61,
+    "Z": 0,
+    "Radius": 0,
+    "Amount": 1,
+    "RotationY": 0
+  },
+  {
+    "Type": "Point",
+    "TemplateId": 200,
+    "X": -10.74,
+    "Y": -1.89,
+    "Z": 0,
+    "Radius": 0,
+    "Amount": 1,
+    "RotationY": 0
+  },
+  {
     "Type": "Area",
     "TemplateId": 101,
-    "MapId": 1,
     "X": 15.7,
     "Y": 10.2,
     "Z": 0,

@@ -60,6 +60,7 @@ namespace Client.Network.Handlers
             CharacterHandler.ResetSession();
             WorldHandler.ResetSession();
             ProgressionHandler.ResetSession();
+            DialogueHandler.ResetSession();
         }
     }
 }
