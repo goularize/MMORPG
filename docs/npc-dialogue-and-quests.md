@@ -177,6 +177,10 @@ turn-in itself is never wrong. Party-shared kill credit comes with the Party sys
   batch). A second turn-in finds the quest `Rewarded` and does nothing, so rewards are never granted twice.
 - **Packets:** `QuestLogSync` (whole log, sent when entering the world), `QuestUpdate` (one quest; `Available` means
   it left the log) and `QuestAbandonRequest` (C→S). Accepting and turning in happen through dialogue options only.
+  Both carry a `QuestEntry`: state, quest name, and per objective its text (no counter, e.g. "Defeat Slime"), current
+  counter and required count, so the client renders the quest log without any quest data (protocol `0.2.4-alpha`). A
+  quest that left the log has an empty name and no objectives; a quest whose template was removed from the data is sent
+  as "Unknown quest" with its saved counters.
 - **Validator rules:** unique positive ids, giver and turn-in NPCs exist and **have a dialogue**, at least one and at
   most six objectives with existing targets, positive counts, rewards reference existing items within their
   `MaxStack`, texts valid, prerequisites valid and not self-referential.
@@ -185,7 +189,7 @@ turn-in itself is never wrong. Party-shared kill credit comes with the Party sys
 
 The Unity client must render what the server sends and send nothing else: the dialogue window, the quest log and
 tracker (`QuestLogSync`, `QuestUpdate`), and the `!` / `?` markers. The client holds no quest or dialogue rules. The
-opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.3-alpha`).
+opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.4-alpha`).
 
 **Dialogue and bind point (#172, implemented):**
 

@@ -51,11 +51,12 @@ namespace Server.Quests
             {
                 var objective = quest.Objectives[i];
                 int done = i < counters.Count ? Math.Min(counters[i], objective.Count) : 0;
-                yield return $"{ObjectiveName(objective)}: {done}/{objective.Count}";
+                yield return $"{ObjectiveText(objective)}: {done}/{objective.Count}";
             }
         }
 
-        private static string ObjectiveName(QuestObjective objective)
+        /// <summary>The objective without its counter, e.g. "Defeat Slime"; sent to the client for the quest log.</summary>
+        public static string ObjectiveText(QuestObjective objective)
         {
             if (!string.IsNullOrWhiteSpace(objective.Description)) return objective.Description!;
 
@@ -201,7 +202,7 @@ namespace Server.Quests
         // ---- Internals ----
 
         /// <summary>The stored counters, resized to the quest's current objectives (quest data may have changed since they were saved).</summary>
-        private static int[] NormalizedCounters(QuestTemplate quest, IReadOnlyList<int> stored)
+        internal static int[] NormalizedCounters(QuestTemplate quest, IReadOnlyList<int> stored)
         {
             var counters = new int[quest.Objectives.Count];
             for (int i = 0; i < counters.Length && i < stored.Count; i++)

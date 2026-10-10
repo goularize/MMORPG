@@ -72,18 +72,34 @@ namespace Server.Tests
         /// <summary>The last QuestUpdate for the quest: state and counters.</summary>
         public (QuestState State, int[] Counters)? LastQuestUpdate(int questId)
         {
+            var entry = LastQuestEntry(questId);
+            return entry == null ? null : (entry.State, entry.Objectives.Select(o => o.Current).ToArray());
+        }
+
+        /// <summary>The last QuestUpdate for the quest with its name and objective texts.</summary>
+        public QuestEntryView? LastQuestEntry(int questId)
+        {
             foreach (var p in Of(OpCode.QuestUpdate).Reverse())
             {
                 if (p.ReadInt() != questId) continue;
-                var state = (QuestState)p.ReadByte();
-                int count = p.ReadByte();
-                var counters = new int[count];
-                for (int i = 0; i < count; i++) counters[i] = p.ReadInt();
-                return (state, counters);
+                return ReadQuestEntry(p);
             }
             return null;
         }
+
+        /// <summary>Reads one QuestEntry as written by QuestHandler (state, name, objectives).</summary>
+        public static QuestEntryView ReadQuestEntry(Packet p)
+        {
+            var state = (QuestState)p.ReadByte();
+            string name = p.ReadString();
+            int count = p.ReadByte();
+            var objectives = new List<(string Text, int Current, int Required)>();
+            for (int i = 0; i < count; i++) objectives.Add((p.ReadString(), p.ReadInt(), p.ReadInt()));
+            return new QuestEntryView(state, name, objectives);
+        }
     }
+
+    public sealed record QuestEntryView(QuestState State, string Name, IReadOnlyList<(string Text, int Current, int Required)> Objectives);
 
     public sealed record DialogueView(int NpcId, string NpcName, string Text, IReadOnlyList<(int Id, string Label, InteractAction Action)> Options)
     {

@@ -9,7 +9,7 @@ namespace Shared.Constants
     public static class GameRules
     {
         /// <summary>Protocol/build version exchanged at sign-in. The server may override it via GAME_VERSION.</summary>
-        public const string GameVersion = "0.2.3-alpha";
+        public const string GameVersion = "0.2.4-alpha";
 
         // --- Simulation ---
         /// <summary>Fixed simulation rate of the authoritative server loop (ticks per second).</summary>
