@@ -31,7 +31,7 @@
 - [x] **Zero-Duplication Unity Integration**: Directory junction pipeline sharing `Shared/` natively with Unity without duplicate code files.
 - [x] **Database & Auth Integration**: PostgreSQL + EF Core 8 with BCrypt password hashing and code-first migrations.
 - [x] **Area of Interest (AoI)**: Distance-based entity culling to limit network throughput.
-- [x] **Multi-Channel Chat System**: Local (AoI culling), Global broadcast, and Whisper channels with profanity filtering and optional DB logging.
+- [x] **Multi-Channel Chat System**: Local (AoI culling), Global broadcast, and Whisper channels with profanity filtering and optional DB logging. Client chat window, commands (`/g`, `/w`) and local speech bubbles: see `docs/chat.md` (#173).
 
 > *Plus emerging features, architectural refinements, and quality-of-life improvements identified during active development sprints.*
 
