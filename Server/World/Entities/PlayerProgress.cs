@@ -26,6 +26,9 @@ namespace Server.World.Entities
         private readonly Dictionary<int, int> _killCounts = new();
         private readonly Dictionary<int, QuestProgress> _quests = new();
 
+        /// <summary>Raised after every change (flag, kill count, quest log); NPC markers depend on all of them. Not raised by <see cref="Load"/>.</summary>
+        public event Action? Changed;
+
         /// <param name="persistence">Where changes are queued; null keeps the progress in memory only.</param>
         public PlayerProgress(int characterId, PersistenceService? persistence)
         {
@@ -47,6 +50,7 @@ namespace Server.World.Entities
             if (!_flags.Add(flag)) return false;
 
             _persistence?.QueueFlag(_characterId, flag, isSet: true);
+            Changed?.Invoke();
             return true;
         }
 
@@ -57,6 +61,7 @@ namespace Server.World.Entities
             if (!_flags.Remove(flag)) return false;
 
             _persistence?.QueueFlag(_characterId, flag, isSet: false);
+            Changed?.Invoke();
             return true;
         }
 
@@ -78,6 +83,7 @@ namespace Server.World.Entities
 
             _killCounts[npcTemplateId] = count;
             _persistence?.QueueKillCount(_characterId, npcTemplateId, count);
+            Changed?.Invoke();
             return count;
         }
 
@@ -105,6 +111,7 @@ namespace Server.World.Entities
             var counters = (objectives ?? Array.Empty<int>()).ToArray();
             _quests[questId] = new QuestProgress(state, counters);
             _persistence?.QueueQuest(_characterId, questId, state, SerializeObjectives(counters), urgent);
+            Changed?.Invoke();
         }
 
         /// <summary>Removes a quest from the log (abandon). Returns true when it was in the log.</summary>
@@ -113,6 +120,7 @@ namespace Server.World.Entities
             if (!_quests.Remove(questId)) return false;
 
             _persistence?.QueueQuestDelete(_characterId, questId, urgent);
+            Changed?.Invoke();
             return true;
         }
 

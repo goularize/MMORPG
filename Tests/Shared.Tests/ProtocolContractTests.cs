@@ -34,6 +34,7 @@ namespace Shared.Tests
             ("OpenLootSatchelRequest", 85), ("LootItemRequest", 86), ("LootAllRequest", 87), ("LootSatchelSync", 88), ("LootSatchelClose", 89),
             ("DialogueOpen", 90), ("DialogueChoose", 91), ("DialogueClose", 92),
             ("QuestAbandonRequest", 93), ("QuestUpdate", 94), ("QuestLogSync", 95),
+            ("EntityMarker", 96),
         };
 
         [Fact]

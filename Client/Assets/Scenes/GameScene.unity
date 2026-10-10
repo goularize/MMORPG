@@ -1656,7 +1656,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 746331754}
-  - component: {fileID: 746331755}
   m_Layer: 5
   m_Name: QuestTrackerHUD
   m_TagString: Untagged
@@ -1684,25 +1683,6 @@ RectTransform:
   m_AnchoredPosition: {x: 769, y: 300}
   m_SizeDelta: {x: 300, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &746331755
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 746331753}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ee43f792812b64f4b823cd9c1699e174, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Client.UI.QuestTrackerUI
-  root: {fileID: 1846076932}
-  text: {fileID: 1357432752}
-  maxQuests: 3
-  questsInProgress: 0
-  questsPinned: 0
-  questsShown: 0
-  questsHidden: 0
 --- !u!1 &766199565
 GameObject:
   m_ObjectHideFlags: 0
@@ -1830,6 +1810,8 @@ GameObject:
   - component: {fileID: 769941687}
   - component: {fileID: 769941691}
   - component: {fileID: 769941690}
+  - component: {fileID: 769941692}
+  - component: {fileID: 769941693}
   - component: {fileID: 769941688}
   - component: {fileID: 769941689}
   m_Layer: 5
@@ -2047,6 +2029,51 @@ MonoBehaviour:
   closeButton: {fileID: 822309612}
   actionIcons: []
   responseTimeoutSeconds: 10
+--- !u!114 &769941692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 769941681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee43f792812b64f4b823cd9c1699e174, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Client.UI.QuestTrackerUI
+  root: {fileID: 1846076932}
+  text: {fileID: 1357432752}
+  maxQuests: 3
+  idleOpacity: 0.7
+  hoverOpacity: 1
+  fadeSpeed: 10
+  questsInProgress: 0
+  questsTracked: 0
+  questsShown: 0
+  questsHidden: 0
+--- !u!114 &769941693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 769941681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94af7f32e4e20de4fb8a7865003ba350, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Client.World.QuestMarkerController
+  height: 2.1
+  bobHeight: 0.08
+  bobSpeed: 3
+  sortingOrder: 12
+  availableColor: {r: 1, g: 0.92, b: 0.25, a: 1}
+  availableSprite: {fileID: 0}
+  readyColor: {r: 1, g: 0.78, b: 0.1, a: 1}
+  readySprite: {fileID: 0}
+  fontSize: 7
+  outlineColor: {r: 0.1, g: 0.05, b: 0, a: 1}
+  outlineWidth: 0.25
 --- !u!1 &822309610
 GameObject:
   m_ObjectHideFlags: 0

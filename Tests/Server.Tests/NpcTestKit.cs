@@ -52,6 +52,17 @@ namespace Server.Tests
             return new DialogueView(npcId, npcName, text, options);
         }
 
+        /// <summary>The marker the client currently shows over the entity: the last EntityMarker sent for it, None when never sent.</summary>
+        public EntityMarker MarkerOf(int entityId)
+        {
+            var shown = EntityMarker.None;
+            foreach (var p in Of(OpCode.EntityMarker))
+            {
+                if (p.ReadInt() == entityId) shown = (EntityMarker)p.ReadByte();
+            }
+            return shown;
+        }
+
         public DialogueCloseReason? LastClose()
         {
             var packets = Of(OpCode.DialogueClose).ToList();

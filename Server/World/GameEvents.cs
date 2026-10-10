@@ -40,6 +40,10 @@ namespace Server.World
             events.NpcTalked += QuestService.OnNpcTalked;
             events.ItemGained += (player, _, _) => QuestService.OnInventoryChanged(player);
             events.ItemLost += (player, _, _) => QuestService.OnInventoryChanged(player);
+
+            // Items can be a condition of a quest, so the NPC markers are recomputed
+            events.ItemGained += (player, _, _) => player.MarkMarkersDirty();
+            events.ItemLost += (player, _, _) => player.MarkMarkersDirty();
             return events;
         }
 

@@ -181,15 +181,22 @@ turn-in itself is never wrong. Party-shared kill credit comes with the Party sys
   counter and required count, so the client renders the quest log without any quest data (protocol `0.2.4-alpha`). A
   quest that left the log has an empty name and no objectives; a quest whose template was removed from the data is sent
   as "Unknown quest" with its saved counters.
+- **NPC markers (#240):** `QuestMarkers.For(player, npc)` gives `QuestReady` ("?") when the player can turn a quest in
+  to the NPC, else `QuestAvailable` ("!") when the NPC offers a quest the player can accept now (same rules as the
+  `[New]` / `[Complete]` options), else `None`. It is per player, so two players can see different markers over the
+  same NPC. The server sends `EntityMarker` (`entityId`, `EntityMarker` byte) right after `EntitySpawn` when the marker
+  is not `None`, and again whenever it changes (`None` clears it). `Player.MarkersDirty` is set by quest log, flag and
+  kill changes (`PlayerProgress.Changed`), by level-ups and by backpack changes; only then does the AoI pass recompute
+  the markers of the NPCs that player knows, so a quiet tick costs nothing (protocol `0.2.5-alpha`).
 - **Validator rules:** unique positive ids, giver and turn-in NPCs exist and **have a dialogue**, at least one and at
   most six objectives with existing targets, positive counts, rewards reference existing items within their
   `MaxStack`, texts valid, prerequisites valid and not self-referential.
 
-## 7. Client — #172, #239 (done), #240 (not implemented)
+## 7. Client — #172, #239, #240 (done)
 
 The Unity client must render what the server sends and send nothing else: the dialogue window, the quest log and
 tracker (`QuestLogSync`, `QuestUpdate`), and the `!` / `?` markers. The client holds no quest or dialogue rules. The
-opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.4-alpha`).
+opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.5-alpha`).
 
 **Dialogue and bind point (#172, implemented):**
 
@@ -219,6 +226,14 @@ opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.4-alpha`).
   the mouse is over it (both values, and the fade speed, are Inspector fields).
 - The offer, progress and turn-in screens (with the reward preview) are server-built dialogue nodes, so the dialogue
   window from #172 already shows them. State resets on logout.
+
+**Quest markers (#240, implemented):**
+
+- `MarkerHandler` keeps the `EntityMarker` the server sent per entity and raises an event; reset on logout.
+- `QuestMarkerController` (one in the game scene) puts a `QuestMarkerView` object ("!" for an offer, "?" for a turn-in)
+  above the NPC's head and removes it when the server clears it. The look (height, bobbing, colours, font size and
+  outline, sorting order) is editable in the Inspector. The markers are text by default; assigning a sprite per marker
+  type shows art instead.
 
 ## 8. Tooling and content (not implemented) — #225, #241, #242
 
