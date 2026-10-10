@@ -63,7 +63,7 @@ namespace Server.Handlers
             {
                 case ChatChannel.Global:
                     LogMessage(ChatChannel.Global, sender.Name, null, message);
-                    BroadcastGlobal(sender.Name, message);
+                    BroadcastGlobal(sender, message);
                     break;
                 case ChatChannel.Local:
                     LogMessage(ChatChannel.Local, sender.Name, null, message);
@@ -80,6 +80,7 @@ namespace Server.Handlers
         {
             using Packet notice = new Packet(OpCode.ChatMessageBroadcast);
             notice.Write((byte)ChatChannel.System);
+            notice.Write(0); // senderId: not an entity
             notice.Write("System");
             notice.Write(text);
             player.Connection.Send(notice);
@@ -105,11 +106,12 @@ namespace Server.Handlers
             }
         }
 
-        private static void BroadcastGlobal(string senderName, string message)
+        private static void BroadcastGlobal(Server.World.Entities.Player sender, string message)
         {
             using Packet broadcast = new Packet(OpCode.ChatMessageBroadcast);
             broadcast.Write((byte)ChatChannel.Global);
-            broadcast.Write(senderName);
+            broadcast.Write(sender.Id);
+            broadcast.Write(sender.Name);
             broadcast.Write(message);
 
             foreach (var map in GameLogic.MapMgr.ActiveMaps.Values)
@@ -120,13 +122,14 @@ namespace Server.Handlers
                 }
             }
             
-            Console.WriteLine($"[Global] {senderName}: {message}");
+            Console.WriteLine($"[Global] {sender.Name}: {message}");
         }
 
         private static void BroadcastLocal(Server.World.Entities.Player sender, string message)
         {
             using Packet broadcast = new Packet(OpCode.ChatMessageBroadcast);
             broadcast.Write((byte)ChatChannel.Local);
+            broadcast.Write(sender.Id);
             broadcast.Write(sender.Name);
             broadcast.Write(message);
 
@@ -161,6 +164,7 @@ namespace Server.Handlers
                 // Send to Target
                 using Packet broadcast = new Packet(OpCode.ChatMessageBroadcast);
                 broadcast.Write((byte)ChatChannel.Whisper);
+                broadcast.Write(sender.Id);
                 broadcast.Write(sender.Name);
                 broadcast.Write(message);
                 target.Connection.Send(broadcast);
@@ -168,6 +172,7 @@ namespace Server.Handlers
                 // Echo back to Sender so they see their own message
                 using Packet echo = new Packet(OpCode.ChatMessageBroadcast);
                 echo.Write((byte)ChatChannel.Whisper);
+                echo.Write(0); // senderId: the echo is not a message from an entity
                 echo.Write($"To {target.Name}");
                 echo.Write(message);
                 sender.Connection.Send(echo);
@@ -179,6 +184,7 @@ namespace Server.Handlers
                 // Target not found
                 using Packet error = new Packet(OpCode.ChatMessageBroadcast);
                 error.Write((byte)ChatChannel.System);
+                error.Write(0);
                 error.Write("System");
                 error.Write($"Player '{targetName}' is not online.");
                 sender.Connection.Send(error);
