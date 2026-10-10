@@ -61,6 +61,7 @@ namespace Client.Network.Handlers
             WorldHandler.ResetSession();
             ProgressionHandler.ResetSession();
             DialogueHandler.ResetSession();
+            QuestHandler.ResetSession();
         }
     }
 }

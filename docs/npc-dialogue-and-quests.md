@@ -185,7 +185,7 @@ turn-in itself is never wrong. Party-shared kill credit comes with the Party sys
   most six objectives with existing targets, positive counts, rewards reference existing items within their
   `MaxStack`, texts valid, prerequisites valid and not self-referential.
 
-## 7. Client — #172 (done), #239, #240 (not implemented)
+## 7. Client — #172, #239 (done), #240 (not implemented)
 
 The Unity client must render what the server sends and send nothing else: the dialogue window, the quest log and
 tracker (`QuestLogSync`, `QuestUpdate`), and the `!` / `?` markers. The client holds no quest or dialogue rules. The
@@ -205,6 +205,20 @@ opcodes are in `Shared/Network/OpCode.cs` (protocol `0.2.4-alpha`).
   "Bound to this inn", shops: "Shops are not available yet").
 - Placeholder prefabs `Entity_HumanBlacksmith` and `Entity_HumanInnkeeper` (tinted `Npc_Farmer` frame) and spawners for
   NPC templates 200 and 201 near the start position. Final art and `Entity_Goblin` are still open (#232).
+
+**Quest log and tracker (#239, implemented):**
+
+- `QuestHandler` (client) mirrors the log from `QuestLogSync` (world entry) and `QuestUpdate` (one quest; `Available`
+  removes it) and sends `QuestAbandonRequest`. It holds names, states and objective text/counters exactly as sent.
+- `QuestLogUI` (key `L`, Esc or X closes): quests in progress first, completed after, with the selected quest's
+  objectives and a two-click Abandon (not offered for completed quests). It never changes the log itself: the
+  server's `QuestUpdate` does.
+- `QuestTrackerUI`: HUD list of the tracked quests with their counters, hidden when empty. Every quest in progress is
+  tracked automatically; the log's Track / Untrack button changes that (a client-side choice, not saved and unknown to
+  the server). At most 3 quests are listed, the rest become a "+N more" line. The tracker is 70% opaque and 100% while
+  the mouse is over it (both values, and the fade speed, are Inspector fields).
+- The offer, progress and turn-in screens (with the reward preview) are server-built dialogue nodes, so the dialogue
+  window from #172 already shows them. State resets on logout.
 
 ## 8. Tooling and content (not implemented) — #225, #241, #242
 
