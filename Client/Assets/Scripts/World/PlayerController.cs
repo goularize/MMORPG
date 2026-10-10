@@ -36,8 +36,27 @@ namespace Client.World
                 return;
             }
 
-            HandleInput();
+            // Typing in the chat must not move the character (WASD are letters then)
+            if (Client.UI.InputFocus.IsTyping)
+            {
+                StopMoving();
+            }
+            else
+            {
+                HandleInput();
+            }
             HandleCombatInput();
+        }
+
+        // Same end as letting go of the keys: one last exact position goes to the server
+        private void StopMoving()
+        {
+            _moveInput = Vector2.zero;
+            if (_wasMoving)
+            {
+                ForceSendPacket(transform.position);
+                _wasMoving = false;
+            }
         }
 
         private void FixedUpdate()

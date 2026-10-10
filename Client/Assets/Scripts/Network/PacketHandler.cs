@@ -45,6 +45,7 @@ namespace Client.Network
             _packetHandlers.Add((int)OpCode.AllocateStatPointResponse, Handlers.ProgressionHandler.HandleStatPointResponse);
             _packetHandlers.Add((int)OpCode.PlayerProgressionSync, Handlers.ProgressionHandler.HandleProgressionSync);
 
+            _packetHandlers.Add((int)OpCode.ChatMessageBroadcast, Handlers.ChatHandler.HandleChatBroadcast);
             _packetHandlers.Add((int)OpCode.EntityMarker, Handlers.MarkerHandler.HandleEntityMarker);
             _packetHandlers.Add((int)OpCode.QuestLogSync, Handlers.QuestHandler.HandleQuestLogSync);
             _packetHandlers.Add((int)OpCode.QuestUpdate, Handlers.QuestHandler.HandleQuestUpdate);

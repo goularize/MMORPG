@@ -63,6 +63,7 @@ namespace Client.Network.Handlers
             DialogueHandler.ResetSession();
             QuestHandler.ResetSession();
             MarkerHandler.ResetSession();
+            ChatHandler.ResetSession();
         }
     }
 }

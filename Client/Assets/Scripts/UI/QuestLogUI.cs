@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 using Client.Network.Handlers;
@@ -76,7 +75,7 @@ namespace Client.UI
             var keyboard = UnityEngine.InputSystem.Keyboard.current;
             if (keyboard == null) return;
 
-            if (keyboard[toggleKey].wasPressedThisFrame && !IsTyping())
+            if (keyboard[toggleKey].wasPressedThisFrame && !InputFocus.IsTyping)
             {
                 if (panel.activeSelf) Close(); else Open();
             }
@@ -95,13 +94,6 @@ namespace Client.UI
         public void Close()
         {
             panel.SetActive(false);
-        }
-
-        // Typing in the chat must not open windows
-        private static bool IsTyping()
-        {
-            var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
-            return selected != null && selected.GetComponent<TMP_InputField>() != null;
         }
 
         private void OnQuestChanged(int questId, QuestView quest)
