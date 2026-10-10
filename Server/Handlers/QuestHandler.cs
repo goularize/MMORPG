@@ -1,4 +1,5 @@
 using System.Linq;
+using Server.Data;
 using Server.Network;
 using Server.Quests;
 using Server.World;
@@ -26,7 +27,7 @@ namespace Server.Handlers
         {
             using Packet packet = new Packet(OpCode.QuestUpdate);
             packet.Write(questId);
-            WriteEntry(packet, player.Progress.GetQuest(questId));
+            WriteEntry(packet, questId, player.Progress.GetQuest(questId));
             player.Connection.Send(packet);
         }
 
@@ -40,18 +41,49 @@ namespace Server.Handlers
             foreach (var (questId, entry) in entries)
             {
                 packet.Write(questId);
-                WriteEntry(packet, entry);
+                WriteEntry(packet, questId, entry);
             }
             player.Connection.Send(packet);
         }
 
-        private static void WriteEntry(Packet packet, QuestProgress? entry)
+        /// <summary>
+        /// State, quest name and the objectives (text, current, required). The texts come from the quest data, so the
+        /// client never needs it. A quest that left the log has no name and no objectives; a quest whose template was
+        /// removed from the data still gets a valid entry from its saved counters.
+        /// </summary>
+        private static void WriteEntry(Packet packet, int questId, QuestProgress? entry)
         {
             packet.Write((byte)(entry?.State ?? QuestState.Available));
 
-            int count = entry?.Objectives.Count ?? 0;
-            packet.Write((byte)count);
-            for (int i = 0; i < count; i++) packet.Write(entry!.Objectives[i]);
+            if (entry == null)
+            {
+                packet.Write(string.Empty);
+                packet.Write((byte)0);
+                return;
+            }
+
+            if (DataManager.Quests.TryGetValue(questId, out var quest))
+            {
+                var counters = QuestService.NormalizedCounters(quest, entry.Objectives);
+                packet.Write(quest.Name);
+                packet.Write((byte)quest.Objectives.Count);
+                for (int i = 0; i < quest.Objectives.Count; i++)
+                {
+                    packet.Write(QuestService.ObjectiveText(quest.Objectives[i]));
+                    packet.Write(counters[i]);
+                    packet.Write(quest.Objectives[i].Count);
+                }
+                return;
+            }
+
+            packet.Write("Unknown quest");
+            packet.Write((byte)entry.Objectives.Count);
+            for (int i = 0; i < entry.Objectives.Count; i++)
+            {
+                packet.Write($"Objective {i + 1}");
+                packet.Write(entry.Objectives[i]);
+                packet.Write(entry.Objectives[i]);
+            }
         }
     }
 }

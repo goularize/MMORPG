@@ -391,13 +391,68 @@ namespace Server.Tests
 
             var packet = client.Of(OpCode.QuestLogSync).Single();
             Assert.Equal(2, packet.ReadInt());
+
             Assert.Equal(1, packet.ReadInt());
-            Assert.Equal(QuestState.Active, (QuestState)packet.ReadByte());
-            Assert.Equal(1, packet.ReadByte());
-            Assert.Equal(4, packet.ReadInt());
+            var slimes = RecordingClient.ReadQuestEntry(packet);
+            Assert.Equal(QuestState.Active, slimes.State);
+            Assert.Equal(DataManager.Quests[1].Name, slimes.Name);
+            var objective = Assert.Single(slimes.Objectives);
+            Assert.Equal(QuestService.ObjectiveText(DataManager.Quests[1].Objectives[0]), objective.Text);
+            Assert.Equal(4, objective.Current);
+            Assert.Equal(DataManager.Quests[1].Objectives[0].Count, objective.Required);
+
+            // Quest 9 has no template: it still gets a valid entry from its saved counters
             Assert.Equal(9, packet.ReadInt());
-            Assert.Equal(QuestState.Rewarded, (QuestState)packet.ReadByte());
-            Assert.Equal(2, packet.ReadByte());
+            var unknown = RecordingClient.ReadQuestEntry(packet);
+            Assert.Equal(QuestState.Rewarded, unknown.State);
+            Assert.Equal(2, unknown.Objectives.Count);
+        }
+
+        [Fact]
+        public void QuestUpdate_CarriesTheNameAndObjectiveTexts()
+        {
+            var (client, player) = AddPlayer();
+            var quest = AddQuest(70, Kill(101, 3), Talk(QuestNpcTemplate));
+            quest.Objectives[1].Description = "Report back";
+
+            QuestService.Accept(player, 70, QuestNpcTemplate);
+
+            var entry = client.LastQuestEntry(70)!;
+            Assert.Equal("Quest 70", entry.Name);
+            Assert.Equal(QuestState.Active, entry.State);
+            Assert.Equal(2, entry.Objectives.Count);
+            Assert.Equal(QuestService.ObjectiveText(quest.Objectives[0]), entry.Objectives[0].Text);
+            Assert.Equal((0, 3), (entry.Objectives[0].Current, entry.Objectives[0].Required));
+            Assert.Equal(("Report back", 0, 1), entry.Objectives[1]);
+        }
+
+        [Fact]
+        public void QuestUpdate_ForAQuestThatLeftTheLog_HasNoNameAndNoObjectives()
+        {
+            var (client, player) = AddPlayer();
+            QuestService.Accept(player, 1, BlacksmithTemplate);
+
+            QuestService.Abandon(player, 1);
+
+            var entry = client.LastQuestEntry(1)!;
+            Assert.Equal(QuestState.Available, entry.State);
+            Assert.Equal(string.Empty, entry.Name);
+            Assert.Empty(entry.Objectives);
+        }
+
+        [Fact]
+        public void QuestUpdate_ForAQuestWhoseTemplateWasRemoved_StillHasAValidEntry()
+        {
+            var (client, player) = AddPlayer();
+            player.Progress.SetQuest(88, QuestState.Active, new[] { 2, 5 });
+            client.Raw.Clear();
+
+            QuestHandler.SendQuestUpdate(player, 88);
+
+            var entry = client.LastQuestEntry(88)!;
+            Assert.Equal(QuestState.Active, entry.State);
+            Assert.Equal("Unknown quest", entry.Name);
+            Assert.Equal(new[] { 2, 5 }, entry.Objectives.Select(o => o.Current).ToArray());
         }
 
         // ---- Through the NPC's dialogue (the whole loop) ----
