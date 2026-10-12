@@ -6,15 +6,12 @@ using Client.Network.Handlers;
 namespace Client.UI
 {
     /// <summary>
-    /// "Character select" button of the game HUD plus the confirmation modal shown when the server says the player
-    /// is in combat (leaving then keeps the character in the world for a while). Buttons are wired here in code.
+    /// The logout flow: the confirmation modal shown when the server says the player
+    /// is in combat (leaving then keeps the character in the world for a while). The HUD button is in HudButtonsUI.
     /// </summary>
     public class LogoutUI : MonoBehaviour
     {
         public static LogoutUI Instance { get; private set; }
-
-        [Header("Button")]
-        [SerializeField] private Button logoutButton;
 
         [Header("Combat confirmation modal")]
         [Tooltip("The modal root. It is hidden at start and shown when the server asks for a confirmation.")]
@@ -29,6 +26,9 @@ namespace Client.UI
         [Header("Behaviour")]
         [Tooltip("Seconds to wait for the server's answer before the button works again.")]
         [SerializeField] private float responseTimeoutSeconds = 10f;
+
+        /// <summary>Waiting for the server to answer a logout request (the HUD button is disabled meanwhile).</summary>
+        public event System.Action<bool> OnPendingChanged;
 
         private bool _pending;
         private float _pendingSince;
@@ -45,7 +45,6 @@ namespace Client.UI
 
         private void Start()
         {
-            logoutButton.onClick.AddListener(OnLogoutClicked);
             confirmButton.onClick.AddListener(OnConfirmClicked);
             cancelButton.onClick.AddListener(OnCancelClicked);
 
@@ -69,7 +68,8 @@ namespace Client.UI
             confirmPanel.SetActive(true);
         }
 
-        private void OnLogoutClicked()
+        /// <summary>Asks the server to leave the world (the server may answer with the combat confirmation).</summary>
+        public void RequestLogout()
         {
             if (_pending) return;
 
@@ -94,7 +94,7 @@ namespace Client.UI
         {
             _pending = pending;
             _pendingSince = Time.unscaledTime;
-            logoutButton.interactable = !pending;
+            OnPendingChanged?.Invoke(pending);
         }
     }
 }

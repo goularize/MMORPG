@@ -85,6 +85,11 @@ namespace Client.UI
             }
         }
 
+        public void Toggle()
+        {
+            if (panel.activeSelf) Close(); else Open();
+        }
+
         public void Open()
         {
             panel.SetActive(true);
