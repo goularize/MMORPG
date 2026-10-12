@@ -32,6 +32,7 @@ Only the main backpack (bag 0) exists for now. Backpack contents, equipment and 
   drag and drop, and a destroy confirmation.
 - `UI/InventorySlotUI.cs` — one cell; reports clicks, drags and hovers to `InventoryUI`.
 - `UI/ItemTooltipUI.cs`, `UI/ItemFormat.cs` — the tooltip that follows the mouse, rarity colours, stat lines.
+- `UI/HudButtonsUI.cs` — the HUD buttons for the inventory, the quest log and logout (like the I and L keys). `InventoryUI` and `QuestLogUI` expose `Toggle()`; `LogoutUI` keeps the combat confirmation and exposes `RequestLogout()`.
 
 ## Controls
 
@@ -50,7 +51,7 @@ short message; the server validates everything again.
 
 ## Icons
 
-Icons are looked up by the template's `Icon` name as `Resources/ItemIcons/<Icon>` (a Sprite). Without a sprite the cell
+Icons are looked up by the template's `Icon` name as `Resources/ItemIcons/<Icon>` (a Sprite, point filter, no compression). Only some exist so far. Without a sprite the cell
 shows the item's initials on its rarity colour, so the window works before any art exists.
 
 ## Not done yet
