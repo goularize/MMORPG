@@ -208,6 +208,11 @@ PublishScripts/
 **/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
+# Unity manifest must be versioned, or a fresh clone gets Unity's default one (no ugui/TMP/InputSystem/URP)
+!Client/Packages/
+Client/Packages/*
+!Client/Packages/manifest.json
+!Client/Packages/packages-lock.json
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
