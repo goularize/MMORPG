@@ -50,6 +50,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Client.World.PlayerController
   speed: 4
+  attackCooldown: 1.5
 --- !u!114 &6802833592245942879
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63,6 +64,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Client.World.CharacterManager
   nameText: {fileID: 8565962398082444903}
+  animator: {fileID: 0}
+  floatingTextPrefab: {fileID: 0}
+  <Health>k__BackingField: 1
+  <MaxHealth>k__BackingField: 1
+  <IsDead>k__BackingField: 0
 --- !u!50 &5452952816440702615
 Rigidbody2D:
   serializedVersion: 5
@@ -290,7 +296,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  - {fileID: 4312890630022362744, guid: a473ef693d41880418611a2253c90d4f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -336,8 +342,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Name
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: a473ef693d41880418611a2253c90d4f, type: 2}
+  m_sharedMaterial: {fileID: 4312890630022362744, guid: a473ef693d41880418611a2253c90d4f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
